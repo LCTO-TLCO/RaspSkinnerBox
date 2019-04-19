@@ -4,18 +4,20 @@ from time import sleep
 from random import choice
 
 # input
-hole_lamp = {}
-# TODO ピン番号の設定
-for i in range(1, 9, 2):
-    hole_lamp[i] = 0
-dispenser_magazine = 0
-dispenser_lamp = 0
-house_lamp = 0
+hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
+# for i in range(1, 9, 2):
+#     hole_lamp[i] = 0
+
+dispenser_magazine = 4
+dispenser_lamp = 17
+house_lamp = 27
 # output
-dispenser_sensor = 0
-hole_sensor = {}
-for i in range(1, 9, 2):
-    hole_sensor[i] = 0
+dispenser_sensor = 5
+hole_sensor = {3: 6, 5: 13, 7: 19}
+
+
+# for i in range(1, 9, 2):
+#     hole_sensor[i] = 0
 
 
 def setup():
