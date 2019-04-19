@@ -3,7 +3,7 @@ import RPi.GPIO as GPIO
 from time import sleep
 from random import choice
 
-# input
+# output
 hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
 # for i in range(1, 9, 2):
 #     hole_lamp[i] = 0
@@ -11,7 +11,7 @@ hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
 dispenser_magazine = 4
 dispenser_lamp = 17
 house_lamp = 27
-# output
+# input
 dispenser_sensor = 5
 hole_sensor = {3: 6, 5: 13, 7: 19}
 
@@ -23,15 +23,17 @@ hole_sensor = {3: 6, 5: 13, 7: 19}
 def setup():
     GPIO.setmode(GPIO.BCM)
     # output
-    for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp]:
+    for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp, house_lamp]:
         if type(outputs) == type(dict):
-            for no in outputs.keys():
+            for no in list(outputs.keys()):
+                print("dict detected")
                 GPIO.setup(outputs[no], GPIO.OUT, initial=GPIO.LOW)
             continue
         GPIO.setup(outputs, GPIO.OUT, initial=GPIO.LOW)
     # input
     for inputs in [dispenser_sensor, hole_sensor]:
         if type(inputs) == type(dict):
+            print("dict detected")
             for no in inputs.keys():
                 GPIO.setup(inputs[no], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             continue
