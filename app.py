@@ -22,9 +22,9 @@ def run(terminate="T0"):
     if terminate in ex_flow[1:2]:
         i = ex_flow.index(terminate)
         del ex_flow[0:i - 1]
-    # for term in ex_flow:
-    #     eval("{}()".format(term))
-    T0()
+    for term in ex_flow:
+        eval("{}()".format(term))
+
 
 def T0():
     print("T0 start")
@@ -37,13 +37,14 @@ def T0():
             dispense_all(reward)
         GPIO.output(dispenser_lamp, GPIO.HIGH)
         dispense_pelet()
-        while GPIO.input(dispenser_sensor) == GPIO.LOW:
+        while GPIO.input(dispenser_sensor) == GPIO.HIGH:
             sleep(0.1)
         print("poked")
         GPIO.output(dispenser_lamp, GPIO.LOW)
         ITI()
     reward = reward - times
     print("T0 end")
+
 
 def T1():
     print("T1 start")
@@ -59,12 +60,13 @@ def T1():
         hole_lamp_all("off")
         GPIO.output(dispenser_lamp, GPIO.HIGH)
         dispense_pelet()
-        while GPIO.input(dispenser_sensor) == GPIO.LOW:
+        while GPIO.input(dispenser_sensor) == GPIO.HIGH:
             sleep(0.1)
         GPIO.output(dispenser_lamp, GPIO.LOW)
         ITI()
     reward = reward - times
     print("T1 end")
+
 
 def T2():
     print("T2 start")
@@ -76,24 +78,25 @@ def T2():
             dispense_all(reward)
         # start
         GPIO.output(dispenser_lamp, GPIO.HIGH)
-        while GPIO.input(dispenser_sensor) == GPIO.LOW:
+        while GPIO.input(dispenser_sensor) == GPIO.HIGH:
             sleep(0.1)
         sleep(5)
         # random lamp on
         num = hole_lamp_rand()
-        end_time = datetime.now() + timedelta(seconds=20)
+        # end_time = datetime.now() + timedelta(seconds=20)
         # nosepoke detect
         while not is_hole_poked(num):
             sleep(0.1)
         hole_lamp_all("off")
         GPIO.output(dispenser_lamp, GPIO.HIGH)
         dispense_pelet()
-        while not GPIO.input(dispenser_sensor) == GPIO.LOW:
+        while not GPIO.input(dispenser_sensor) == GPIO.HIGH:
             sleep(0.1)
         GPIO.output(dispenser_lamp, GPIO.LOW)
         sleep(20)
     reward = reward - times
     print("T2 end")
+
 
 def dispense_all(feed):
     for f in range(feed):

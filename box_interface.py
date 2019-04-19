@@ -13,7 +13,7 @@ dispenser_lamp = 17
 house_lamp = 27
 # input
 dispenser_sensor = 5
-hole_sensor = {3: 6, 5: 13, 7: 19}
+hole_sensor = {3: 6, 5: 26, 7: 19}
 
 
 # for i in range(1, 9, 2):
@@ -51,26 +51,26 @@ def shutdown():
 
 
 def dispense_pelet():
-    global hole_lamp,dispenser_lamp,house_lamp,dispenser_sensor,hole_sensor
+    global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
     GPIO.output(dispenser_magazine, GPIO.HIGH)
     GPIO.output(dispenser_magazine, GPIO.LOW)
     sleep(3)
 
 
 def hole_lamp_turn(no: int, switch: str):
-    global hole_lamp,dispenser_lamp,house_lamp,dispenser_sensor,hole_sensor
+    global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
     do = {"on": GPIO.HIGH, "off": GPIO.LOW}
     GPIO.output(hole_lamp[no], do[switch])
 
 
 def hole_lamp_all(switch: str):
-    global hole_lamp,dispenser_lamp,house_lamp,dispenser_sensor,hole_sensor
+    global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
     for no in hole_lamp.keys():
         hole_lamp_turn(no, switch)
 
 
 def hole_lamp_rand():
-    global hole_lamp,dispenser_lamp,house_lamp,dispenser_sensor,hole_sensor
+    global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
     holes = hole_lamp.keys()
     num = choice(list(holes))
     hole_lamp_turn(num, "on")
@@ -78,7 +78,7 @@ def hole_lamp_rand():
 
 
 def is_hole_poked(no: int):
-    if GPIO.input(no):
+    if GPIO.input(no) == GPIO.LOW:
         return True
 
 
