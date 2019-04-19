@@ -37,7 +37,7 @@ def T0():
             dispense_all(reward)
         GPIO.output(dispenser_lamp, GPIO.HIGH)
         dispense_pelet()
-        while not GPIO.input(dispenser_sensor):
+        while GPIO.input(dispenser_sensor) == GPIO.LOW:
             sleep(0.1)
         print("poked")
         GPIO.output(dispenser_lamp, GPIO.LOW)
@@ -59,7 +59,7 @@ def T1():
         hole_lamp_all("off")
         GPIO.output(dispenser_lamp, GPIO.HIGH)
         dispense_pelet()
-        while not GPIO.input(dispenser_sensor):
+        while GPIO.input(dispenser_sensor) == GPIO.LOW:
             sleep(0.1)
         GPIO.output(dispenser_lamp, GPIO.LOW)
         ITI()
@@ -88,7 +88,7 @@ def T2():
         hole_lamp_all("off")
         GPIO.output(dispenser_lamp, GPIO.HIGH)
         dispense_pelet()
-        while not GPIO.input(dispenser_sensor):
+        while not GPIO.input(dispenser_sensor) == GPIO.LOW:
             sleep(0.1)
         GPIO.output(dispenser_lamp, GPIO.LOW)
         sleep(20)
