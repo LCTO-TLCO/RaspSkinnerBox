@@ -74,7 +74,7 @@ def hole_lamp_rand():
     holes = hole_lamp.keys()
     num = choice(list(holes))
     hole_lamp_turn(num, "on")
-    return num
+    return hole_lamp[num]
 
 
 def is_hole_poked(no: int):
