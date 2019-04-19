@@ -22,9 +22,9 @@ def run(terminate="T0"):
     if terminate in ex_flow[1:2]:
         i = ex_flow.index(terminate)
         del ex_flow[0:i - 1]
-    for term in ex_flow:
-        eval("{}()".format(term))
-
+    # for term in ex_flow:
+    #     eval("{}()".format(term))
+    T0()
 
 def T0():
     print("T0 start")
@@ -39,6 +39,7 @@ def T0():
         dispense_pelet()
         while not GPIO.input(dispenser_sensor):
             sleep(0.1)
+        print("poked")
         GPIO.output(dispenser_lamp, GPIO.LOW)
         ITI()
     reward = reward - times
