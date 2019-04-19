@@ -1,0 +1,81 @@
+#! /usr/bin python3
+import RPi.GPIO as GPIO
+from time import sleep
+from random import choice
+
+# input
+hole_lamp = {}
+# TODO ピン番号の設定
+for i in range(1, 9, 2):
+    hole_lamp[i] = 0
+dispenser_magazine = 0
+dispenser_lamp = 0
+house_lamp = 0
+# output
+dispenser_sensor = 0
+hole_sensor = {}
+for i in range(1, 9, 2):
+    hole_sensor[i] = 0
+
+
+def setup():
+    GPIO.setmode(GPIO.BCM)
+    # output
+    for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp]:
+        if type(outputs) == type(dict):
+            for no in outputs.keys():
+                GPIO.setup(outputs[no], GPIO.OUT, initial=GPIO.LOW)
+            continue
+        GPIO.setup(outputs, GPIO.OUT, initial=GPIO.LOW)
+    # input
+    for inputs in [dispenser_sensor, hole_sensor]:
+        if type(inputs) == type(dict):
+            for no in inputs.keys():
+                GPIO.setup(inputs[no], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+            continue
+        GPIO.setup(inputs, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+
+def shutdown():
+    for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp]:
+        if type(outputs) == type(dict):
+            for no in outputs.keys():
+                GPIO.output(outputs[no], GPIO.LOW)
+            continue
+        GPIO.setup(outputs, GPIO.LOW)
+    GPIO.cleanup()
+
+
+def dispense_pelet():
+    GPIO.output(dispenser_magazine, GPIO.HIGH)
+    GPIO.output(dispenser_magazine, GPIO.LOW)
+    sleep(3)
+
+
+def hole_lamp(no: int, switch: str):
+    do = {"on": GPIO.HIGH, "off": GPIO.LOW}
+    GPIO.output(hole_lamp[no], do[switch])
+
+
+def hole_lamp_all(switch: str):
+    for no in hole_lamp.keys():
+        hole_lamp(no, switch)
+
+
+def hole_lamp_rand():
+    holes = hole_lamp.keys()
+    num = choice(list(holes))
+    hole_lamp(num, "on")
+    return num
+
+
+def is_hole_poked(no: int):
+    if GPIO.input(no):
+        return True
+
+
+def is_holes_poked():
+    for hole in hole_sensor.values():
+        if is_hole_poked(hole):
+            return True
+    return False
