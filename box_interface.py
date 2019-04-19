@@ -44,7 +44,7 @@ def setup():
 def shutdown():
     global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
     for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp]:
-        if type(outputs) == type(dict):
+        if type(outputs) == type({}):
             for no in outputs.keys():
                 GPIO.output(outputs[no], GPIO.LOW)
             continue
