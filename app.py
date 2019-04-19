@@ -27,6 +27,7 @@ def run(terminate="T0"):
 
 
 def T0():
+    print("T0 start")
     global reward
     times = 0
     GPIO.output(dispenser_lamp, GPIO.LOW)
@@ -41,9 +42,10 @@ def T0():
         GPIO.output(dispenser_lamp, GPIO.LOW)
         ITI()
     reward = reward - times
-
+    print("T0 end")
 
 def T1():
+    print("T1 start")
     global reward
     hole_lamp_all("off")
     times = 0
@@ -61,9 +63,10 @@ def T1():
         GPIO.output(dispenser_lamp, GPIO.LOW)
         ITI()
     reward = reward - times
-
+    print("T1 end")
 
 def T2():
+    print("T3 start")
     global reward
     hole_lamp_all("off")
     times = 0
@@ -89,7 +92,7 @@ def T2():
         GPIO.output(dispenser_lamp, GPIO.LOW)
         sleep(20)
     reward = reward - times
-
+    print("T2 end")
 
 def dispense_all(feed):
     for f in range(feed):
