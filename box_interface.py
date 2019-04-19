@@ -68,7 +68,7 @@ def hole_lamp_turn(no: int, switch: str):
 def hole_lamp_all(switch: str):
     global hole_lamp,dispenser_lamp,house_lamp,dispenser_sensor,hole_sensor
     for no in hole_lamp.keys():
-        hole_lamp(no, switch)
+        hole_lamp_turn(no, switch)
 
 
 def hole_lamp_rand():
