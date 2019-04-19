@@ -21,6 +21,7 @@ hole_sensor = {3: 6, 5: 13, 7: 19}
 
 
 def setup():
+    global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
     GPIO.setmode(GPIO.BCM)
     # output
     for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp, house_lamp]:
@@ -41,6 +42,7 @@ def setup():
 
 
 def shutdown():
+    global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
     for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp]:
         if type(outputs) == type(dict):
             for no in outputs.keys():
@@ -51,25 +53,29 @@ def shutdown():
 
 
 def dispense_pelet():
+    global hole_lamp,dispenser_lamp,house_lamp,dispenser_sensor,hole_sensor
     GPIO.output(dispenser_magazine, GPIO.HIGH)
     GPIO.output(dispenser_magazine, GPIO.LOW)
     sleep(3)
 
 
-def hole_lamp(no: int, switch: str):
+def hole_lamp_turn(no: int, switch: str):
+    global hole_lamp,dispenser_lamp,house_lamp,dispenser_sensor,hole_sensor
     do = {"on": GPIO.HIGH, "off": GPIO.LOW}
     GPIO.output(hole_lamp[no], do[switch])
 
 
 def hole_lamp_all(switch: str):
+    global hole_lamp,dispenser_lamp,house_lamp,dispenser_sensor,hole_sensor
     for no in hole_lamp.keys():
         hole_lamp(no, switch)
 
 
 def hole_lamp_rand():
+    global hole_lamp,dispenser_lamp,house_lamp,dispenser_sensor,hole_sensor
     holes = hole_lamp.keys()
     num = choice(list(holes))
-    hole_lamp(num, "on")
+    hole_lamp_turn(num, "on")
     return num
 
 
@@ -79,6 +85,7 @@ def is_hole_poked(no: int):
 
 
 def is_holes_poked():
+    global hole_sensor
     for hole in hole_sensor.values():
         if is_hole_poked(hole):
             return True
