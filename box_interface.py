@@ -24,7 +24,7 @@ def setup():
     GPIO.setmode(GPIO.BCM)
     # output
     for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp, house_lamp]:
-        if type(outputs) == type(dict):
+        if type(outputs) == type({}):
             for no in list(outputs.keys()):
                 print("dict detected")
                 GPIO.setup(outputs[no], GPIO.OUT, initial=GPIO.LOW)
@@ -32,7 +32,7 @@ def setup():
         GPIO.setup(outputs, GPIO.OUT, initial=GPIO.LOW)
     # input
     for inputs in [dispenser_sensor, hole_sensor]:
-        if type(inputs) == type(dict):
+        if type(inputs) == type({}):
             print("dict detected")
             for no in inputs.keys():
                 GPIO.setup(inputs[no], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
