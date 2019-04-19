@@ -4,7 +4,8 @@ from time import sleep
 from random import choice
 
 # output
-hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
+#hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
+hole_lamp = { 3: 18, 5: 23, 7: 24}
 # for i in range(1, 9, 2):
 #     hole_lamp[i] = 0
 
@@ -13,7 +14,7 @@ dispenser_lamp = 17
 house_lamp = 27
 # input
 dispenser_sensor = 5
-hole_sensor = {3: 6, 5: 13, 7: 19}
+hole_sensor = {3: 6, 5: 26, 7: 19}
 
 
 # for i in range(1, 9, 2):
@@ -53,8 +54,9 @@ def shutdown():
 def dispense_pelet():
     global hole_lamp,dispenser_lamp,house_lamp,dispenser_sensor,hole_sensor
     GPIO.output(dispenser_magazine, GPIO.HIGH)
+    sleep(0.1)
     GPIO.output(dispenser_magazine, GPIO.LOW)
-    sleep(3)
+    
 
 
 def hole_lamp_turn(no: int, switch: str):
@@ -74,11 +76,11 @@ def hole_lamp_rand():
     holes = hole_lamp.keys()
     num = choice(list(holes))
     hole_lamp_turn(num, "on")
-    return hole_lamp[num]
+    return num
 
 
 def is_hole_poked(no: int):
-    if GPIO.input(no):
+    if GPIO.input(hole_sensor[no]) == GPIO.LOW:
         return True
 
 

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from random import seed, choice
 
 # define
-DEBUG = True
+DEBUG = False
 reward = 100
 today = datetime.today()
 reset_time = datetime(today.year, today.month, today.day + 1, 10, 0, 0)
@@ -24,7 +24,7 @@ def run(terminate="T0"):
         del ex_flow[0:i - 1]
     # for term in ex_flow:
     #     eval("{}()".format(term))
-    T0()
+    T2()
 
 def T0():
     print("T0 start")
@@ -33,13 +33,13 @@ def T0():
     GPIO.output(dispenser_lamp, GPIO.LOW)
     hole_lamp_all("off")
     for times in range(0, ex_limit[DEBUG][0]):
+        print(times)
         if reset_time <= datetime.now():
             dispense_all(reward)
         GPIO.output(dispenser_lamp, GPIO.HIGH)
         dispense_pelet()
-        while GPIO.input(dispenser_sensor) == GPIO.LOW:
-            sleep(0.1)
-        print("poked")
+        while GPIO.input(dispenser_sensor) == GPIO.HIGH:
+            sleep(0.01)
         GPIO.output(dispenser_lamp, GPIO.LOW)
         ITI()
     reward = reward - times
@@ -51,16 +51,17 @@ def T1():
     hole_lamp_all("off")
     times = 0
     for times in range(0, ex_limit[DEBUG][0]):
+        print(times)
         if reset_time <= datetime.now():
             dispense_all(reward)
         hole_lamp_all("on")
         while not is_holes_poked():
-            sleep(0.1)
+            sleep(0.01)
         hole_lamp_all("off")
         GPIO.output(dispenser_lamp, GPIO.HIGH)
         dispense_pelet()
-        while GPIO.input(dispenser_sensor) == GPIO.LOW:
-            sleep(0.1)
+        while GPIO.input(dispenser_sensor) == GPIO.HIGH:
+            sleep(0.01)
         GPIO.output(dispenser_lamp, GPIO.LOW)
         ITI()
     reward = reward - times
@@ -72,24 +73,26 @@ def T2():
     hole_lamp_all("off")
     times = 0
     for times in range(0, ex_limit[DEBUG][1]):
+        print(times)
         if reset_time <= datetime.now():
             dispense_all(reward)
         # start
         GPIO.output(dispenser_lamp, GPIO.HIGH)
-        while GPIO.input(dispenser_sensor) == GPIO.LOW:
-            sleep(0.1)
+        while GPIO.input(dispenser_sensor) == GPIO.HIGH:
+            sleep(0.01)
+        GPIO.output(dispenser_lamp, GPIO.LOW)
         sleep(5)
         # random lamp on
         num = hole_lamp_rand()
         end_time = datetime.now() + timedelta(seconds=20)
         # nosepoke detect
         while not is_hole_poked(num):
-            sleep(0.1)
+            sleep(0.01)
         hole_lamp_all("off")
         GPIO.output(dispenser_lamp, GPIO.HIGH)
         dispense_pelet()
-        while not GPIO.input(dispenser_sensor) == GPIO.LOW:
-            sleep(0.1)
+        while GPIO.input(dispenser_sensor) == GPIO.HIGH:
+            sleep(0.01)
         GPIO.output(dispenser_lamp, GPIO.LOW)
         sleep(20)
     reward = reward - times
@@ -105,6 +108,8 @@ def dispense_all(feed):
 
 def ITI():
     secs = [4, 8, 16, 32]
+    if DEBUG:
+        secs = 2
     seed()
     sleep(choice(secs))
 
