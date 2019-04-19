@@ -66,7 +66,7 @@ def T1():
     print("T1 end")
 
 def T2():
-    print("T3 start")
+    print("T2 start")
     global reward
     hole_lamp_all("off")
     times = 0
