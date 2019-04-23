@@ -1,0 +1,133 @@
+{
+  "T1": {
+    "task_call": true,
+    "limited_hold": -1,
+    "target_hole": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "ITI": [
+      4,
+      8,
+      16,
+      32
+    ],
+    "upper_limit": 50,
+    "reward_late": []
+  },
+  "T2": {
+    "task_call": true,
+    "limited_hold": -1,
+    "target_hole": [
+      5
+    ],
+    "ITI": [
+      4,
+      8,
+      16,
+      32
+    ],
+    "upper_limit": 50,
+    "reward_late": []
+  },
+  "T3": {
+    "task_call": true,
+    "limited_hold": 60,
+    "target_hole": [
+      5
+    ],
+    "ITI": [
+      0
+    ],
+    "upper_limit": 50,
+    "reward_late": []
+  },
+  "T4": {
+    "task_call": true,
+    "limited_hold": 20,
+    "target_hole": [
+      5
+    ],
+    "ITI": [
+      4,
+      8,
+      16,
+      32
+    ],
+    "upper_limit": 50,
+    "reward_late": []
+  },
+  "Q1": {
+    "task_call": true,
+    "limited_hold": 10,
+    "target_hole": [
+      5
+    ],
+    "ITI": [
+      0
+    ],
+    "upper_limit": 100,
+    "reward_late": []
+  },
+  "Q2": {
+    "task_call": true,
+    "limited_hold": 5,
+    "target_hole": [
+      3,
+      5,
+      7
+    ],
+    "ITI": [
+      0
+    ],
+    "upper_limit": 300,
+    "reward_late": [
+      30,
+      0,
+      70
+    ]
+  },
+  "Q3": {
+    "task_call": true,
+    "limited_hold": 5,
+    "target_hole": [
+      3,
+      5,
+      7
+    ],
+    "ITI": [
+      0
+    ],
+    "upper_limit": 300,
+    "reward_late": [
+      30,
+      0,
+      0
+    ]
+  },
+  "Q4": {
+    "task_call": true,
+    "limited_hold": 5,
+    "target_hole": [
+      3,
+      5,
+      7
+    ],
+    "ITI": [
+      0
+    ],
+    "upper_limit": 300,
+    "reward_late": [
+      30,
+      0,
+      70
+    ]
+  }
+}
