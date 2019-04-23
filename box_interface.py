@@ -36,6 +36,7 @@ def setup():
         if type(inputs) == type({}):
             for no in inputs.keys():
                 GPIO.setup(inputs[no], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+                print("hole ["+ str(no) +"] = GPIO input ["+str(inputs[no])+"]")
             continue
         GPIO.setup(inputs, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
@@ -80,13 +81,17 @@ def hole_lamp_rand():
 
 
 def is_hole_poked(no: int):
+#    print(str(no))
     if GPIO.input(hole_sensor[no]) == GPIO.LOW:
         return True
 
 
 def is_holes_poked():
     global hole_sensor
-    for hole in hole_sensor.values():
+#    print(str(hole_sensor))
+#    for hole in hole_sensor.values():
+    for hole in hole_sensor.keys():
+#        print(str(hole))
         if is_hole_poked(hole):
             return True
     return False
