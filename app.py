@@ -31,13 +31,16 @@ ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}
 
 # Task 
 # T0. magazineからpelletを出す, ITI1, 50回
-# T1. すべてのholeが点灯しつづけ, いずれかにnose pokeするとreward, ITI2, 50回 (Day1)
+# T1. すべてのholeが点灯しつづけ, いずれかにnose pokeするとreward, ITI1, 50回 (Day1)
 # T3. magazineでtaskをcallして、5th hole点灯, 5th hole nose pokeでreward, ITI3, limited hold 60s, 50回
 # T4. limited hold 20s, ITI3, 50回(Day2)
-# Q1. 5th hole点灯, 5th hole nose pokeで必ずreward, ITI2, limited hold 10s, 100回(Day3), ITI3
+# Q1. 5th hole点灯, 5th hole nose pokeで必ずreward, ITI3, limited hold 10s, 100回(Day3), ITI3
 # Q2. 3,5,7th hole点灯, 3,5,7th hole nose pokeで{30%, 0%, 70%}の確率でreward, ITI3, limited hold 5s, 300回 (3日分)
 # Q3. 3,5,7th hole点灯, 3,5,7th hole nose pokeで{30%, 0%, 0%}の確率でreward, ITI3, limited hold 5s, 300回 (3日分)
 # Q4. 3,5,7th hole点灯, 3,5,7th hole nose pokeで{30%, 0%, 70%}の確率でreward, ITI3, limited hold 5s, 300回 (3日分)
+
+# ITI1 4,8,16,32 s
+# ITI3 1 s
 
 seed(32)
 logfile = open('epsilon-greedy.txt', 'a+')
