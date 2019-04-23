@@ -9,6 +9,7 @@ import json
 from export import *
 import time  # added
 import io  # added
+from collections import OrderedDict
 
 # define
 DEBUG = True
@@ -17,7 +18,9 @@ today = datetime.today()
 reset_time = datetime(today.year, today.month, today.day + 1, 10, 0, 0)
 # ex_limit = {True: [1, 3], False: [50, 100]}
 ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
-ex_flow = json.load(open("task_settings/20190423.json", "r"))
+ex_flow = OrderedDict({"T0":{}})
+ex_flow.update(json.load(open("task_settings/20190423.json", "r"),object_pairs_hook=OrderedDict))
+
 limit = {True: 25, False: 1}
 
 # while pelet > 0 and not datetime.now().time().hour == 10:
@@ -50,14 +53,16 @@ seed(32)
 logfile = open('epsilon-greedy.txt', 'a+')
 
 
-def run(terminate="T0", remained=-1):
+def run(terminate="", remained=-1):
     setup()
     global ex_flow
-    ex_flow.insert("T0")
+    print(ex_flow.keys())
     if terminate in list(ex_flow.keys())[1:-1]:
-        i = ex_flow.index(terminate)
+        i = list(ex_flow.keys()).index(terminate)
         print("i=" + str(i))
-        del ex_flow[0:i]
+        for delete_task in list(ex_flow.keys())[0:i]:
+            del ex_flow[delete_task]
+    print("{}".format(ex_flow.keys()))
     for term in ex_flow:
         # eval("{}({})".format(term, remained))
         if term == "T0":
@@ -142,9 +147,9 @@ def T0():
         if reset_time <= datetime.now():
             dispense_all(reward)
         hole_lamp_turn("dispenser_lamp", "on")
-        dispense_pelet()
-        while is_hole_poked("dispnser_sensor"):
+        while not is_hole_poked("dispenser_sensor"):
             sleep(0.01)
+        dispense_pelet()
         hole_lamp_turn("dispenser_lamp", "off")
         ITI([4, 8, 16, 32])
     reward = reward - times

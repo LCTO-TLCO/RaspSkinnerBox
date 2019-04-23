@@ -23,7 +23,7 @@ def export(task_no: str, times: int, event_type: str, hole_no=0):
 
 def magagine_log(reason, amount=1):
     """ 餌やりのログ 記入事項：「日付, 量(粒),報酬・精算」 """
-    string = ','.join([str(datetime.now()), amount, reason])
+    string = ','.join([str(datetime.now()), str(amount), reason])
     dispence_log_file.write(string)
     dispence_log_file.flush()
 

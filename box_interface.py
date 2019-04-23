@@ -88,7 +88,7 @@ def is_hole_poked(no: Union[int, str]):
         if GPIO.input(no) == GPIO.LOW:
             return True
     elif isinstance(no, str):
-        if exec("GPIO.input({})".format(no)) == GPIO.LOW:
+        if eval("GPIO.input({})".format(no)) == GPIO.LOW:
             return True
     return False
 
