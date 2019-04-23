@@ -4,6 +4,7 @@ from export import *
 import RPi.GPIO as GPIO
 from time import sleep
 from random import choice
+from app import DEBUG
 
 # output
 # hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
@@ -29,7 +30,7 @@ def setup():
         GPIO.setup(outputs, GPIO.OUT, initial=GPIO.LOW)
     # input
     for inputs in [dispenser_sensor, hole_sensor]:
-        if type(inputs) == type({}):
+        if isinstance(inputs,dict):
             for no in inputs.keys():
                 GPIO.setup(inputs[no], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
                 print("hole [" + str(no) + "] = GPIO input [" + str(inputs[no]) + "]")
@@ -50,10 +51,11 @@ def shutdown():
 
 def dispense_pelet(reason="reward"):
     global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
-    GPIO.output(dispenser_magazine, GPIO.HIGH)
-    sleep(0.1)
-    GPIO.output(dispenser_magazine, GPIO.LOW)
-    magagine_log(reason)
+    if not DEBUG:
+        GPIO.output(dispenser_magazine, GPIO.HIGH)
+        sleep(0.1)
+        GPIO.output(dispenser_magazine, GPIO.LOW)
+        magagine_log(reason)
 
 
 def hole_lamp_turn(target: Union[int, str], switch: str):
@@ -93,12 +95,15 @@ def is_hole_poked(no: Union[int, str]):
     return False
 
 
-def is_holes_poked():
+def is_holes_poked(holes: list):
     global hole_sensor
     #    print(str(hole_sensor))
     #    for hole in hole_sensor.values():
-    for hole in hole_sensor.keys():
+    holes = list(hole_sensor.keys())if len(holes)==0 else holes
+    if None in holes:
+        return False
+    for hole in holes:
         #        print(str(hole))
-        if is_hole_poked(hole):
-            return True
+        if is_hole_poked(hole_sensor[hole]):
+            return hole
     return False

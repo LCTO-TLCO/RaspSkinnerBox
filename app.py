@@ -56,13 +56,11 @@ logfile = open('epsilon-greedy.txt', 'a+')
 def run(terminate="", remained=-1):
     setup()
     global ex_flow
-    print(ex_flow.keys())
-    if terminate in list(ex_flow.keys())[1:-1]:
+    if terminate in list(ex_flow.keys()):
         i = list(ex_flow.keys()).index(terminate)
-        print("i=" + str(i))
-        for delete_task in list(ex_flow.keys())[0:i]:
+        #print("i=" + str(i))
+        for delete_task in list(ex_flow.keys())[0:i+1]:
             del ex_flow[delete_task]
-    print("{}".format(ex_flow.keys()))
     for term in ex_flow:
         # eval("{}({})".format(term, remained))
         if term == "T0":
@@ -77,17 +75,21 @@ def task(task_no: str, remained: int):
     current_task = ex_flow[task_no]
     print("{} start".format(task_no))
     hole_lamps_turn("off")
-    begin = current_task[task_no]["upper_limit"] - remained if not remained == -1 else 0
+    begin = 0
+    if remained == -1:
+        begin = 0
+    else:
+        begin = int(current_task["upper_limit"]/limit[DEBUG]) - remained
     if begin < 0:
         begin = 0
-    correct_times = 0
-    for times in range(begin, current_task[task_no]["upper_limit"]/limit[DEBUG]):
+    correct_times = begin
+    for times in range(begin, int(current_task["upper_limit"]/limit[DEBUG])):
         # print(times)
         export(task_no, times, "start")
         # if reset_time <= datetime.now():
         #     dispense_all(reward)
         # task call
-        if current_task[task_no]["task_call"]:
+        if current_task["task_call"]:
             hole_lamp_turn("dispenser_lamp", "on")
             while not is_hole_poked("dispenser_sensor"):
                 sleep(0.01)
@@ -95,41 +97,45 @@ def task(task_no: str, remained: int):
             export(task_no, times, "task called")
             sleep(1)
         # hole setup
-        target_holes = current_task[task_no]["target_hole"]
+        target_holes = current_task["target_hole"]
         q_holes = []
         hole_lamps_turn("on", target_holes)
         # reward holes setup
-        if not len(current_task[task_no]["reward_late"]) == 0:
-            [q_holes.append(h) for h in target_holes if random.random() * 100 < current_task[task_no]["reward_late"][h]]
+        if not len(current_task["reward_late"]) == 0:
+            [q_holes.append(h) for h in target_holes if random.random() * 100 <= current_task["reward_late"][target_holes.index(h)]]
+            q_holes.append(None)if len(q_holes)==0 else None
         else:
             q_holes = target_holes
         # time
-        end_time = datetime.now() + timedelta(seconds=current_task[task_no]["upper_limit"])
+        end_time = False
+        if current_task["limited_hold"] >= 0:
+            end_time = datetime.now() + timedelta(seconds=current_task["limited_hold"])
         hole_poked = False
         time_over = False
         while not (hole_poked or time_over):
-            for h in q_holes:
-                if is_hole_poked(h):
-                    hole_poked = True
-                    correct_times += 1
-                    export(task_no, correct_times, "nose poked", h)
-                    break
+            if not is_holes_poked(q_holes) == False:
+                h = is_holes_poked(q_holes)
+                hole_poked = True
+                correct_times += 1
+                export(task_no, correct_times, "nose poked", h)
+                break
             # time over
-            if end_time < datetime.now():
-                time_over = True
-                export(task_no, correct_times, "time over")
+            if not end_time == False:        
+                if end_time < datetime.now():
+                    time_over = True
+                    export(task_no, correct_times, "time over")
             sleep(0.01)
         # end
         hole_lamps_turn("off")
         if hole_poked:
             hole_lamp_turn("dispenser_lamp", "on")
             dispense_pelet()
-            while is_hole_poked("dispenser_sensor"):
+            while not is_hole_poked("dispenser_sensor"):
                 sleep(0.01)
             export(task_no, correct_times, "magazine nose poked")
-            sleep(20)
+            sleep(int(20/limit[DEBUG]))
             hole_lamp_turn("dispenser_lamp", "off")
-        ITI(current_task[task_no]["ITI"])
+        ITI(current_task["ITI"])
     reward = reward - correct_times
     print("{} end".format(task_no))
 
@@ -481,7 +487,8 @@ if __name__ == "__main__":
         if len(sys.argv) >= 2:
             terminate_task = sys.argv[1]
         if len(sys.argv) == 3:
-            remained = sys.argv[2]
+            remained = int(sys.argv[2])
+            print("remained{}".format(remained))
         run(terminate_task, remained)
     except Exception as e:
         # error log
