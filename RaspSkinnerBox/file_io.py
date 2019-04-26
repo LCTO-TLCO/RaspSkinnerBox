@@ -33,24 +33,27 @@ colors = {'time over': pycolor.YELLOW,
           'reward': pycolor.GREEN,
           'failure': pycolor.YELLOW,
           'task called': pycolor.WHITE,
-          ',3': pycolor.GREEN,
-          ',5': pycolor.RED,
-          ',7': pycolor.YELLOW}
+          }
+integers = {'3': pycolor.GREEN,
+            '5': pycolor.RED,
+            '7': pycolor.YELLOW}
 
 
 def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0):
-    logstring = ','.join([str(datetime.now()), task_no, str(session_no), str(times), event_type, str(hole_no)])
+    logstring = ','.join([str(datetime.now()), task_no, str(session_no), str(times), event_type])
     with open(logfile_path, 'a+') as logfile:
-        logfile.write(logstring + "\n")
+        logfile.write(",".join([logstring, str(hole_no)]) + "\n")
         logfile.flush()
-    print(add_color(logstring))
+    print(add_color(logstring, str(hole_no)))
 
 
-def add_color(string: str):
-    global colors
+def add_color(string: str, integer: str):
+    global colors,integers
     for keyword, new_color in colors.items():
         string = string.replace(keyword, "".join([new_color, keyword, pycolor.END]))
-    return string
+    for keyvalue, new_color in integers.items():
+        integer = integer.replace(keyvalue, "".join([new_color, keyvalue, pycolor.END]))
+    return ",".join([string, integer])
 
 
 def magagine_log(reason, amount=1):
@@ -81,7 +84,8 @@ def last_session_id():
     else:
         with open(logfile_path, 'r') as logfile:
             last = logfile.readlines()[-1]
-            return int(last[3])+1
+            return int(last[3]) + 1
+
 
 def error_log(error):
     logging.exception(error)
@@ -103,7 +107,6 @@ def all_nosepoke_log(channel: int, event_type: str):
         poke_log.flush()
 
 
-
 if __name__ == "__main__":
-    export("test", 1, 1,"reward", "3/5")
-    export("test", 1, 1,"time over", "3/5")
+    export("test", 1, 1, "reward", "3/5")
+    export("test", 1, 1, "time over", "3/5")
