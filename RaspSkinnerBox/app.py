@@ -107,7 +107,7 @@ def task(task_no: str, remained: int):
             q_holes.append(None) if len(q_holes) == 0 else None
         else:
             q_holes = target_holes
-        export(task_no, session_no, correct_times, "correct holes:" + '/'.join(q_holes), 0)
+        export(task_no, session_no, correct_times, "correct holes", '/'.join(q_holes))
 
         # time
         end_time = False
