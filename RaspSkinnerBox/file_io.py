@@ -48,7 +48,8 @@ def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0
 
 def add_color(string: str):
     global colors
-    [string.replace(keyword, "".join([new_color, keyword, pycolor.END])) for keyword, new_color in colors.items()]
+    for keyword, new_color in colors.items():
+        string.replace(keyword, "".join([new_color, keyword, pycolor.END]))
     return string
 
 
