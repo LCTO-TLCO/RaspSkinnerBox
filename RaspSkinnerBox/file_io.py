@@ -49,7 +49,7 @@ def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0
 def add_color(string: str):
     global colors
     for keyword, new_color in colors.items():
-        string.replace(keyword, "".join([new_color, keyword, pycolor.END]))
+        string = string.replace(keyword, "".join([new_color, keyword, pycolor.END]))
     return string
 
 
@@ -101,3 +101,9 @@ def all_nosepoke_log(channel: int, event_type: str):
     with open(nosepoke_logfile_path, 'a+') as poke_log:
         poke_log.write(string)
         poke_log.flush()
+
+
+
+if __name__ == "__main__":
+    export("test", 1, 1,"reward", "3/5")
+    export("test", 1, 1,"time over", "3/5")
