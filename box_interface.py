@@ -26,17 +26,19 @@ def setup():
         if type(outputs) == type({}):
             for no in list(outputs.keys()):
                 GPIO.setup(outputs[no], GPIO.OUT, initial=GPIO.LOW)
+                print("hole lamp [{\033[32m" + str(no) + "\033[0m}] = GPIO output [" + str(outputs[no]) + "]")
             continue
         GPIO.setup(outputs, GPIO.OUT, initial=GPIO.LOW)
+        print("output [" + str(outputs) + "] = GPIO output [" + str(outputs) + "]")
     # input
     for inputs in [dispenser_sensor, hole_sensor]:
         if isinstance(inputs,dict):
             for no in inputs.keys():
                 GPIO.setup(inputs[no], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-                print("hole [" + str(no) + "] = GPIO input [" + str(inputs[no]) + "]")
+                print("hole sensor [{\033[32m" + str(no) + "\033[0m}] = GPIO input [" + str(inputs[no]) + "]")
             continue
         GPIO.setup(inputs, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-
+        print("input [" + str(inputs) + "] = GPIO input [" + str(inputs) + "]")
 
 def shutdown():
     global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
@@ -65,7 +67,6 @@ def hole_lamp_turn(target: Union[int, str], switch: str):
         GPIO.output(hole_lamp[target], do[switch])
     elif "lamp" in target:
         exec("GPIO.output({},do[switch])".format(target))
-
 
 def hole_lamps_turn(switch: str, target=[]):
     global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor

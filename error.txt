@@ -1,0 +1,18 @@
+ERROR:root:local variable 'inputs' referenced before assignment
+Traceback (most recent call last):
+  File "app.py", line 194, in <module>
+    run(terminate_task, remained)
+  File "app.py", line 48, in run
+    setup()
+  File "/home/pi/programs/RaspSkinnerBox/box_interface.py", line 29, in setup
+    print("lamp [" + str(no) + "] = GPIO output [" + str(inputs[no]) + "]")
+UnboundLocalError: local variable 'inputs' referenced before assignment
+ERROR:root:Channel must be an integer or list/tuple of integers
+Traceback (most recent call last):
+  File "app.py", line 194, in <module>
+    run(terminate_task, remained)
+  File "app.py", line 48, in run
+    setup()
+  File "/home/pi/programs/RaspSkinnerBox/box_interface.py", line 31, in setup
+    GPIO.setup(outputs, GPIO.OUT, initial=GPIO.LOW)
+ValueError: Channel must be an integer or list/tuple of integers
