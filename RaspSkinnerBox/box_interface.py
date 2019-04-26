@@ -1,10 +1,10 @@
 #! /usr/bin python3
 from typing import Union
-from RaspSkinnerBox.file_io import *
+from file_io import *
 import RPi.GPIO as GPIO
 from time import sleep
 from random import choice
-from RaspSkinnerBox.app import DEBUG
+from app import DEBUG
 
 # output
 # hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}

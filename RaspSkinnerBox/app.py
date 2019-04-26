@@ -1,12 +1,12 @@
 #! /usr/bin python3
 # coding:utf-8
 import sys
-from RaspSkinnerBox.box_interface import *
+from box_interface import *
 from datetime import timedelta
 from random import seed, choice
 import random
 import json
-from RaspSkinnerBox.file_io import *
+from file_io import *
 from collections import OrderedDict
 
 # define
