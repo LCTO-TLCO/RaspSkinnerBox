@@ -96,7 +96,7 @@ def callback_falling(channel):
 
 
 def all_nosepoke_log(channel: int, event_type: str):
-    string = ','.join([str(datetime.now()), event_type, channel])
+    string = ','.join([str(datetime.now()), event_type, str(channel)])
     with open(nosepoke_logfile_path, 'a+') as poke_log:
         poke_log.write(string)
         poke_log.flush()
