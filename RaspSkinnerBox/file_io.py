@@ -3,6 +3,7 @@
 from datetime import datetime
 import logging
 import csv
+import os
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -72,6 +73,14 @@ def select_preview_payoff():
             preview_payoff_time = datetime(datetime.today().year, datetime.today().month, datetime.today().day,
                                            10, 0, 0)
 
+
+def last_session_id():
+    if not os.path.exists(logfile_path):
+        return 0
+    else:
+        with open(logfile_path, 'r') as logfile:
+            last = logfile.readlines()[-1]
+            return int(last[3])+1
 
 def error_log(error):
     logging.exception(error)

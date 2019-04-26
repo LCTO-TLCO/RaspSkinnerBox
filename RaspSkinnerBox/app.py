@@ -71,7 +71,7 @@ def task(task_no: str, remained: int):
     current_task = ex_flow[task_no]
     print("{} start".format(task_no))
     hole_lamps_turn("off")
-    session_no = 0
+    session_no = last_session_id()
     begin = 0
     if remained == -1:
         begin = 0
@@ -107,7 +107,7 @@ def task(task_no: str, remained: int):
             q_holes.append(None) if len(q_holes) == 0 else None
         else:
             q_holes = target_holes
-        export(task_no, session_no, correct_times, "correct holes:" + str(q_holes), 0)
+        export(task_no, session_no, correct_times, "correct holes:" + '/'.join(q_holes), 0)
 
         # time
         end_time = False
