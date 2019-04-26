@@ -31,7 +31,7 @@ limit = {True: 25, False: 1}
 # 3. log comment from stdin
 ## 4. coloring selected hole 3->green, 5->red, 7->yellow
 ## 5. file open check
-# 6. continue session no
+## 6. continue session no
 
 # Task 
 # T0. magazineからpelletを出す, ITI1, 50回
