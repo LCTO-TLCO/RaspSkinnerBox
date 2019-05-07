@@ -7,16 +7,16 @@ from random import choice
 from app import DEBUG
 
 # output
-# hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
-hole_lamp = {3: 18, 5: 23, 7: 24}
+hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
+# hole_lamp = {3: 18, 5: 23, 7: 24}
 
 dispenser_magazine = 4
 dispenser_lamp = 17
 house_lamp = 27
 # input
 dispenser_sensor = 5
-hole_sensor = {3: 6, 5: 26, 7: 19}
-
+# hole_sensor = {3: 6, 5: 26, 7: 19}
+hole_sensor = {1: 12, 3: 6, 5: 26, 7: 19, 9: 16}
 
 def setup():
     global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
@@ -41,6 +41,7 @@ def setup():
         GPIO.setup(inputs, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         print("input [" + str(inputs) + "] = GPIO input [" + str(inputs) + "]")
     set_dir()
+
 
 def shutdown():
     global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor

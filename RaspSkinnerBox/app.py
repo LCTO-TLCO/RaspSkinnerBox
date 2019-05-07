@@ -17,7 +17,7 @@ reset_time = datetime(today.year, today.month, today.day + 1, 10, 0, 0)
 # ex_limit = {True: [1, 3], False: [50, 100]}
 ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
 ex_flow = OrderedDict({"T0": {}})
-ex_flow.update(json.load(open("task_settings/20190423.json", "r"), object_pairs_hook=OrderedDict))
+ex_flow.update(json.load(open("task_settings/20190505_5hole.json", "r"), object_pairs_hook=OrderedDict))
 
 limit = {True: 25, False: 1}
 
@@ -54,7 +54,7 @@ def run(terminate="", remained=-1):
     global ex_flow
     if terminate in list(ex_flow.keys()):
         i = list(ex_flow.keys()).index(terminate)
-        # print("i=" + str(i))
+        print("i=" + str(i))
         for delete_task in list(ex_flow.keys())[0:i]:
             del ex_flow[delete_task]
     for term in ex_flow:
@@ -210,11 +210,12 @@ def unpayed_feeds_calculate():
 
     # calc len
     # dispense
+    None
 
 
 if __name__ == "__main__":
     try:
-        terminate_task = "T0"
+        terminate_task = ""
         remained = -1
         if len(sys.argv) >= 2:
             terminate_task = sys.argv[1]
