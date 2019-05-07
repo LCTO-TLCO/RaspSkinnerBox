@@ -1,0 +1,250 @@
+---
+title: "analyze"
+author: "YuTakarada"
+date: "2019/4/26"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(entropy)
+library(zoo)
+library("gridExtra")
+setting_data <- NA
+all_holes <- c(3,5,7)
+```
+
+# データ読み込み
+## やってること
+- 文字列置換
+correct_holes表記がカンマ入りで読み込むときに支障がある
+- CSVとしてtxtファイル読み込み
+    - data.frameとして変換
+```{r read_csv ,echo=FALSE}
+header <- c("timestamps","task","session_id","correct_times","event_type","hole_no","add")
+#types = c()
+#for(r in txt){
+#    gsub(":\[(([0-9](, [0-9]){0,1})|None)\],0",)
+#}
+#behavior_data <- as_tibble(read.csv("../RaspSkinnerBox/log/testlog2.csv",header = F, col.names = header))
+#behavior_data <- read_csv('log/cage1_no2.txt', col_names=header, col_types='Tciicic')
+behavior_data <- read_csv('../RaspSkinnerBox/log/cage2_no3.txt', col_names=header, col_types='Tciicic')
+
+```
+
+# データ整形
+- time out セッションの排除
+- collect_hole,incollect_hole の追加
+- collect, fail のフラグ追加
+- session id ごとのtibble作成
+```{r reshape_data , echo=FALSE}
+behavior_data %>% filter(str_detect(event_type,"(reward|failure|time over)")) -> dt
+
+## task interval
+task_start_idx <- c(1)
+for (i in 2:nrow(dt)){
+  if (dt$task[i] != dt$task[i-1]) {
+    task_start_idx[length(task_start_idx)+1] <- c(i)
+  }
+}
+
+##
+dt$hole_correct = ifelse(dt$event_type=='reward', dt$hole_no, 0)
+dt$hole_incorrect = ifelse(dt$event_type=='failure', dt$hole_no, 0)
+dt$is_correct = ifelse(dt$event_type=='reward', 1, 0)
+dt$is_incorrect = ifelse(dt$event_type=='failure', 1, 0)
+dt$is_omission = ifelse(dt$event_type=='time over', 1, 0)
+
+dt$cumsum_correct = cumsum(dt$is_correct)
+dt$cumsum_incorrect = cumsum(dt$is_incorrect)
+dt$cumsum_omission = cumsum(dt$is_omission)
+
+## cumsum
+
+dt$cumsum_correct_taskreset = dt$cumsum_correct
+dt$cumsum_incorrect_taskreset = dt$cumsum_incorrect
+dt$cumsum_omission_taskreset = dt$cumsum_omission
+
+for (i in 2:length(task_start_idx)){
+  idx_st = task_start_idx[i]
+  if (i==length(task_start_idx)){
+    idx_end = nrow(dt)
+  }else{
+    idx_end = task_start_idx[i+1] - 1
+  }
+  dt$cumsum_correct_taskreset[idx_st:idx_end] = dt$cumsum_correct_taskreset[idx_st:idx_end] - dt$cumsum_correct_taskreset[idx_st]
+  dt$cumsum_incorrect_taskreset[idx_st:idx_end] = dt$cumsum_incorrect_taskreset[idx_st:idx_end] - dt$cumsum_incorrect_taskreset[idx_st]
+  dt$cumsum_omission_taskreset[idx_st:idx_end] = dt$cumsum_omission_taskreset[idx_st:idx_end] - dt$cumsum_omission_taskreset[idx_st]
+  
+}
+
+dt$is_hole1 = ifelse(dt$hole_no==1, 1,NA)
+dt$is_hole3 = ifelse(dt$hole_no==3, 1,NA)
+dt$is_hole5 = ifelse(dt$hole_no==5, 1,NA)
+dt$is_hole7 = ifelse(dt$hole_no==7, 1,NA)
+dt$is_hole9 = ifelse(dt$hole_no==9, 1,NA)
+
+## entropy counting
+ent <- function(x){
+   return(entropy(discretize(x, numBins=5, r=c(1,9))))
+}
+he <- rollapply(dt$hole_no,width=150,by=1,FUN=ent)
+he <- append(array(0,c(1,length(dt$hole_no)-length(he))), he)
+dt$hole_choice_entropy <- he
+dt <- transform(dt,index=as.numeric(rownames(dt)))
+
+```
+
+# graph1
+```{r graph1 , echo=FALSE,eval=FALSE}
+yl <- c(0,max(c(sum(dt$is_incorrect), sum(dt$is_correct) , sum(dt$is_omission))))
+cexval <- 0.4
+dotcolor <- rgb(0,0,0)
+
+##グラフパラメータを変更する
+#グラフパラメータの設定
+mai <- par()$mai
+#余白サイズの設定(上下と左右の幅を揃える)
+mai[4] <- mai[1] 
+#指定した余白サイズの適用
+par(mai = mai)
+
+plot(dt$cumsum_correct, type="s", ylab="", lty=1, ylim=yl, col=rgb(0,1,0))
+par(new=T)
+plot(dt$cumsum_incorrect, type="s", lty=2, ylim=yl, col=rgb(1,0,0), axes = F, ann=F)
+par(new=T)
+plot(dt$cumsum_omission, type="s", lty=2, ylim=yl, col=rgb(0,0,1), axes = F, ann=F)
+
+mtext("cumsum", #2軸目のラベル名
+      side = 2, #どこにラベルを置くか(1なら下,2なら左,3なら上,4なら右)
+      line = 2 #グラフの枠からの距離
+      )
+
+par(new=T)
+plot((dt$is_hole1-0.2) * yl[2]*0.5, ylab="", ylim=yl ,col=dotcolor, ann=F, axes = F, cex=cexval)
+par(new=T)
+plot((dt$is_hole3-0.2) * yl[2]*0.6, ylab="", ylim=yl ,col=dotcolor, ann=F, axes = F, cex=cexval)
+par(new=T)
+plot((dt$is_hole5-0.2) * yl[2]*0.7, ylab="", ylim=yl ,col=dotcolor, ann=F, axes = F, cex=cexval)
+par(new=T)
+plot((dt$is_hole7-0.2) * yl[2]*0.8, ylab="", ylim=yl ,col=dotcolor, ann=F, axes = F, cex=cexval)
+par(new=T)
+plot((dt$is_hole9-0.2) * yl[2]*0.9, ylab="", ylim=yl ,col=dotcolor, ann=F, axes = F, cex=cexval)
+
+for (i in 1:length(task_start_idx)){
+  if (i %% 2 == 0){
+    if (i+1 > length(task_start_idx)){
+      endidx = length(dt$task)
+    }else{
+      endidx = task_start_idx[i+1]-1
+    }
+    rect(task_start_idx[i], par()$usr[3], endidx,
+         par()$usr[4], col=rgb(1,0,0, alpha=0.1), lty=0)
+  }
+  text(task_start_idx[i], yl[2], labels=dt$task[task_start_idx[i]], srt=90,adj=c(1,1),cex=0.7)
+}
+
+par(new=T)
+plot(dt$hole_choice_entropy, type="s", ylab="", ann=F, axes = F)
+axis(4)
+mtext("Entropy (bit)", #2軸目のラベル名
+      side = 4, #どこにラベルを置くか(1なら下,2なら左,3なら上,4なら右)
+      line = 2 #グラフの枠からの距離
+      )
+
+```
+
+# graph2
+```{r graph2 , echo=FALSE}
+yl <- c(0,max(c(dt$cumsum_correct_taskreset, dt$cumsum_incorrect_taskreset, dt$cumsum_omission_taskreset  ))*1.3 )
+cexval <- 0.4
+dotcolor <- rgb(0,0,0)
+par(mai = mai)
+
+# task start
+graph <- ggplot()
+task_index <- data.frame(xmin=task_start_idx,
+                         xmax=c(task_start_idx[-1]-1,nrow(dt)),
+                         task = dt$task[task_start_idx])
+odd <- seq(1, nrow(task_index), by = 2)
+odd_flag <- odd
+odd_flag[odd_flag>=1]<- 1
+graph <- graph +   
+  geom_rect(data = task_index[odd,], aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf,fill=odd_flag),alpha=0.3)+  
+  geom_text(data = task_index,aes(x=xmin+50, y=yl[2]*0.8, label=task),srt=90,adj=1)+
+  guides(fill=FALSE)
+graph
+
+# # task start
+# for (i in 1:length(task_start_idx)){
+#   if (i %% 2 == 0){
+#     if (i+1 > length(task_start_idx)){
+#       endidx = length(dt$task)
+#     }else{
+#       endidx = task_start_idx[i+1]-1
+#     }
+#     rect(task_start_idx[i], par()$usr[3], endidx,
+#          par()$usr[4], col=rgb(1,0,0, alpha=0.1), lty=0)
+#   }
+#   text(task_start_idx[i], yl[2], labels=paste(dt$task[task_start_idx[i]], "      "), srt=90, adj=c(1,1), cex=0.7)
+# }
+
+# cumsum
+cumsum_graph <- graph +
+  geom_line(data=dt,aes(x=index,y=cumsum_correct_taskreset,colour="correct"))+
+  geom_line(data=dt,aes(x=index,y=cumsum_incorrect_taskreset,colour="incorrect"))+
+  geom_line(data=dt,aes(x=index,y=cumsum_omission_taskreset,colour="omission"))+
+  xlab("index")+
+  ylab("cumsum per task")+
+  theme(legend.position = c(0.5, 1.01),
+        legend.direction = "horizontal")
+cumsum_graph
+
+# hole dot
+
+hole_dot_graph <- graph +
+  geom_point(data=dt,aes(y=(is_hole1)*yl[2]*0.2,x=index,colour=dotcolor))+
+  geom_point(data=dt,aes(y=(is_hole3)*yl[2]*0.3,x=index,colour=dotcolor))+
+  geom_point(data=dt,aes(y=(is_hole5)*yl[2]*0.4,x=index,colour=dotcolor))+
+  geom_point(data=dt,aes(y=(is_hole7)*yl[2]*0.5,x=index,colour=dotcolor))+
+  geom_point(data=dt,aes(y=(is_hole9)*yl[2]*0.6,x=index,colour=dotcolor))+
+  guides(colour=FALSE)+
+  xlab("")+
+  ylab("")
+hole_dot_graph
+
+
+# plot((dt$is_hole9-0.2) * yl[2]*0.6, ylab="", ylim=yl ,col=dotcolor, ann=F, cex=cexval, axes = F)
+
+# entropy
+entropy_graph <- graph +
+  geom_line(data=dt,aes(x=index,y=hole_choice_entropy*1000))+
+  xlab("")+
+  ylab("Entropy (bit)*1000")
+entropy_graph
+# plot(dt$hole_choice_entropy, type="s", ylab="", ylim=c(-3,3), ann=F, axes = F)
+grid.arrange(cumsum_graph,hole_dot_graph,entropy_graph,ncol=1)
+ggsave("graphs.eps",)
+
+
+
+
+```
+
+# TODO
+# 0. ggplot2化 (graph1は不要)
+# 1. hole dot表示とentropyを同横軸別グラフ縦に並べる
+## ggplot2 facet_grid()
+# 2. PNG解像度を上げる(このままだとpptに貼れない)
+## 300dps ggsave
+# 3. eps出力
+## ggsave で eps 指定可能
+
+# 4. correctの増加はomissionの低下とパラレル
+
+# やっていること
+## 
+
+```
+
