@@ -38,19 +38,21 @@ integers = {'3': pycolor.GREEN,
             '5': pycolor.RED,
             '7': pycolor.YELLOW}
 
+
 def set_dir():
     os.chdir("../")
 
+
 def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0):
     logstring = ','.join([str(datetime.now()), task_no, str(session_no), str(times), event_type])
-    with open(logfile_path, 'a+') as logfile:
+    with open(os.path.join("log", logfile_path), 'a+') as logfile:
         logfile.write(",".join([logstring, str(hole_no)]) + "\n")
         logfile.flush()
     print(add_color(logstring, str(hole_no)))
 
 
 def add_color(string: str, integer: str):
-    global colors,integers
+    global colors, integers
     for keyword, new_color in colors.items():
         string = string.replace(keyword, "".join([new_color, keyword, pycolor.END]))
     for keyvalue, new_color in integers.items():
@@ -61,14 +63,14 @@ def add_color(string: str, integer: str):
 def magagine_log(reason, amount=1):
     """ 餌やりのログ 記入事項：「日付, 量(粒),報酬・精算」 """
     string = ','.join([str(datetime.now()), str(amount), reason])
-    with open('dispence_feed.csv', 'a+') as dispence_log_file:
+    with open(os.path.join('log', 'dispence_feed.csv'), 'a+') as dispence_log_file:
         dispence_log_file.write(string)
         dispence_log_file.flush()
 
 
 def select_preview_payoff():
     # read csv
-    with open('dispence_feed.csv', 'a+') as dispense_log_file:
+    with open(os.path.join("log", 'dispence_feed.csv'), 'a+') as dispense_log_file:
         data = csv.reader(dispense_log_file)
         # select cols
         preview_payoff_time = -1
@@ -84,7 +86,7 @@ def last_session_id():
     if not os.path.exists(logfile_path):
         return 0
     else:
-        with open(logfile_path, 'r') as logfile:
+        with open(os.path.join("log", logfile_path), 'r') as logfile:
             last = logfile.readlines()[-1]
             return int(last[3]) + 1
 
@@ -104,7 +106,7 @@ def callback_falling(channel):
 
 def all_nosepoke_log(channel: int, event_type: str):
     string = ','.join([str(datetime.now()), event_type, str(channel)])
-    with open(nosepoke_logfile_path, 'a+') as poke_log:
+    with open(os.path.join("log", nosepoke_logfile_path), 'a+') as poke_log:
         poke_log.write(string)
         poke_log.flush()
 
