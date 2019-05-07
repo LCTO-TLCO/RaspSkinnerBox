@@ -40,8 +40,8 @@ integers = {'3': pycolor.GREEN,
 
 
 def set_dir():
-    os.chdir("../")
-
+    # os.chdir("../")
+    None
 
 def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0):
     logstring = ','.join([str(datetime.now()), task_no, str(session_no), str(times), event_type])
