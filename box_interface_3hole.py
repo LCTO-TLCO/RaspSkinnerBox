@@ -1,22 +1,22 @@
 #! /usr/bin python3
 from typing import Union
-from file_io import *
+from export import *
 import RPi.GPIO as GPIO
 from time import sleep
 from random import choice
 from app import DEBUG
 
 # output
-hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
-# hole_lamp = {3: 18, 5: 23, 7: 24}
+# hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
+hole_lamp = {3: 18, 5: 23, 7: 24}
 
 dispenser_magazine = 4
 dispenser_lamp = 17
 house_lamp = 27
 # input
 dispenser_sensor = 5
-# hole_sensor = {3: 6, 5: 26, 7: 19}
-hole_sensor = {1: 12, 3: 6, 5: 26, 7: 19, 9: 16}
+hole_sensor = {3: 6, 5: 26, 7: 19}
+
 
 def setup():
     global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
@@ -32,16 +32,13 @@ def setup():
         print("output [" + str(outputs) + "] = GPIO output [" + str(outputs) + "]")
     # input
     for inputs in [dispenser_sensor, hole_sensor]:
-        if isinstance(inputs, dict):
+        if isinstance(inputs,dict):
             for no in inputs.keys():
                 GPIO.setup(inputs[no], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
                 print("hole sensor [{\033[32m" + str(no) + "\033[0m}] = GPIO input [" + str(inputs[no]) + "]")
-                holes_event_setup(inputs[no])
             continue
         GPIO.setup(inputs, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         print("input [" + str(inputs) + "] = GPIO input [" + str(inputs) + "]")
-    set_dir()
-
 
 def shutdown():
     global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
@@ -70,7 +67,6 @@ def hole_lamp_turn(target: Union[int, str], switch: str):
         GPIO.output(hole_lamp[target], do[switch])
     elif "lamp" in target:
         exec("GPIO.output({},do[switch])".format(target))
-
 
 def hole_lamps_turn(switch: str, target=[]):
     global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
@@ -104,7 +100,7 @@ def is_holes_poked(holes: list):
     global hole_sensor
     #    print(str(hole_sensor))
     #    for hole in hole_sensor.values():
-    holes = list(hole_sensor.keys()) if len(holes) == 0 else holes
+    holes = list(hole_sensor.keys())if len(holes)==0 else holes
     if None in holes:
         return False
     for hole in holes:
@@ -112,8 +108,3 @@ def is_holes_poked(holes: list):
         if is_hole_poked(hole_sensor[hole]):
             return hole
     return False
-
-
-def holes_event_setup(gpio_no: int):
-    GPIO.add_event_detect(gpio_no, GPIO.RISING, callback=callback_rising, bouncetime=50)
-    # GPIO.add_event_detect(gpio_no, GPIO.FALLING, callback=callback_falling, bouncetime=50)
