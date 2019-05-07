@@ -19,7 +19,7 @@ reset_time = datetime(today.year, today.month, today.day + 1, 10, 0, 0)
 # ex_limit = {True: [1, 3], False: [50, 100]}
 ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
 ex_flow = OrderedDict({"T0":{}})
-ex_flow.update(json.load(open("task_settings/20190505_5hole.json", "r"),object_pairs_hook=OrderedDict))
+ex_flow.update(json.load(open("task_settings/20190426_3hole.json", "r"),object_pairs_hook=OrderedDict))
 
 limit = {True: 25, False: 1}
 
@@ -52,12 +52,14 @@ def run(terminate="", remained=-1):
     setup()
     global ex_flow
     if terminate in list(ex_flow.keys()):
+        print(terminate)
         i = list(ex_flow.keys()).index(terminate)
-        print("i=" + str(i))
+        #print("i=" + str(i))
         for delete_task in list(ex_flow.keys())[0:i+1]:
             del ex_flow[delete_task]
+    print(ex_flow.keys())
     for term in ex_flow:
-        # eval("{}({})".format(term, remained))
+        # eval("{}({})".format(term, remained))		
         if term == "T0":
             T0()
         else:
