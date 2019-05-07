@@ -20,7 +20,7 @@
   },
   "TC100": {
     "task_call": true,
-    "limited_hold": 60
+    "limited_hold": 60,
     "target_hole": [
       1,
       3,
