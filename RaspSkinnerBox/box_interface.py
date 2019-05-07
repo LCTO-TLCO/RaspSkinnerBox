@@ -40,7 +40,7 @@ def setup():
             continue
         GPIO.setup(inputs, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         print("input [" + str(inputs) + "] = GPIO input [" + str(inputs) + "]")
-
+    set_dir()
 
 def shutdown():
     global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
