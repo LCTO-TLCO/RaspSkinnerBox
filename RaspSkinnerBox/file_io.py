@@ -13,7 +13,7 @@ logging.basicConfig(
 # define
 logfile_path = 'epsilon-greedy.txt'
 dispence_logfile_path = 'dispence_feed.csv'
-nosepoke_logfile_path = ''
+nosepoke_logfile_path = 'nosepoke_log.csv'
 
 
 class pycolor:
