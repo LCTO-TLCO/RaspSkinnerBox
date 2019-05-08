@@ -23,6 +23,7 @@ ex_flow.update(json.load(open("task_settings/20190505_5hole.json", "r"),object_p
 
 limit = {True: 25, False: 1}
 
+# test1
 # while pelet > 0 and not datetime.now().time().hour == 10:
 
 # TODO
