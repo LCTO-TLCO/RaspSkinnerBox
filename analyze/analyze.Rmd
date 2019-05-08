@@ -172,23 +172,10 @@ odd_flag <- odd
 odd_flag[odd_flag>=1]<- 1
 graph <- graph +   
   geom_rect(data = task_index[odd,], aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf,fill=odd_flag),alpha=0.3)+  
-  geom_text(data = task_index,aes(x=xmin+50, y=yl[2]*0.8, label=task),srt=90,adj=1)+
+  # geom_text(data = task_index,aes(x=xmin+50, y=yl[2]*0.8, label=task),srt=90,adj=1)+
   guides(fill=FALSE)
 graph
 
-# # task start
-# for (i in 1:length(task_start_idx)){
-#   if (i %% 2 == 0){
-#     if (i+1 > length(task_start_idx)){
-#       endidx = length(dt$task)
-#     }else{
-#       endidx = task_start_idx[i+1]-1
-#     }
-#     rect(task_start_idx[i], par()$usr[3], endidx,
-#          par()$usr[4], col=rgb(1,0,0, alpha=0.1), lty=0)
-#   }
-#   text(task_start_idx[i], yl[2], labels=paste(dt$task[task_start_idx[i]], "      "), srt=90, adj=c(1,1), cex=0.7)
-# }
 
 # cumsum
 cumsum_graph <- graph +
@@ -197,35 +184,51 @@ cumsum_graph <- graph +
   geom_line(data=dt,aes(x=index,y=cumsum_omission_taskreset,colour="omission"))+
   xlab("index")+
   ylab("cumsum per task")+
-  theme(legend.position = c(0.5, 1.01),
-        legend.direction = "horizontal")
+  theme(legend.position = c(0.5, 0.9),
+        legend.direction = "horizontal",
+        plot.margin = unit(c(0,0,0,0),"lines"))
 cumsum_graph
 
 # hole dot
 
 hole_dot_graph <- graph +
-  geom_point(data=dt,aes(y=(is_hole1)*yl[2]*0.2,x=index,colour=dotcolor))+
-  geom_point(data=dt,aes(y=(is_hole3)*yl[2]*0.3,x=index,colour=dotcolor))+
-  geom_point(data=dt,aes(y=(is_hole5)*yl[2]*0.4,x=index,colour=dotcolor))+
-  geom_point(data=dt,aes(y=(is_hole7)*yl[2]*0.5,x=index,colour=dotcolor))+
-  geom_point(data=dt,aes(y=(is_hole9)*yl[2]*0.6,x=index,colour=dotcolor))+
+  geom_point(data=dt,aes(y=(is_hole1)*1,x=index,colour=dotcolor))+
+  geom_point(data=dt,aes(y=(is_hole3)*2,x=index,colour=dotcolor))+
+  geom_point(data=dt,aes(y=(is_hole5)*3,x=index,colour=dotcolor))+
+  geom_point(data=dt,aes(y=(is_hole7)*4,x=index,colour=dotcolor))+
+  geom_point(data=dt,aes(y=(is_hole9)*5,x=index,colour=dotcolor))+
   guides(colour=FALSE)+
   xlab("")+
-  ylab("")
+  ylab("hole dots")+
+  theme(axis.text.x = element_blank(),
+        plot.margin = unit(c(0,0,0,0),"lines"),
+        axis.ticks.x = element_blank())
 hole_dot_graph
 
 
 # plot((dt$is_hole9-0.2) * yl[2]*0.6, ylab="", ylim=yl ,col=dotcolor, ann=F, cex=cexval, axes = F)
 
 # entropy
-entropy_graph <- graph +
-  geom_line(data=dt,aes(x=index,y=hole_choice_entropy*1000))+
+entropy_graph <- ggplot()+  
+  geom_rect(data = task_index[odd,], aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf,fill=odd_flag),alpha=0.3)+  
+  geom_text(data = task_index,aes(x=xmin+50, y=max(dt$hole_choice_entropy), label=task),srt=90,adj=1)+
+  guides(fill=FALSE)+
+  geom_line(data=dt,aes(x=index,y=hole_choice_entropy))+
   xlab("")+
-  ylab("Entropy (bit)*1000")
+  ylab("Entropy (bit)")+
+  theme(axis.text.x = element_blank(),
+        plot.margin = unit(c(0,0,0,0),"lines"),
+        axis.ticks.x = element_blank())
 entropy_graph
 # plot(dt$hole_choice_entropy, type="s", ylab="", ylim=c(-3,3), ann=F, axes = F)
-grid.arrange(cumsum_graph,hole_dot_graph,entropy_graph,ncol=1)
-ggsave("graphs.eps",)
+# grid.arrange(entropy_graph,hole_dot_graph,cumsum_graph,ncol=1)
+# http://sakananoiroiro.seesaa.net/article/460806470.html
+g1 <- ggplot_gtable(ggplot_build(entropy_graph))
+g2 <- ggplot_gtable(ggplot_build(hole_dot_graph))
+g3 <- ggplot_gtable(ggplot_build(cumsum_graph))
+gnew <- gtable_rbind(g1, g2,g3, size="first")
+plot(gnew)
+ggsave("graphs.png",gnew,dpi = 300,width = 9,height = 6)
 
 
 
@@ -235,11 +238,11 @@ ggsave("graphs.eps",)
 # TODO
 # 0. ggplot2化 (graph1は不要)
 # 1. hole dot表示とentropyを同横軸別グラフ縦に並べる
-## ggplot2 facet_grid()
 # 2. PNG解像度を上げる(このままだとpptに貼れない)
 ## 300dps ggsave
 # 3. eps出力
 ## ggsave で eps 指定可能
+## 手動出力時指定可能
 
 # 4. correctの増加はomissionの低下とパラレル
 
