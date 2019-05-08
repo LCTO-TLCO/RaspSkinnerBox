@@ -58,9 +58,14 @@ def add_color(string: str, integer: str):
     global colors, integers
     for keyword, new_color in colors.items():
         string = string.replace(keyword, "".join([new_color, keyword, pycolor.END]))
-    for keyvalue, new_color in integers.items():
-        integer = integer.replace(keyvalue, "".join([new_color, keyvalue, pycolor.END]))
-    return ",".join([string, integer])
+    retval = ""
+    for st in integer:
+        if st in integers.keys():
+            retval += st.replace(st, "".join([integers[st], st, pycolor.END]))
+        else:
+            retval += st
+
+    return ",".join([string, retval])
 
 
 def magagine_log(reason, amount=1):
@@ -115,5 +120,5 @@ def all_nosepoke_log(channel: int, event_type: str):
 
 
 if __name__ == "__main__":
-    export("test", 1, 1, "reward", "3/5")
-    export("test", 1, 1, "time over", "3/5")
+    export("test", 1, 1, "reward", 7)
+    export("test", 1, 1, "time over", None)
