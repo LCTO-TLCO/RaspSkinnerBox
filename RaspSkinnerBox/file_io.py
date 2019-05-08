@@ -29,19 +29,22 @@ class pycolor:
     UNDERLINE = '\033[4m'
 
 
-colors = {'time over': pycolor.YELLOW,
+colors = {'time over': pycolor.PURPLE,
           'reward': pycolor.GREEN,
           'failure': pycolor.YELLOW,
           'task called': pycolor.WHITE,
           }
-integers = {'3': pycolor.GREEN,
+integers = {'1': pycolor.CYAN,
+            '3': pycolor.GREEN,
             '5': pycolor.RED,
-            '7': pycolor.YELLOW}
+            '7': pycolor.YELLOW,
+            '9': pycolor.BLUE}
 
 
 def set_dir():
     # os.chdir("../")
     None
+
 
 def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0):
     logstring = ','.join([str(datetime.now()), task_no, str(session_no), str(times), event_type])
