@@ -158,6 +158,7 @@ mtext("Entropy (bit)", #2軸目のラベル名
 # graph2
 ```{r graph2 , echo=FALSE}
 yl <- c(0,max(c(dt$cumsum_correct_taskreset, dt$cumsum_incorrect_taskreset, dt$cumsum_omission_taskreset  ))*1.3 )
+gg = function(p) ggplot_gtable(ggplot_build(p))
 cexval <- 0.4
 dotcolor <- rgb(0,0,0)
 par(mai = mai)
@@ -184,9 +185,10 @@ cumsum_graph <- graph +
   geom_line(data=dt,aes(x=index,y=cumsum_omission_taskreset,colour="omission"))+
   xlab("index")+
   ylab("cumsum per task")+
-  theme(legend.position = c(0.5, 0.9),
-        legend.direction = "horizontal",
-        plot.margin = unit(c(0,0,0,0),"lines"))
+  theme(plot.margin = unit(c(0,0,0,0),"lines"),
+        legend.position = c(0.5, 0.9),
+        legend.direction = "horizontal"
+        )
 cumsum_graph
 
 # hole dot
@@ -216,21 +218,44 @@ entropy_graph <- ggplot()+
   geom_line(data=dt,aes(x=index,y=hole_choice_entropy))+
   xlab("")+
   ylab("Entropy (bit)")+
-  theme(axis.text.x = element_blank(),
-        plot.margin = unit(c(0,0,0,0),"lines"),
+  theme(plot.margin = unit(c(0,0,0,0),"lines"),
+        axis.text.x = element_blank(),
         axis.ticks.x = element_blank())
 entropy_graph
 # plot(dt$hole_choice_entropy, type="s", ylab="", ylim=c(-3,3), ann=F, axes = F)
 # grid.arrange(entropy_graph,hole_dot_graph,cumsum_graph,ncol=1)
 # http://sakananoiroiro.seesaa.net/article/460806470.html
+# 今動く方
 g1 <- ggplot_gtable(ggplot_build(entropy_graph))
 g2 <- ggplot_gtable(ggplot_build(hole_dot_graph))
 g3 <- ggplot_gtable(ggplot_build(cumsum_graph))
 gnew <- gtable_rbind(g1, g2,g3, size="first")
 plot(gnew)
-ggsave("graphs.png",gnew,dpi = 300,width = 9,height = 6)
+ggsave("graphs.eps",gnew,dpi = 300,width = 9,height = 6)
 
 
+# テスト中
+# test_cumsum_graph <- graph +
+#   geom_line(data=dt,aes(x=index,y=cumsum_correct_taskreset,colour="correct"))+
+#   geom_line(data=dt,aes(x=index,y=cumsum_incorrect_taskreset,colour="incorrect"))+
+#   geom_line(data=dt,aes(x=index,y=cumsum_omission_taskreset,colour="omission"))+
+#   xlab("index")+
+#   ylab("cumsum per task")+
+#   theme(plot.margin = unit(c(0,0,0,0),"lines"))
+# t1 <- gg(entropy_graph)
+# t2 <- gg(hole_dot_graph)
+# t3 <- gg(test_cumsum_graph)
+# tL <- t3[3,] # 凡例だけ取り出す
+# t3 <- t3[-3,] # 凡例を削除
+# tnew <- gtable_rbind(t1, t2, t3)
+# plot(tnew)
+# 
+# a1 <- ggplotGrob(entropy_graph)
+# a2 <- ggplotGrob(hole_dot_graph)
+# a3 <- ggplotGrob(test_cumsum_graph)
+# legend_a3 <- a3[["grobs"]][[grep("guide-box", a3$layout$name)]]
+# a3[["grobs"]][[grep("guide-box", a3$layout$name)]]
+# anew <- gtable_rbind(a1, a2, a3)
 
 
 ```
@@ -239,7 +264,6 @@ ggsave("graphs.png",gnew,dpi = 300,width = 9,height = 6)
 # 0. ggplot2化 (graph1は不要)
 # 1. hole dot表示とentropyを同横軸別グラフ縦に並べる
 # 2. PNG解像度を上げる(このままだとpptに貼れない)
-## 300dps ggsave
 # 3. eps出力
 ## ggsave で eps 指定可能
 ## 手動出力時指定可能
