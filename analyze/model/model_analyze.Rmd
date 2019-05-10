@@ -1,0 +1,17 @@
+---
+title: "models_analyze"
+author: "YuTakarada"
+date: "2019/5/10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## model define
+
+
+```{r cars}
+summary(cars)
+```
