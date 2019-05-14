@@ -259,8 +259,66 @@ ggsave("graphs.eps",gnew,dpi = 300,width = 9,height = 6)
 
 
 ```
+# モデル比較
+## model 定義
+### dth-order markov model
+dtにモデルごとの選択確率を追加
+
+```{r malcov eval=FALSE}
+func_markov <- function(dem){
+  if(dem > length(data)){
+    dem <- length(data)
+  }
+  d <- data[(length(data)-dem):length(data)]
+  retval <- c()
+  for (number in order(unique(data$hole_no))){
+    retval <- append(retval,(length(d[[d$hole_no==number]]+1))/(length(d)+2))
+  }  
+  return(retval)
+}
+```
+
+### Q-Learning
+```{r Q-learning}
+alpha <- c(0.5,0)
+kappa <- c(0.5,0)
+func_standard_RLalgo <- function(datas,param){
+  # 定義
+  ids <- datas %>%
+    filter(event_type == "reward"|event_type=="failure") %>%
+    select(session_id) %>%
+    unique() %>%
+    order()
+  holes <-unique(datas$hole_no)
+  Q = matrix(numeric(length(holes)*length(datas)), nrow=length(holes), ncol = length(datas))
+  ll <- 0
+  # 選択されたhole に対応したQ値更新
+  for(t in ids){
+    target_data <- datas %>%
+      filter(grepl(session_id,ids,session_id<=t))
+    last_reward <- target_data %>%
+      filter(event_type=="reward"|event_type=="failure"|session_id==t)
+    last_selection <- target_data %>%
+      filter(event_type=="nose poke"|session_id==t)
+    for(hole in holes){
+      learning_late <- 1 - param.alpha[1]
+      disgust <- param.alpha[1] * param.kappa[1]
+      if(last_selection$hole_no==t|last_reward$event_type=="failure"){
+        disgust <- (-1)*param.alpha[1] * param.kappa[2]        
+      }else if(last_selection$hole_no==!t){
+        learning_late <- 1 - param.alpha[2]
+      }
+      Q[which(holes==hole),which(ids==t)+1] <- learning_late*Q[which(holes==hole),which(ids==t)] + disgust
+    }
+  }
+  # 全holeの選択確率を更新
+  
+  }
+```
 
 # TODO
+- Q値の更新
+- Q値から行動確率の算出
 # 0. ggplot2化 (graph1は不要)
 # 1. hole dot表示とentropyを同横軸別グラフ縦に並べる
 # 2. PNG解像度を上げる(このままだとpptに貼れない)
