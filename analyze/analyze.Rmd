@@ -41,6 +41,8 @@ behavior_data <- read_csv('../RaspSkinnerBox/log/cage2_no3.txt', col_names=heade
 ```{r reshape_data , echo=FALSE}
 behavior_data %>% filter(str_detect(event_type,"(reward|failure|time over)")) -> dt
 
+## timestamps 
+dt$timestamps <- dt$timestamps %>% as.POSIXct()
 ## task interval
 task_start_idx <- c(1)
 for (i in 2:nrow(dt)){
@@ -94,6 +96,15 @@ he <- append(array(0,c(1,length(dt$hole_no)-length(he))), he)
 dt$hole_choice_entropy <- he
 dt <- transform(dt,index=as.numeric(rownames(dt)))
 
+## burst
+dt$burst_group[1] <- 1
+for(i in 2:nrow(dt)){
+  if(as.numeric(dt$timestamps[i]-dt$timestamps[i-1],units="secs") <= 60){
+    dt$burst_group[i] <- dt$burst_group[i-1]
+    next
+    }
+  dt$burst_group[i] <- dt$burst_group[i-1] + 1
+}
 ```
 
 # graph1
