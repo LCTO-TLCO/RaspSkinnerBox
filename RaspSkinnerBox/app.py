@@ -17,7 +17,7 @@ reset_time = datetime(today.year, today.month, today.day + 1, 10, 0, 0)
 # ex_limit = {True: [1, 3], False: [50, 100]}
 ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
 ex_flow = OrderedDict({"T0": {}})
-ex_flow.update(json.load(open("task_settings/20190505_5hole.json", "r"), object_pairs_hook=OrderedDict))
+ex_flow.update(json.load(open("task_settings/20190515.json", "r"), object_pairs_hook=OrderedDict))
 
 limit = {True: 25, False: 1}
 
