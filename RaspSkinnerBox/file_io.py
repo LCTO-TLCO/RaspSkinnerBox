@@ -47,9 +47,10 @@ integers = {'3': pycolor.GREEN,
 
 
 def set_dir():
-    if (os.path.basename(os.getcwd()) == "log"):
-        return
-    os.chdir("./log")
+    None
+    # if (os.path.basename(os.getcwd()) == "log"):
+    #     return
+    # os.chdir("./log")
 
 
 def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0):
