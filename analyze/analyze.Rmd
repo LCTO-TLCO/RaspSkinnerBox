@@ -13,6 +13,8 @@ library(zoo)
 library("gridExtra")
 setting_data <- NA
 all_holes <- c(3,5,7)
+"%+=%" <- function(x, y) x <<- x + y 
+"%/=%" <- function(x, y) x <<- x / y 
 ```
 
 # データ読み込み
@@ -324,20 +326,48 @@ hole_burst_graph
 ## Incorrect 時の異選択肢選択確率1-4
 ## Correct,Incorrect 時の Omittion 確率1-4
 
-```{r}
+```{r calc_prob}
 after_c_all <- nrow(filter(dt,event_type=="reward"))
 after_f_all <- nrow(filter(dt,event_type=="failure"))
 after_o_all <- nrow(filter(dt,event_type=="time over"))
-c_same <- c(0,0,0,0)
-f_diff <- c(0,0,0,0)
-c_omit <- c(0,0,0,0)
-f_omit <- c(0,0,0,0)
-c_NotMax <- c(0,0,0,0)
-f_NotMax <- c(0,0,0,0)
-o_NotMax <- c(0,0,0,0)
+# TODO データフレームとして作成
+prob <- data.frame()
+prob$c_same <- c(0,0,0,0)
+prob$f_diff <- c(0,0,0,0)
+prob$c_omit <- c(0,0,0,0)
+prob$f_omit <- c(0,0,0,0)
+prob$c_NotMax <- c(0,0,0,0)
+prob$f_NotMax <- c(0,0,0,0)
+prob$o_NotMax <- c(0,0,0,0)
 for(i in 1:nrow(df)){
-  
+  if (dt$event_type[i]=="reward") {
+    for (j in 1:4) {
+      if (dt$hole_no[i] == dt$hole_no[i+j]) {
+        prob$c_same[j] %+=% 1
+      }else if (dt$is_omission[i+j]) {
+        prob$c_omit[j] %+=% 1
+      }
+    }    
+  }else if (dt$event_type[i]=="failure") {
+    for (j in 1:4) {
+      if(dt$is_omission[i+j]){
+        prob$f_omit %+=% 1
+      }else if (dt$hole_no[i] != dt$hole_no[i+j]) {
+        prob$f_diff %+=% 1
+      }
+    }
+  }
 }
+prob$c_same %/=% after_c_all
+prob$f_diff %/=% after_f_all
+prob$c_omit %/=% after_c_all
+prob$f_omit %/=% after_f_all
+# prob$c_NotMax %/=% after_c_all
+# prob$f_NotMax %/=% after_f_all
+# prob$o_NotMax %/=% after_o_all
+```
+
+```{r prob_graph}
 
 ```
 
