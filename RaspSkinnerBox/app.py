@@ -5,9 +5,7 @@ from box_interface import *
 from datetime import timedelta
 from random import seed, choice
 import random
-import json
 from file_io import *
-from collections import OrderedDict
 
 # define
 DEBUG = False
@@ -16,8 +14,6 @@ today = datetime.today()
 reset_time = datetime(today.year, today.month, today.day + 1, 10, 0, 0)
 # ex_limit = {True: [1, 3], False: [50, 100]}
 ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
-ex_flow = OrderedDict({"T0": {}})
-ex_flow.update(json.load(open("task_settings/20190505_5hole.json", "r"), object_pairs_hook=OrderedDict))
 
 limit = {True: 25, False: 1}
 
@@ -51,7 +47,7 @@ seed(32)
 
 def run(terminate="", remained=-1):
     setup()
-    global ex_flow
+    file_setup(sys.argv[2])
     if terminate in list(ex_flow.keys()):
         i = list(ex_flow.keys()).index(terminate)
         print("i=" + str(i))
@@ -217,10 +213,14 @@ if __name__ == "__main__":
     try:
         terminate_task = ""
         remained = -1
-        if len(sys.argv) >= 2:
-            terminate_task = sys.argv[1]
-        if len(sys.argv) == 3:
-            remained = int(sys.argv[2])
+        if len(sys.argv) == 1:
+            print("usage: python app.py mouse_No terminate_task_No remained_number_of_tasks")
+            sys.exit()
+        mouse_no = sys.argv[2]
+        if len(sys.argv) >= 3:
+            terminate_task = sys.argv[3]
+        if len(sys.argv) == 4:
+            remained = int(sys.argv[4])
             print("remained{}".format(remained))
         run(terminate_task, remained)
     except Exception as e:

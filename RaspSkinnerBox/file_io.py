@@ -1,9 +1,12 @@
 #! /usr/bin python3
 # coding:utf-8
+import shutil
 from datetime import datetime
 import logging
 import csv
 import os
+from collections import OrderedDict
+import json
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -11,10 +14,13 @@ logging.basicConfig(
     filemode='a')
 
 # define
-logfile_path = 'epsilon-greedy.txt'
-dispence_logfile_path = 'dispence_feed.csv'
-nosepoke_logfile_path = ''
-
+logfile_path = 'no{}_action.csv'
+dispence_logfile_path = 'no{}_dispencer.csv'
+nosepoke_logfile_path = 'no{}_nosepoke.csv'
+settings_logfile_path = 'no{}_task_settings.json'
+setting_file = "task_settings/20190505_5hole.json"
+ex_flow = OrderedDict({"T0": {}})
+ex_flow.update(json.load(open(setting_file, "r"), object_pairs_hook=OrderedDict))
 
 class pycolor:
     RED = '\033[31m'
@@ -43,6 +49,7 @@ def set_dir():
     # os.chdir("../")
     None
 
+
 def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0):
     logstring = ','.join([str(datetime.now()), task_no, str(session_no), str(times), event_type])
     with open(os.path.join("log", logfile_path), 'a+') as logfile:
@@ -66,6 +73,16 @@ def magagine_log(reason, amount=1):
     with open(os.path.join('log', 'dispence_feed.csv'), 'a+') as dispence_log_file:
         dispence_log_file.write(string)
         dispence_log_file.flush()
+
+
+def file_setup(mouse_no):
+    global logfile_path,dispence_logfile_path,nosepoke_logfile_path,settings_logfile_path
+    logfile_path = logfile_path.format(mouse_no.zfill(3))
+    dispence_logfile_path = dispence_logfile_path.format(mouse_no.zfill(3))
+    nosepoke_logfile_path = nosepoke_logfile_path.format(mouse_no.zfill(3))
+    settings_logfile_path = settings_logfile_path.format(mouse_no.zfill(3))
+    shutil.copyfile(setting_file, settings_logfile_path)
+
 
 
 def select_preview_payoff():
