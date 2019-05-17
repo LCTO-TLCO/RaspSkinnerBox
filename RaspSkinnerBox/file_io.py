@@ -11,7 +11,7 @@ logging.basicConfig(
     filemode='a')
 
 # define
-logfile_path = 'epsilon-greedy.txt'
+logfile_path = 'epsilon-greedy.csv'
 dispence_logfile_path = 'dispence_feed.csv'
 nosepoke_logfile_path = ''
 
