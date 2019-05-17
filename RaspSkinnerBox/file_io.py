@@ -129,5 +129,6 @@ def all_nosepoke_log(channel: int, event_type: str):
 
 
 if __name__ == "__main__":
+    file_setup("3")
     export("test", 1, 1, "reward", "3/5")
     export("test", 1, 1, "time over", "3/5")
