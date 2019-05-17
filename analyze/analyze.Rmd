@@ -188,7 +188,14 @@ cumsum_graph <- graph +
   theme(plot.margin = unit(c(0,0,0,0),"lines"),
         legend.position = c(0.5, 0.9),
         legend.direction = "horizontal"
-        )
+        )+
+scale_colour_manual(
+    values = c(
+      correct  = "green",
+      incorrect  = "red",
+      omission  = "blue"
+    )
+  )
 cumsum_graph
 
 # hole dot
@@ -265,24 +272,44 @@ ggsave("graphs.eps",gnew,dpi = 300,width = 9,height = 6)
 dtにモデルごとの選択確率を追加
 
 ```{r malcov eval=FALSE}
-func_markov <- function(dem){
-  if(dem > length(data)){
-    dem <- length(data)
+func_markov <- function(datas,dem,dummy){
+  header <- c("hole1","hole2","hole3","hole4","hole5")
+  # probability <- data.frame(matrix(rep(NA, 5), nrow=1))[numeric(0), ]
+  # colnames(probability) <- header
+  probability <- c()
+  ids <- datas %>%
+  filter(event_type == "reward"|event_type=="failure") %>%
+  select(session_id) %>%
+  unique() %>%
+  order()
+  for(t in ids){
+    # 分析対象の抽出
+    target_data <- datas %>%
+    filter(grepl(session_id,ids,session_id<=t))
+    if(dth < length(target_data)){
+      target_data <- targetdata[length(target_data)-dem:length(target_data)]
+    }
+    prob <- c()
+    for (number in order(unique(data$hole_no))){
+      prob <- append(retval,(length(d[[d$hole_no==number]]+1))/(length(d)+2))
+    }
+    probability <- probability %>%
+      rbind(prob)
   }
-  d <- data[(length(data)-dem):length(data)]
-  retval <- c()
-  for (number in order(unique(data$hole_no))){
-    retval <- append(retval,(length(d[[d$hole_no==number]]+1))/(length(d)+2))
-  }  
-  return(retval)
+  return(data.frame(mc_hole1=probability[1],mc_hole2=probability[2],
+                    mc_hole3=probability[3],mc_hole4=probability[4],
+                    mc_hole5=probability[5]))
 }
 ```
 
 ### Q-Learning
 ```{r Q-learning}
-alpha <- c(0.5,0)
-kappa <- c(0.5,0)
-func_standard_RLalgo <- function(datas,param){
+# param にはパラメータを指定
+# 2*2
+# standard :alpha[2]=kappa[2]=0
+# forgetting: alpha[1]=alpha[2]
+# Diff F: all free params
+func_QL <- function(datas,param,param_type){
   # 定義
   ids <- datas %>%
     filter(event_type == "reward"|event_type=="failure") %>%
@@ -291,7 +318,15 @@ func_standard_RLalgo <- function(datas,param){
     order()
   holes <-unique(datas$hole_no)
   Q = matrix(numeric(length(holes)*length(datas)), nrow=length(holes), ncol = length(datas))
+  Q[1] <- param$Q1
   ll <- 0
+  probability <- c()
+  # パラメータ定義
+  if(param_type=="F"){
+    param$alpha2=param$alpha1
+  }else if(param_type=="standard"){
+    param$alpha2 <- param$kappa2 <- 0
+  }
   # 選択されたhole に対応したQ値更新
   for(t in ids){
     target_data <- datas %>%
@@ -301,24 +336,48 @@ func_standard_RLalgo <- function(datas,param){
     last_selection <- target_data %>%
       filter(event_type=="nose poke"|session_id==t)
     for(hole in holes){
-      learning_late <- 1 - param.alpha[1]
-      disgust <- param.alpha[1] * param.kappa[1]
+      learning_late <- 1 - param$alpha[1]
+      disgust <- param$alpha[1] * param$kappa[1]
       if(last_selection$hole_no==t|last_reward$event_type=="failure"){
-        disgust <- (-1)*param.alpha[1] * param.kappa[2]        
+        disgust <- (-1)*param$alpha[1] * param$kappa[2]        
       }else if(last_selection$hole_no==!t){
-        learning_late <- 1 - param.alpha[2]
+        learning_late <- 1 - param$alpha[2]
       }
-      Q[which(holes==hole),which(ids==t)+1] <- learning_late*Q[which(holes==hole),which(ids==t)] + disgust
+      Q[which(ids==t)+1,which(holes==hole)] <- learning_late*Q[which(holes==hole),which(ids==t)] + disgust
     }
+    #TODO 代入  
+    rbind(probability,action_prob(Q[which(ids==t)+1,]))
   }
   # 全holeの選択確率を更新
+   
+  return(data.frame(hole1=probability[1],hole2=probability[2],
+                  hole3=probability[3],hole4=probability[4],
+                  hole5=probability[5]))
+
+}
+action_prob <- function(Qvalues){
+  return(Qvalues/sum(Qvalues))
   
-  }
+}
+```
+
+# 尤度関数
+```{r least_sm}
+least_sm <- function(param,data,func,param_type){
+    prob <- func(data,param,param_type)
+    hole_flag <- dt %>%
+      select(starts_with("is_hole"))
+    # 実データで取った行動のモデル側の確率のみを抽出する
+    return((prob*hole_flag))
+}
+```
+
+```{r model_fitting}
+#TODO 
+optim(c(10, 2), loglikelihood, y = y)
 ```
 
 # TODO
-- Q値の更新
-- Q値から行動確率の算出
 # 0. ggplot2化 (graph1は不要)
 # 1. hole dot表示とentropyを同横軸別グラフ縦に並べる
 # 2. PNG解像度を上げる(このままだとpptに貼れない)
