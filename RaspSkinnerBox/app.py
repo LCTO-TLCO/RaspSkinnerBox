@@ -213,14 +213,14 @@ if __name__ == "__main__":
     try:
         terminate_task = ""
         remained = -1
-        if len(sys.argv) == 1:
-            print("usage: python app.py mouse_No terminate_task_No remained_number_of_tasks")
-            sys.exit()
-        mouse_no = sys.argv[1]
-        if len(sys.argv) >= 3:
-            terminate_task = sys.argv[2]
-        if len(sys.argv) == 4:
-            remained = int(sys.argv[3])
+        # if len(sys.argv) == 1:
+        #     print("usage: python app.py mouse_No terminate_task_No remained_number_of_tasks")
+        #     sys.exit()
+        # mouse_no = sys.argv[1]
+        if len(sys.argv) >= 2:
+            terminate_task = sys.argv[1]
+        if len(sys.argv) == 3:
+            remained = int(sys.argv[2])
             print("remained{}".format(remained))
         run(terminate_task, remained)
     except Exception as e:
