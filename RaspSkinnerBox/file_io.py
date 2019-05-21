@@ -138,10 +138,10 @@ def all_nosepoke_log(channel: int, event_type: str):
 
 
 if __name__ == "__main__":
-    file_setup("3")
+    file_setup("4")
     magagine_log("test")
     all_nosepoke_log(3,"test")
-    export("test", 1, 1, "reward", "3/5")
-    export("test", 1, 1, "time over", "3/5")
-    export("test", 1, 1, "reward", 7)
+    export("test", 1, 1, "reward", "5")
+    export("test", 1, 1, "time over", "0")
+    export("test", 1, 1, "reward", "4")
     export("test", 1, 1, "time over", None)
