@@ -14,47 +14,23 @@ today = datetime.today()
 reset_time = datetime(today.year, today.month, today.day + 1, 10, 0, 0)
 # ex_limit = {True: [1, 3], False: [50, 100]}
 ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
-
+mouse_no = "10"
 limit = {True: 25, False: 1}
-
 # while pelet > 0 and not datetime.now().time().hour == 10:
-
-# TODO
-# 0. log analyze script
-#   row: session_no, column: task_no, is_correct, is_failure, correct_hole, failure_hole, timestamp(correct/failure)
-## 1. rise up-nose poke in, rise down-nose poke out detection -> in,out time logging
-# 2. T1-Q1 recheck
-# 3. log comment from stdin
-## 4. coloring selected hole 3->green, 5->red, 7->yellow
-## 5. file open check
-## 6. continue session no
-
-# Task 
-# T0. magazineからpelletを出す, ITI1, 50回
-# T1. すべてのholeが点灯しつづけ, いずれかにnose pokeするとreward, ITI1, 50回 (Day1)
-# T2. magazineでtaskをcallして、5th hole点灯, 5th hole nose pokeでreward, ITI2, limited hold 60s, 50回
-# T3. limited hold 20s, ITI2, 50回(Day2)
-# Q1. 5th hole点灯, 5th hole nose pokeで必ずreward, ITI3, limited hold 10s, 100回(Day3), ITI2
-# Q2. 3,5,7th hole点灯, 3,5,7th hole nose pokeで{30%, 0%, 70%}の確率でreward, ITI2, limited hold 10s, 300回 (3日分)
-# Q3. 3,5,7th hole点灯, 3,5,7th hole nose pokeで{30%, 0%, 0%}の確率でreward, ITI2, limited hold 10s, 300回 (3日分)
-# Q4. 3,5,7th hole点灯, 3,5,7th hole nose pokeで{30%, 0%, 70%}の確率でreward, ITI2, limited hold 10s, 300回 (3日分)
-
-# ITI1 4,8,16,32 s
-# ITI2 0 s
 
 seed(32)
 
 
 def run(terminate="", remained=-1):
+    global mouse_no
     setup()
-    file_setup(sys.argv[2])
+    file_setup(mouse_no)
     if terminate in list(ex_flow.keys()):
         i = list(ex_flow.keys()).index(terminate)
         print("i=" + str(i))
         for delete_task in list(ex_flow.keys())[0:i]:
             del ex_flow[delete_task]
     for term in ex_flow:
-        # eval("{}({})".format(term, remained))
         if term == "T0":
             T0()
         else:
