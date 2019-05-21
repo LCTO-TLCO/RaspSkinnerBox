@@ -1,9 +1,12 @@
 #! /usr/bin python3
 # coding:utf-8
+import shutil
 from datetime import datetime
 import logging
 import csv
 import os
+from collections import OrderedDict
+import json
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -11,9 +14,13 @@ logging.basicConfig(
     filemode='a')
 
 # define
-logfile_path = 'epsilon-greedy.txt'
-dispence_logfile_path = 'dispence_feed.csv'
-nosepoke_logfile_path = 'nosepoke_log.csv'
+logfile_path = 'no{}_action.csv'
+dispence_logfile_path = 'no{}_dispencer.csv'
+nosepoke_logfile_path = 'no{}_nosepoke.csv'
+settings_logfile_path = 'no{}_task_settings.json'
+setting_file = "task_settings/20190505_5hole.json"
+ex_flow = OrderedDict({"T0": {}})
+ex_flow.update(json.load(open(setting_file, "r"), object_pairs_hook=OrderedDict))
 
 
 class pycolor:
@@ -42,8 +49,10 @@ integers = {'1': pycolor.CYAN,
 
 
 def set_dir():
-    # os.chdir("../")
     None
+    # if (os.path.basename(os.getcwd()) == "log"):
+    #     return
+    # os.chdir("./log")
 
 
 def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0):
@@ -71,14 +80,23 @@ def add_color(string: str, integer: str):
 def magagine_log(reason, amount=1):
     """ 餌やりのログ 記入事項：「日付, 量(粒),報酬・精算」 """
     string = ','.join([str(datetime.now()), str(amount), reason])
-    with open(os.path.join('log', 'dispence_feed.csv'), 'a+') as dispence_log_file:
+    with open(os.path.join('log', dispence_logfile_path), 'a+') as dispence_log_file:
         dispence_log_file.write(string + "\n")
         dispence_log_file.flush()
 
 
+def file_setup(mouse_no):
+    global logfile_path, dispence_logfile_path, nosepoke_logfile_path, settings_logfile_path
+    logfile_path = logfile_path.format(mouse_no.zfill(3))
+    dispence_logfile_path = dispence_logfile_path.format(mouse_no.zfill(3))
+    nosepoke_logfile_path = nosepoke_logfile_path.format(mouse_no.zfill(3))
+    settings_logfile_path = settings_logfile_path.format(mouse_no.zfill(3))
+    shutil.copyfile(setting_file, os.path.join('log', settings_logfile_path))
+
+
 def select_preview_payoff():
     # read csv
-    with open(os.path.join("log", 'dispence_feed.csv'), 'a+') as dispense_log_file:
+    with open(os.path.join("log", dispence_logfile_path), 'a+') as dispense_log_file:
         data = csv.reader(dispense_log_file)
         # select cols
         preview_payoff_time = -1
@@ -120,5 +138,10 @@ def all_nosepoke_log(channel: int, event_type: str):
 
 
 if __name__ == "__main__":
+    file_setup("3")
+    magagine_log("test")
+    all_nosepoke_log(3,"test")
+    export("test", 1, 1, "reward", "3/5")
+    export("test", 1, 1, "time over", "3/5")
     export("test", 1, 1, "reward", 7)
     export("test", 1, 1, "time over", None)
