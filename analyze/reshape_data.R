@@ -1,25 +1,3 @@
-library(tidyverse)
-library(entropy)
-library(zoo)
-setting_data <- NA
-all_holes <- c(1,3,5,7,9)
-
-header <- c("timestamps","task","session_id","correct_times","event_type","hole_no")
-behavior_data <- read_csv('../../PycharmProjects/RaspSkinnerBox/RaspSkinnerBox/log/no004_action.csv', col_names=header, col_types='Tciicc')
-
-# データ整形
-behavior_data %>% filter(str_detect(event_type,"(reward|failure|time over)")) -> dt
-
-## timestamps 
-dt$timestamps <- dt$timestamps %>% as.POSIXct()
-## task interval
-task_start_idx <- c(1)
-for (i in 2:nrow(dt)){
-  if (dt$task[i] != dt$task[i-1]) {
-    task_start_idx[length(task_start_idx)+1] <- c(i)
-  }
-}
-
 dt$hole_correct     <-  ifelse(dt$event_type=='reward', dt$hole_no, 0)
 dt$hole_incorrect   <-  ifelse(dt$event_type=='failure', dt$hole_no, 0)
 dt$is_correct       <-  ifelse(dt$event_type=='reward', 1, 0)
@@ -49,29 +27,28 @@ for (i in 1:length(task_start_idx)){
   
 }
 
+## is_holex
 dt$is_hole1 <- ifelse(grepl("1",dt$hole_no), 1,NA)
 dt$is_hole3 <- ifelse(grepl("3",dt$hole_no), 1,NA)
 dt$is_hole5 <- ifelse(grepl("5",dt$hole_no), 1,NA)
 dt$is_hole7 <- ifelse(grepl("7",dt$hole_no), 1,NA)
 dt$is_hole9 <- ifelse(grepl("9",dt$hole_no), 1,NA)
 
-## entropy counting
-ent <- function(x){
-  return(entropy(discretize(x, numBins=5, r=c(1,9))))
-}
-he <- rollapply(dt$hole_no,width=150,)
-he <- append(array(0,c(1,length(dt$hole_no)-length(he))), he)
-dt$hole_choice_entropy <- he
-dt <- transform(dt,index=as.numeric(rownames(dt)))
+# ## entropy counting
+# ent <- function(x){
+#   return(entropy(discretize(x, numBins=5, r=c(1,9))))
+# }
+# he <- rollapply(dt$hole_no,width=150,ent)
+# he <- append(array(0,c(1,length(dt$hole_no)-length(he))), he)
+# dt$hole_choice_entropy <- he
+# dt <- transform(dt,index=as.numeric(rownames(dt)))
 
 ## burst
-dt$burst_group[1] <- 1
-for(i in 2:nrow(dt)){
-  if(as.numeric(dt$timestamps[i]-dt$timestamps[i-1],units="secs") <= 60){
-    dt$burst_group[i] <- dt$burst_group[i-1]
-    next
-  }
-  dt$burst_group[i] <- dt$burst_group[i-1] + 1
-}
-
-saveRDS(object = dt,file="dataframe_dt.rds")
+# dt$burst_group[1] <- 1
+# for(i in 2:nrow(dt)){
+#   if(as.numeric(dt$timestamps[i]-dt$timestamps[i-1],units="secs") <= 60){
+#     dt$burst_group[i] <- dt$burst_group[i-1]
+#     next
+#   }
+#   dt$burst_group[i] <- dt$burst_group[i-1] + 1
+# }
