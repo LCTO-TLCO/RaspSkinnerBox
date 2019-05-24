@@ -118,7 +118,6 @@ def read_data():
     for idx, dt in after_f_starts.iterrows():
         is_continued = True
         for j in range(1, min(5, len(data) - idx)):
-            # 連続で失敗しているときの処理
             if data.shift(-j)["is_omission"][idx] and is_continued:
                 probability["f_omit"][j] = probability["f_omit"][j] + 1
             elif not dt["hole_no"] == data.shift(-j)["hole_no"][idx]:
