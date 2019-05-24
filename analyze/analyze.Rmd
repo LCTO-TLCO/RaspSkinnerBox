@@ -31,8 +31,8 @@ header <- c("timestamps","task","session_id","correct_times","event_type","hole_
 #}
 #behavior_data <- as_tibble(read.csv("../RaspSkinnerBox/log/testlog2.csv",header = F, col.names = header))
 #behavior_data <- read_csv('log/cage1_no2.txt', col_names=header, col_types='Tciicic')
-#behavior_data <- read_csv('../RaspSkinnerBox/log/cage2_no3.txt', col_names=header, col_types='Tciicic')
-behavior_data <- read_csv('./log/no012_action.csv', col_names=header, col_types='Tciicic')
+behavior_data <- read_csv('../RaspSkinnerBox/log/cage1_no2.txt', col_names=header, col_types='Tciicic')
+# behavior_data <- read_csv('./log/no012_action.csv', col_names=header, col_types='Tciicic')
 
 ```
 
@@ -94,7 +94,7 @@ dt$is_hole9 = ifelse(dt$hole_no==9, 1,NA)
 ent <- function(x){
    return(entropy(discretize(x, numBins=5, r=c(1,9))))
 }
-he <- rollapply(dt$hole_no,width=150,)
+he <- rollapply(dt$hole_no,width=150,ent)
 he <- append(array(0,c(1,length(dt$hole_no)-length(he))), he)
 dt$hole_choice_entropy <- he
 dt <- transform(dt,index=as.numeric(rownames(dt)))
