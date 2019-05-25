@@ -190,18 +190,21 @@ def graph(data, prob, mouse_id, task):
 
 
 def after_response(prob, mouse_id, task, figfilename):
-    after_fig = plt.figure()
-    after_ax = after_fig.add_subplot(1, 1, 1)
-    after_ax.plot(prob["c_same"], label="correct")
-    after_ax.plot(prob["f_same"], label="incorrect")
+    fig = plt.figure()
+#    plt.ioff()
+    #after_ax = after_fig.add_subplot(1, 1, 1)
+    plt.plot(prob["c_same"], label="correct")
+    plt.plot(prob["f_same"], label="incorrect")
+    plt.ioff()
     plt.ylim(0, 1)
     plt.ylabel('P(same choice)')
-    plt.xlabel('Trials after a correct/incorrect response')
-    plt.title('{:03} {}'.format(mouse_id,task))
+    plt.xlabel('Trials after correct/incorrect response')
+    plt.title('Mouse{:03} {}'.format(mouse_id, task))
     plt.legend()
+#    plt.draw()
     plt.show()
-#    plt.savefig(figfilename)
-    plt.close(after_fig)
+    plt.savefig(figfilename)
+#    plt.close(fig)
 
 
 if __name__ == "__main__":
@@ -210,11 +213,16 @@ if __name__ == "__main__":
 
     for mouse_id in mice:
         for task in tasks:
+            print('mouse id={:03} task={}'.format(mouse_id, task))
             data_file = "../RaspSkinnerBox/log/no{:03d}_action.csv".format(mouse_id)
             data, prob = read_data(data_file, mouse_id, task)  # TODO mouse_id, task毎にdataを管理したい
 #            data.to_csv('./test.csv')
+            print('csv writing ...', end=' ')
             prob.to_csv('../RaspSkinnerBox/log/no{:03d}_{}_prob.csv'.format(mouse_id, task))
+            print('done')
 
+            print('plotting ...', end=' ')
             after_response(prob, mouse_id, task, '../RaspSkinnerBox/log/no{:03d}_{}_prob.png'.format(mouse_id, task))  # TODO もうすこしかっこよく
+            print('done')
 
 
