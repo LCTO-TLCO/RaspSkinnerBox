@@ -9,16 +9,19 @@ import datetime
 # from scipy.stats import entropy
 # from pandas.core.window import Rolling
 
+# TODO warning対応
 
-def read_data():
-    data_file = "../RaspSkinnerBox/log/no011_action.csv"
-    time_limit_delta = 60
-    header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"]
+def read_data(data_file,mouse_no,task):
+    header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"] # TODO session_idはCTRL-Dで止めた信用できないので、app側を変えるか?, その場合過去のlogを一括修正する必要あり
     data = pd.read_csv(data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
 
     # TODO omission抜き集計とomission有り集計の2種を切り替えて出す
 #    data = data[data["event_type"].isin(["reward", "failure", "time over"])]
+#    data = data[data["event_type"].isin(["reward", "failure"])]
     data = data[data["event_type"].isin(["reward", "failure"])]
+    data = data[data["task"].isin([task])]
+
+    # TODO 範囲指定 reward idx基準で100:150(taskごとに指定)の間のactionをすべて持ってくる
 
 
     data = data.reset_index()
@@ -158,10 +161,11 @@ def read_data():
     return [data, probability]
 
 
-def graph(data):
+def graph(data, prob, mouse_id, task):
     # define
     plt.style.use("ggplot")
     font = {'family': 'meiryo'}
+    #    font = {'family': 'Arial'} # TODO Arial(Helvetica)系にしたい
     mpl.rc('font', **font)
 
     # data plot
@@ -182,16 +186,35 @@ def graph(data):
         burst_ax.set_xlabel("time/sessions")
         burst_ax.set_ylabel("hole dots")
         plt.show()
+    # burst_nosepoke()
 
-    def aa():
-        None
 
-    burst_nosepoke()
+def after_response(prob, mouse_id, task, figfilename):
+    after_fig = plt.figure()
+    after_ax = after_fig.add_subplot(1, 1, 1)
+    after_ax.plot(prob["c_same"], label="correct")
+    after_ax.plot(prob["f_same"], label="incorrect")
+    plt.ylim(0, 1)
+    plt.ylabel('P(same choice)')
+    plt.xlabel('Trials after a correct/incorrect response')
+    plt.title('{:03} {}'.format(mouse_id,task))
+    plt.legend()
+    plt.show()
+#    plt.savefig(figfilename)
+    plt.close(after_fig)
 
 
 if __name__ == "__main__":
-    data, prob = read_data()
-    data.to_csv('./test.csv')
-    prob.to_csv('./prob.csv')
-    # graph(data)
+    mice = [11]
+    tasks = ["All5_30", "Only5_50", "Not5_Other30"]  # TODO task毎のrewardベースstart idx, end idxを設定したい
+
+    for mouse_id in mice:
+        for task in tasks:
+            data_file = "../RaspSkinnerBox/log/no{:03d}_action.csv".format(mouse_id)
+            data, prob = read_data(data_file, mouse_id, task)  # TODO mouse_id, task毎にdataを管理したい
+#            data.to_csv('./test.csv')
+            prob.to_csv('../RaspSkinnerBox/log/no{:03d}_{}_prob.csv'.format(mouse_id, task))
+
+            after_response(prob, mouse_id, task, '../RaspSkinnerBox/log/no{:03d}_{}_prob.png'.format(mouse_id, task))  # TODO もうすこしかっこよく
+
 
