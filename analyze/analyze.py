@@ -191,8 +191,6 @@ def graph(data, prob, mouse_id, task):
 
 def after_response(prob, mouse_id, task, figfilename):
     fig = plt.figure()
-#    plt.ioff()
-    #after_ax = after_fig.add_subplot(1, 1, 1)
     plt.plot(prob["c_same"], label="correct")
     plt.plot(prob["f_same"], label="incorrect")
     plt.ioff()
@@ -201,10 +199,8 @@ def after_response(prob, mouse_id, task, figfilename):
     plt.xlabel('Trials after correct/incorrect response')
     plt.title('Mouse{:03} {}'.format(mouse_id, task))
     plt.legend()
-#    plt.draw()
     plt.show()
     plt.savefig(figfilename)
-#    plt.close(fig)
 
 
 if __name__ == "__main__":
