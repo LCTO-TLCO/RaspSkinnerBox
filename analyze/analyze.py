@@ -11,8 +11,8 @@ import datetime
 
 # TODO warning対応
 
-def read_data(data_file,mouse_no,task):
-    header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"] # TODO session_idはCTRL-Dで止めた信用できないので、app側を変えるか?, その場合過去のlogを一括修正する必要あり
+def read_data(data_file, mouse_no, task):
+    header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"] # TODO session_idはCTRL-Dで止めたらresetされる、app側を変えるか?, その場合過去のlogを一括修正する必要あり
     data = pd.read_csv(data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
 
     # TODO omission抜き集計とomission有り集計の2種を切り替えて出す
@@ -189,36 +189,42 @@ def graph(data, prob, mouse_id, task):
     # burst_nosepoke()
 
 
-def after_response(prob, mouse_id, task, figfilename):
-    fig = plt.figure()
-    plt.plot(prob["c_same"], label="correct")
-    plt.plot(prob["f_same"], label="incorrect")
-    plt.ioff()
-    plt.ylim(0, 1)
-    plt.ylabel('P(same choice)')
-    plt.xlabel('Trials after correct/incorrect response')
-    plt.title('Mouse{:03} {}'.format(mouse_id, task))
-    plt.legend()
-    plt.show()
-    plt.savefig(figfilename)
-
 
 if __name__ == "__main__":
-    mice = [11]
+    mice = [6, 7, 8, 11, 12, 13]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]  # TODO task毎のrewardベースstart idx, end idxを設定したい
 
     for mouse_id in mice:
+        fig = plt.figure(figsize=(15, 8), dpi=100)
+        i = 0
         for task in tasks:
+            i = i + 1
             print('mouse id={:03} task={}'.format(mouse_id, task))
             data_file = "../RaspSkinnerBox/log/no{:03d}_action.csv".format(mouse_id)
+            print('analyzing ...', end=' ')
             data, prob = read_data(data_file, mouse_id, task)  # TODO mouse_id, task毎にdataを管理したい
-#            data.to_csv('./test.csv')
+            print('done')
             print('csv writing ...', end=' ')
+            data.to_csv('../RaspSkinnerBox/log/no{:03d}_{}_data.csv'.format(mouse_id, task))
             prob.to_csv('../RaspSkinnerBox/log/no{:03d}_{}_prob.csv'.format(mouse_id, task))
             print('done')
 
             print('plotting ...', end=' ')
-            after_response(prob, mouse_id, task, '../RaspSkinnerBox/log/no{:03d}_{}_prob.png'.format(mouse_id, task))  # TODO もうすこしかっこよく
+
+            plt.subplot(1, 3, i)
+            plt.plot(prob["c_same"], label="correct")
+            plt.plot(prob["f_same"], label="incorrect")
+            plt.ioff()
+            plt.ylim(0, 1)
+            if i == 1:
+                plt.ylabel('P (same choice)')
+                plt.legend()
+            plt.xlabel('Trial')
+            plt.title('{:03} {}'.format(mouse_id, task))
+            plt.show()
+
+            # TODO plotを関数化 (data, probを算出する部分(data)とplot(view)を分離する)
             print('done')
 
+        plt.savefig('../RaspSkinnerBox/log/no{:03d}_prob.png'.format(mouse_id))
 
