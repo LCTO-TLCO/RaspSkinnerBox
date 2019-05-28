@@ -9,20 +9,14 @@ import datetime
 # from scipy.stats import entropy
 # from pandas.core.window import Rolling
 
-# TODO warning対応
 
 def read_data(data_file, mouse_no, task):
     header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"] # TODO session_idはCTRL-Dで止めたらresetされる、app側を変えるか?, その場合過去のlogを一括修正する必要あり
     data = pd.read_csv(data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
 
-    # TODO omission抜き集計とomission有り集計の2種を切り替えて出す
 #    data = data[data["event_type"].isin(["reward", "failure", "time over"])]
-#    data = data[data["event_type"].isin(["reward", "failure"])]
     data = data[data["event_type"].isin(["reward", "failure"])]
     data = data[data["task"].isin([task])]
-
-    # TODO 範囲指定 reward idx基準で100:150(taskごとに指定)の間のactionをすべて持ってくる
-
 
     data = data.reset_index()
     # task interval
@@ -101,7 +95,6 @@ def read_data(data_file, mouse_no, task):
     #         continue
     #     data["burst_group"][i] = data["burst_group"][i - 1] + 1
 
-    # TODO task毎にaction prob集計
 
     # action Probability
     after_c_all = float(len(data[data["is_correct"] == 1]))
@@ -160,12 +153,17 @@ def read_data(data_file, mouse_no, task):
 
     return [data, probability]
 
+# TODO Burst raster plot
+# TODO R plot(Entropy, Raster, Correct/Incorrect/Omission) 移植
+# TODO 散布図,csv出力 連続無報酬期間 vs reaction time (タスクコールからnose pokeまでの時間 正誤両方)
+# TODO 散布図,csv出力 連続無報酬期間 vs reward latency  (正解nose pokeからmagazine nose pokeまでの時間 正解のみ)
+# TODO 散布図,csv出力 連続無報酬期間 vs 区間Entropy
+# TODO 探索行動の短期指標を定義(Exploration Index 1, EI1) : 検討中
 
 def graph(data, prob, mouse_id, task):
     # define
     plt.style.use("ggplot")
     font = {'family': 'meiryo'}
-    #    font = {'family': 'Arial'} # TODO Arial(Helvetica)系にしたい
     mpl.rc('font', **font)
 
     # data plot
@@ -192,17 +190,19 @@ def graph(data, prob, mouse_id, task):
 
 if __name__ == "__main__":
     mice = [6, 7, 8, 11, 12, 13]
-    tasks = ["All5_30", "Only5_50", "Not5_Other30"]  # TODO task毎のrewardベースstart idx, end idxを設定したい
+    tasks = ["All5_30", "Only5_50", "Not5_Other30"]
 
     for mouse_id in mice:
-        fig = plt.figure(figsize=(15, 8), dpi=100)
+
+        fig = plt.figure(figsize=(15, 8), dpi=100) # TODO view分離
+
         i = 0
         for task in tasks:
             i = i + 1
             print('mouse id={:03} task={}'.format(mouse_id, task))
             data_file = "../RaspSkinnerBox/log/no{:03d}_action.csv".format(mouse_id)
             print('analyzing ...', end=' ')
-            data, prob = read_data(data_file, mouse_id, task)  # TODO mouse_id, task毎にdataを管理したい
+            data, prob = read_data(data_file, mouse_id, task)  # TODO mouse_id, task毎にdataを管理したい(data,probのリスト化?)
             print('done')
             print('csv writing ...', end=' ')
             data.to_csv('../RaspSkinnerBox/log/no{:03d}_{}_data.csv'.format(mouse_id, task))
@@ -211,6 +211,7 @@ if __name__ == "__main__":
 
             print('plotting ...', end=' ')
 
+            # P(same) plot
             plt.subplot(1, 3, i)
             plt.plot(prob["c_same"], label="correct")
             plt.plot(prob["f_same"], label="incorrect")
@@ -223,8 +224,8 @@ if __name__ == "__main__":
             plt.title('{:03} {}'.format(mouse_id, task))
             plt.show()
 
-            # TODO plotを関数化 (data, probを算出する部分(data)とplot(view)を分離する)
+            # TODO plotを関数化 (data, probを算出する部分(model)とplot(view)を分離する)
             print('done')
 
-        plt.savefig('../RaspSkinnerBox/log/no{:03d}_prob.png'.format(mouse_id))
+        plt.savefig('../RaspSkinnerBox/log/no{:03d}_prob.png'.format(mouse_id)) # TODO view分離
 
