@@ -378,7 +378,8 @@ if __name__ == "__main__":
     mice = [13]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     # tasks = ["test"]
-    logpath = '../RaspSkinnerBox/log/'
+#    logpath = '../RaspSkinnerBox/log/'
+    logpath = './'
     task = task_data(mice, tasks, logpath)
     graph_ins = graph(task, mice, tasks, logpath)
     graph_ins.entropy_scatter()
