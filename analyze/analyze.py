@@ -10,16 +10,13 @@ import datetime
 # from pandas.core.window import Rolling
 
 
-def read_data():
-    data_file = "../RaspSkinnerBox/log/no011_action.csv"
-    time_limit_delta = 60
-    header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"]
+def read_data(data_file, mouse_no, task):
+    header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"] # TODO session_idはCTRL-Dで止めたらresetされる、app側を変えるか?, その場合過去のlogを一括修正する必要あり
     data = pd.read_csv(data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
 
-    # TODO omission抜き集計とomission有り集計の2種を切り替えて出す
 #    data = data[data["event_type"].isin(["reward", "failure", "time over"])]
     data = data[data["event_type"].isin(["reward", "failure"])]
-
+    data = data[data["task"].isin([task])]
 
     data = data.reset_index()
     # task interval
@@ -157,8 +154,14 @@ def read_data():
 
     return [data, probability]
 
+# TODO Burst raster plot
+# TODO R plot(Entropy, Raster, Correct/Incorrect/Omission) 移植
+# TODO 散布図,csv出力 連続無報酬期間 vs reaction time (タスクコールからnose pokeまでの時間 正誤両方)
+# TODO 散布図,csv出力 連続無報酬期間 vs reward latency  (正解nose pokeからmagazine nose pokeまでの時間 正解のみ)
+# TODO 散布図,csv出力 連続無報酬期間 vs 区間Entropy
+# TODO 探索行動の短期指標を定義(Exploration Index 1, EI1) : 検討中
 
-def graph(data):
+def graph(data, prob, mouse_id, task):
     # define
     plt.style.use("ggplot")
     font = {'family': 'meiryo'}
@@ -182,16 +185,49 @@ def graph(data):
         burst_ax.set_xlabel("time/sessions")
         burst_ax.set_ylabel("hole dots")
         plt.show()
+    # burst_nosepoke()
 
-    def aa():
-        None
-
-    burst_nosepoke()
 
 
 if __name__ == "__main__":
-    data, prob = read_data()
-    data.to_csv('./test.csv')
-    prob.to_csv('./prob.csv')
-    # graph(data)
+    mice = [6, 7, 8, 11, 12, 13]
+    tasks = ["All5_30", "Only5_50", "Not5_Other30"]
+
+    for mouse_id in mice:
+
+        fig = plt.figure(figsize=(15, 8), dpi=100) # TODO view分離
+
+        i = 0
+        for task in tasks:
+            i = i + 1
+            print('mouse id={:03} task={}'.format(mouse_id, task))
+            data_file = "../RaspSkinnerBox/log/no{:03d}_action.csv".format(mouse_id)
+            print('analyzing ...', end=' ')
+            data, prob = read_data(data_file, mouse_id, task)  # TODO mouse_id, task毎にdataを管理したい(data,probのリスト化?)
+            print('done')
+            print('csv writing ...', end=' ')
+            data.to_csv('../RaspSkinnerBox/log/no{:03d}_{}_data.csv'.format(mouse_id, task))
+            prob.to_csv('../RaspSkinnerBox/log/no{:03d}_{}_prob.csv'.format(mouse_id, task))
+            print('done')
+
+            print('plotting ...', end=' ')
+
+            # P(same) plot
+            plt.subplot(1, 3, i)
+            plt.plot(prob["c_same"], label="correct")
+            plt.plot(prob["f_same"], label="incorrect")
+            plt.ioff()
+            plt.ylim(0, 1)
+            if i == 1:
+                plt.ylabel('P (same choice)')
+                plt.legend()
+            plt.xlabel('Trial')
+            plt.title('{:03} {}'.format(mouse_id, task))
+            plt.show()
+
+            # TODO plotを関数化 (data, probを算出する部分(model)とplot(view)を分離する)
+            print('done')
+
+        plt.savefig('../RaspSkinnerBox/log/no{:03d}_prob.png'.format(mouse_id)) # TODO view分離
+
 
