@@ -11,16 +11,17 @@ from scipy.stats import entropy
 # from pandas.core.window import Rolling
 
 class task_data:
-    def __init__(self, mice: list, tasks):
+    def __init__(self, mice: list, tasks, logpath):
         self.data_file = ""
         self.mouse_no = mice
         self.tasks = tasks
         self.probability = {}
         self.mice_task = {}
         self.task_prob = {}
+        self.logpath = logpath
         print('reading data...', end='')
         for mouse_id in self.mouse_no:
-            self.data_file = "../RaspSkinnerBox/log/no{:03d}_action.csv".format(mouse_id)
+            self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
             self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id] = \
                 self.read_data()
             self.export_csv(mouse_id)
@@ -282,8 +283,8 @@ class task_data:
 
     def export_csv(self, mouse_no):
         for task in self.tasks:
-            self.mice_task[mouse_no].to_csv('../RaspSkinnerBox/log/no{:03d}_{}_data.csv'.format(mouse_no, task))
-            self.probability[mouse_no].to_csv('../RaspSkinnerBox/log/no{:03d}_{}_prob.csv'.format(mouse_no, task))
+            self.mice_task[mouse_no].to_csv('{}no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, task))
+            self.probability[mouse_no].to_csv('{}no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
 
 
 # TODO Burst raster plot
@@ -294,13 +295,14 @@ class task_data:
 # TODO 探索行動の短期指標を定義(Exploration Index 1, EI1) : 検討中
 
 class graph:
-    def __init__(self, task_datas, mice, tasks):
+    def __init__(self, task_datas, mice, tasks, exportpath):
         plt.style.use("ggplot")
         font = {'family': 'meiryo'}
         mpl.rc('font', **font)
         self.data = task_datas
         self.mice = mice
         self.tasks = tasks
+        self.exportpath = exportpath
 
     # data plot
     # TODO これは全nose pokeなので、burstは別に用意する
@@ -345,7 +347,7 @@ class graph:
                 plt.title('{:03} {}'.format(mouse_id, task))
                 plt.show()
 
-            plt.savefig('../RaspSkinnerBox/log/no{:03d}_prob.png'.format(mouse_id))
+            plt.savefig('{}no{:03d}_prob.png'.format(self.exportpath, mouse_id))
 
     def CFO_plot(self):
         for mouse_id in self.mice:
@@ -376,8 +378,9 @@ if __name__ == "__main__":
     mice = [13]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     # tasks = ["test"]
-    task = task_data(mice, tasks)
-    graph_ins = graph(task, mice, tasks)
+    logpath = '../RaspSkinnerBox/log/'
+    task = task_data(mice, tasks, logpath)
+    graph_ins = graph(task, mice, tasks, logpath)
     graph_ins.entropy_scatter()
     graph_ins.burst_nosepoke()
     graph_ins.same_plot()
