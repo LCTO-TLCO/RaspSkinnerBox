@@ -377,7 +377,6 @@ if __name__ == "__main__":
     # mice = [6, 7, 8, 11, 12, 13]
     mice = [13]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
-    # tasks = ["test"]
 #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
     task = task_data(mice, tasks, logpath)
