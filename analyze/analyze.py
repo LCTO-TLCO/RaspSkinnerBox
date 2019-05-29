@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import pyper
 import datetime
-
+import math, string, sys, fileinput
 from scipy.stats import entropy
 
 
@@ -101,10 +101,18 @@ class task_data:
                                                                            index_start:index_end] - \
                                                                            pre_omission
 
+            def min_max(x, axis=None):
+                np.array(x)
+                min = np.array(x).min(axis=axis)
+                max = np.array(x).max(axis=axis)
+                result = (x - min) / (max - min)
+                return result
             # entropy
             ent = [0] * 150
             for i in range(0, len(data[data.event_type.str.contains('(reward|failure)')]) - 150):
-                current_entropy = [data["is_hole{}".format(str(hole_no))][i:i+150].sum()/150.0 for hole_no in [1, 3, 5, 7, 9]]
+                denominator = 150.0 #sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
+                current_entropy = min_max([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
+                                   [1, 3, 5, 7, 9]])
                 ent.append(entropy(current_entropy, base=2))
             data["hole_choice_entropy"] = ent
 
@@ -363,7 +371,7 @@ class graph:
 
 if __name__ == "__main__":
     # mice = [6, 7, 8, 11, 12, 13]
-    mice = [14]
+    mice = [13]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     # tasks = ["test"]
     task = task_data(mice, tasks)
