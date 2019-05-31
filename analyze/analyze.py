@@ -110,12 +110,14 @@ class task_data:
                 max = np.array(x).max(axis=axis)
                 result = (x - min) / (max - min)
                 return result
+
             # entropy
             ent = [0] * 150
             for i in range(0, len(data[data.event_type.str.contains('(reward|failure)')]) - 150):
-                denominator = 150.0 #sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
-                current_entropy = min_max([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
-                                   [1, 3, 5, 7, 9]])
+                denominator = 150.0  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
+                current_entropy = min_max(
+                    [data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
+                     [1, 3, 5, 7, 9]])
                 ent.append(entropy(current_entropy, base=2))
             data["hole_choice_entropy"] = ent
 
@@ -127,8 +129,6 @@ class task_data:
             #         continue
             #     data["burst_group"][i] = data["burst_group"][i - 1] + 1
             return data
-
-        data = add_hot_vector()
 
         def add_timedelta():
             data = pd.read_csv(self.data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
@@ -165,6 +165,28 @@ class task_data:
                                           'reward_latency': reward_latency}))
                     # entropy
 
+        def rehash_session_id():
+            data = pd.read_csv(self.data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
+            id_col = data.filter(items=["session_id", "task", "event_type"])
+            line_no = 0
+            print("max_id_col:{}".format(len(id_col)))
+            session_id = 0
+            while line_no < len(id_col) - 1:
+                tmp = id_col[line_no:][id_col["event_type"].isin(["reward", "failure", "time over"])][
+                    "session_id"].head(1)
+                if len(tmp)== 0:
+                    end_col_no = len(id_col)
+                else:
+                    end_col_no = tmp.index[0]
+                id_col[line_no:end_col_no]["session_id"] = session_id
+                line_no = end_col_no + 1
+                session_id = session_id + 1
+            data["session_id"] = id_col["session_id"]
+            print("rehash done")
+            return data
+
+        rehash_session_id()
+        data = add_hot_vector()
         # add_timedelta()
 
         # action Probability
@@ -183,11 +205,12 @@ class task_data:
             after_f_all_task[task] = float(len(after_f_starts_task[task]))
 
         # after_o_all = len(data[data["event_type"] == "time over"])
-        forward_trace = 5 # TODO forward_trace=5ならなぜか4までしかデータが入らない
+        forward_trace = 5
+        # TODO forward_trace=5ならなぜか4までしかデータが入らない -> A. rangeの仕様です
         prob_index = ["c_same", "c_diff", "c_omit", "c_checksum", "f_same", "f_diff", "f_omit", "f_checksum",
                       "c_NotMax",
                       "f_NotMax", "o_NotMax"]
-        probability = pd.DataFrame(columns=prob_index, index=range(1, forward_trace)).fillna(0.0)
+        probability = pd.DataFrame(columns=prob_index, index=range(1, forward_trace + 1)).fillna(0.0)
 
         # count
         # correctスタート
@@ -296,7 +319,7 @@ class task_data:
 
 
 # TODO Burst raster plot
-# TODO Entropy, Nose Poke Raster, Correct/Incorrect/Omission を縦に３つ並べる
+# TODO Entropy, Nose Poke Raster, Correct/Incorrect/Omission(cumsum) を縦に３つ並べる
 # TODO 散布図,csv出力 連続無報酬期間 vs reaction time (タスクコールからnose pokeまでの時間 正誤両方)
 # TODO 散布図,csv出力 連続無報酬期間 vs reward latency  (正解nose pokeからmagazine nose pokeまでの時間 正解のみ)
 # TODO 散布図,csv出力 連続無報酬期間 vs 区間Entropy (検討中)
@@ -314,7 +337,7 @@ class graph:
 
     # data plot
     # TODO これは全nose pokeなので、burstは別に用意する
-    def burst_nosepoke(self):
+    def nose_poke_raster(self):
         for mouse_id in self.mice:
             burst_nosepoke = plt.figure()
             burst_ax = burst_nosepoke.add_subplot(1, 1, 1)
@@ -322,7 +345,7 @@ class graph:
             # flags = data.loc[:, data.colums.str.match("is_[(omission|correct|incorrect)")]
             datasets = [(self.data.mice_task[mouse_id][self.data.mice_task[mouse_id]
                                                        ["is_{}".format(flag)] == 1]) for flag in labels]
-            # TODO 同一session_idに複数のhole choiceとomissionが入っているのを修正 session_idが信用できない
+            # TODO 同一session_idに複数のhole choiceとomissionが入っているのを修正 session_idが信用できない -> A.rehash する関数実装
             for dt, la in zip(datasets, labels):
                 burst_ax.scatter(dt['session_id'], dt['is_hole1'] * 1, color="blue")
                 burst_ax.scatter(dt['session_id'], dt['is_hole3'] * 2, color="blue")
@@ -345,8 +368,8 @@ class graph:
                 plt.plot(self.data.task_prob[mouse_id][task]["c_same"], label="correct")
                 plt.plot(self.data.task_prob[mouse_id][task]["f_same"], label="incorrect")
                 plt.ioff()
-                plt.xticks(np.arange(1, xlen+1, 1))
-                plt.xlim(0.5, xlen+0.5)
+                plt.xticks(np.arange(1, xlen + 1, 1))
+                plt.xlim(0.5, xlen + 0.5)
                 plt.ylim(0, 1)
                 if self.tasks.index(task) == 0:
                     plt.ylabel('P (same choice)')
@@ -362,7 +385,7 @@ class graph:
             fig = plt.figure(figsize=(15, 8), dpi=100)
             plt.scatter(self.data.task_prob[mouse_id]['is_correct'])
             plt.title('{:03} CFO'.format(mouse_id))
-            #.plot.scatter(x='session_id', y='is_correct')
+            # .plot.scatter(x='session_id', y='is_correct')
 
     def burst_raster(self):
         None
@@ -381,15 +404,15 @@ class graph:
             plt.ylabel('Entropy (bit)')
             plt.title('{:03} Entropy'.format(mouse_id))
 
+
 if __name__ == "__main__":
     # mice = [6, 7, 8, 11, 12, 13]
     mice = [13]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
-#    logpath = '../RaspSkinnerBox/log/'
+    #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
     task = task_data(mice, tasks, logpath)
     graph_ins = graph(task, mice, tasks, logpath)
     graph_ins.entropy_scatter()
-    graph_ins.burst_nosepoke()
+    graph_ins.nose_poke_raster()
     graph_ins.same_plot()
-
