@@ -13,6 +13,7 @@ from scipy.stats import entropy
 class task_data:
     def __init__(self, mice: list, tasks, logpath):
         self.data_file = ""
+        self.data = None
         self.mouse_no = mice
         self.tasks = tasks
         self.probability = {}
@@ -32,10 +33,30 @@ class task_data:
         # TODO session_idはCTRL-Dで止めたらresetされる、app側を変えるか?, その場合過去のlogを一括修正する必要あり
         task_prob = {}
 
+        def rehash_session_id():
+            data = pd.read_csv(self.data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
+            id_col = data.filter(items=["session_id", "task", "event_type"])
+            line_no = 0
+            print("max_id_col:{}".format(len(id_col)))
+            session_id = 0
+            while line_no < len(id_col) - 1:
+                tmp = id_col[line_no:][id_col["event_type"].isin(["reward", "failure", "time over"])][
+                    "session_id"].head(1)
+                if len(tmp) == 0:
+                    end_col_no = len(id_col)
+                else:
+                    end_col_no = tmp.index[0]
+                id_col[line_no:end_col_no+1]["session_id"] = session_id
+                line_no = end_col_no + 1
+                session_id = session_id + 1
+            data["session_id"] = id_col["session_id"]
+            print("rehash done")
+            return data
+
         def add_hot_vector():
             #    data = data[data["event_type"].isin(["reward", "failure", "time over"])]
-            data = pd.read_csv(self.data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
-            data = data[data["event_type"].isin(["reward", "failure"])]
+            data = self.data
+            data = data[data["event_type"].isin(["reward", "failure", "time over"])]
             data = data[data["task"].isin(self.tasks)]
 
             data = data.reset_index()
@@ -65,16 +86,16 @@ class task_data:
             # warning mettyaderu zone
             # SettingWithCopyWarning
             data.loc[data["event_type"].isin(["reward"]), 'hole_correct'] = data["hole_no"]
-            data.loc[~data["event_type"].isin(["reward"]), 'hole_correct'] = 0
+            data.loc[~data["event_type"].isin(["reward"]), 'hole_correct'] = np.nan
             data.loc[data["event_type"].isin(["failure"]), 'hole_incorrect'] = data["hole_no"]
-            data.loc[~data["event_type"].isin(["failure"]), 'hole_incorrect'] = 0
+            data.loc[~data["event_type"].isin(["failure"]), 'hole_incorrect'] = np.nan
 
             data.loc[data["event_type"].isin(["reward"]), 'is_correct'] = 1
-            data.loc[~data["event_type"].isin(["reward"]), 'is_correct'] = 0
+            data.loc[~data["event_type"].isin(["reward"]), 'is_correct'] = np.nan
             data.loc[data["event_type"].isin(["failure"]), 'is_incorrect'] = 1
-            data.loc[~data["event_type"].isin(["failure"]), 'is_incorrect'] = 0
+            data.loc[~data["event_type"].isin(["failure"]), 'is_incorrect'] = np.nan
             data.loc[data["event_type"].isin(["time over"]), 'is_omission'] = 1
-            data.loc[~data["event_type"].isin(["time over"]), 'is_omission'] = 0
+            data.loc[~data["event_type"].isin(["time over"]), 'is_omission'] = np.nan
 
             data["cumsum_correct"] = data["is_correct"].cumsum(axis=0)
             data["cumsum_incorrect"] = data["is_incorrect"].cumsum(axis=0)
@@ -113,7 +134,7 @@ class task_data:
 
             # entropy
             ent = [0] * 150
-            for i in range(0, len(data[data.event_type.str.contains('(reward|failure)')]) - 150):
+            for i in range(0, len(data[data.event_type.str.contains('(reward|failure|time over)')]) - 150):
                 denominator = 150.0  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
                 current_entropy = min_max(
                     [data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
@@ -165,42 +186,22 @@ class task_data:
                                           'reward_latency': reward_latency}))
                     # entropy
 
-        def rehash_session_id():
-            data = pd.read_csv(self.data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
-            id_col = data.filter(items=["session_id", "task", "event_type"])
-            line_no = 0
-            print("max_id_col:{}".format(len(id_col)))
-            session_id = 0
-            while line_no < len(id_col) - 1:
-                tmp = id_col[line_no:][id_col["event_type"].isin(["reward", "failure", "time over"])][
-                    "session_id"].head(1)
-                if len(tmp)== 0:
-                    end_col_no = len(id_col)
-                else:
-                    end_col_no = tmp.index[0]
-                id_col[line_no:end_col_no]["session_id"] = session_id
-                line_no = end_col_no + 1
-                session_id = session_id + 1
-            data["session_id"] = id_col["session_id"]
-            print("rehash done")
-            return data
-
-        rehash_session_id()
-        data = add_hot_vector()
+        self.data = rehash_session_id()
+        self.data = add_hot_vector()
         # add_timedelta()
 
         # action Probability
-        after_c_all = float(len(data[data["is_correct"] == 1]))
-        after_f_all = float(len(data[data["is_incorrect"] == 1]))
-        after_c_starts = data[data["is_correct"] == 1]
-        after_f_starts = data[data["is_incorrect"] == 1]
+        after_c_all = float(len(self.data[self.data["is_correct"] == 1]))
+        after_f_all = float(len(self.data[self.data["is_incorrect"] == 1]))
+        after_c_starts = self.data[self.data["is_correct"] == 1]
+        after_f_starts = self.data[self.data["is_incorrect"] == 1]
         after_c_all_task = {}
         after_f_all_task = {}
         after_c_starts_task = {}
         after_f_starts_task = {}
         for task in self.tasks:
-            after_c_starts_task[task] = data[(data["is_correct"] == 1) & (data["task"] == task)]
-            after_f_starts_task[task] = data[(data["is_incorrect"] == 1) & (data["task"] == task)]
+            after_c_starts_task[task] = self.data[(self.data["is_correct"] == 1) & (self.data["task"] == task)]
+            after_f_starts_task[task] = self.data[(self.data["is_incorrect"] == 1) & (self.data["task"] == task)]
             after_c_all_task[task] = float(len(after_c_starts_task[task]))
             after_f_all_task[task] = float(len(after_f_starts_task[task]))
 
@@ -217,15 +218,15 @@ class task_data:
         def count_all():
             for idx, dt in after_c_starts.iterrows():
                 is_continued = True
-                for j in range(1, min(forward_trace, len(data) - idx)):
+                for j in range(1, min(forward_trace, len(self.data) - idx)):
                     # 報酬を得たときと同じ選択(CF両方)をしたときの処理
-                    if dt["hole_no"] == data.shift(-j)["hole_no"][idx] and is_continued:
+                    if dt["hole_no"] == self.data.shift(-j)["hole_no"][idx] and is_continued:
                         probability["c_same"][j] = probability["c_same"][j] + 1
                     # omissionの場合
-                    elif data.shift(-j)["is_omission"][idx]:
+                    elif self.data.shift(-j)["is_omission"][idx]:
                         probability["c_omit"][j] = probability["c_omit"][j] + 1
                         # is_continued = False
-                    elif dt["hole_no"] != data.shift(-j)["hole_no"][idx] and is_continued:
+                    elif dt["hole_no"] != self.data.shift(-j)["hole_no"][idx] and is_continued:
                         probability["c_diff"][j] = probability["c_diff"][j] + 1
                     # 違うhole
             #            else:
@@ -233,13 +234,14 @@ class task_data:
             # incorrectスタート
             for idx, dt in after_f_starts.iterrows():
                 is_continued = True
-                for j in range(1, min(forward_trace, len(data) - idx)):
+                for j in range(1, min(forward_trace, len(self.data) - idx)):
                     # 連続で失敗しているときの処理
-                    if dt["hole_no"] == data.shift(-j)["hole_no"][idx] and is_continued:
+                    if dt["hole_no"] == self.data.shift(-j)["hole_no"][idx] and is_continued:
                         probability["f_same"][j] = probability["f_same"][j] + 1
-                    elif data.shift(-j)["is_omission"][idx] and is_continued:
+                    elif self.data.shift(-j)["is_omission"][idx] and is_continued:
                         probability["f_omit"][j] = probability["f_omit"][j] + 1
-                    elif dt["hole_no"] != data.shift(-j)["hole_no"][idx] and not data.shift(-j)["is_omission"][
+                    elif dt["hole_no"] != self.data.shift(-j)["hole_no"][idx] and not \
+                    self.data.shift(-j)["is_omission"][
                         idx] and is_continued:
                         probability["f_diff"][j] = probability["f_diff"][j] + 1
                         # is_continued = False
@@ -264,15 +266,15 @@ class task_data:
                 prob = pd.DataFrame(columns=prob_index, index=range(1, forward_trace)).fillna(0.0)
                 for idx, dt in after_c_starts_task[task].iterrows():
                     is_continued = True
-                    for j in range(1, min(forward_trace, len(data) - idx)):
+                    for j in range(1, min(forward_trace, len(self.data) - idx)):
                         # 報酬を得たときと同じ選択(CF両方)をしたときの処理
-                        if dt["hole_no"] == data.shift(-j)["hole_no"][idx] and is_continued:
+                        if dt["hole_no"] == self.data.shift(-j)["hole_no"][idx] and is_continued:
                             prob["c_same"][j] = prob["c_same"][j] + 1
                         # omissionの場合
-                        elif data.shift(-j)["is_omission"][idx]:
+                        elif self.data.shift(-j)["is_omission"][idx]:
                             prob["c_omit"][j] = prob["c_omit"][j] + 1
                             # is_continued = False
-                        elif dt["hole_no"] != data.shift(-j)["hole_no"][idx] and is_continued:
+                        elif dt["hole_no"] != self.data.shift(-j)["hole_no"][idx] and is_continued:
                             prob["c_diff"][j] = prob["c_diff"][j] + 1
                         # 違うhole
                 #            else:
@@ -280,13 +282,14 @@ class task_data:
                 # incorrectスタート
                 for idx, dt in after_f_starts_task[task].iterrows():
                     is_continued = True
-                    for j in range(1, min(forward_trace, len(data) - idx)):
+                    for j in range(1, min(forward_trace, len(self.data) - idx)):
                         # 連続で失敗しているときの処理
-                        if dt["hole_no"] == data.shift(-j)["hole_no"][idx] and is_continued:
+                        if dt["hole_no"] == self.data.shift(-j)["hole_no"][idx] and is_continued:
                             prob["f_same"][j] = prob["f_same"][j] + 1
-                        elif data.shift(-j)["is_omission"][idx] and is_continued:
+                        elif self.data.shift(-j)["is_omission"][idx] and is_continued:
                             prob["f_omit"][j] = prob["f_omit"][j] + 1
-                        elif dt["hole_no"] != data.shift(-j)["hole_no"][idx] and not data.shift(-j)["is_omission"][
+                        elif dt["hole_no"] != self.data.shift(-j)["hole_no"][idx] and not \
+                        self.data.shift(-j)["is_omission"][
                             idx] and is_continued:
                             prob["f_diff"][j] = prob["f_diff"][j] + 1
                             # is_continued = False
@@ -310,7 +313,7 @@ class task_data:
 
         count_all()
         count_task()
-        return data, probability, task_prob
+        return self.data, probability, task_prob
 
     def export_csv(self, mouse_no):
         for task in self.tasks:
@@ -347,16 +350,33 @@ class graph:
                                                        ["is_{}".format(flag)] == 1]) for flag in labels]
             # TODO 同一session_idに複数のhole choiceとomissionが入っているのを修正 session_idが信用できない -> A.rehash する関数実装
             for dt, la in zip(datasets, labels):
-                burst_ax.scatter(dt['session_id'], dt['is_hole1'] * 1, color="blue")
-                burst_ax.scatter(dt['session_id'], dt['is_hole3'] * 2, color="blue")
-                burst_ax.scatter(dt['session_id'], dt['is_hole5'] * 3, color="blue")
-                burst_ax.scatter(dt['session_id'], dt['is_hole7'] * 4, color="blue")
-                burst_ax.scatter(dt['session_id'], dt['is_hole9'] * 5, color="blue")
-                burst_ax.scatter(dt['session_id'], dt['is_omission'] * 0, color="red")
+                burst_ax.scatter(dt['session_id'], dt['is_hole1'] * 1, s=15, color="blue")
+                burst_ax.scatter(dt['session_id'], dt['is_hole3'] * 2, s=15, color="blue")
+                burst_ax.scatter(dt['session_id'], dt['is_hole5'] * 3, s=15, color="blue")
+                burst_ax.scatter(dt['session_id'], dt['is_hole7'] * 4, s=15, color="blue")
+                burst_ax.scatter(dt['session_id'], dt['is_hole9'] * 5, s=15, color="blue")
+                burst_ax.scatter(dt['session_id'], dt['is_omission'] * 0, s=15, color="red")
             burst_ax.set_xlabel("time/sessions")
             burst_ax.set_ylabel("hole dots")
             plt.ylim(-1, 6)
             plt.show()
+
+    def CFO_cumsum_plot(self):
+        for mouse_id in self.mice:
+            fig = plt.figure(figsize=(15, 8), dpi=100)
+            plt.plot(self.data.task_prob[mouse_id]['cumsum_correct_taskreset'])
+            plt.title('{:03} CFO'.format(mouse_id))
+            # .plot.scatter(x='session_id', y='is_correct')
+
+    def entropy_scatter(self):
+        for mouse_id in self.mice:
+            fig = plt.figure(figsize=(15, 8), dpi=100)
+            plt.plot(self.data.mice_task[mouse_id]['hole_choice_entropy'])
+            plt.xlabel('Trial')
+            plt.ylabel('Entropy (bit)')
+            plt.title('{:03} Entropy'.format(mouse_id))
+
+
 
     def same_plot(self):
         fig = plt.figure(figsize=(15, 8), dpi=100)
@@ -376,16 +396,10 @@ class graph:
                     plt.legend()
                 plt.xlabel('Trial')
                 plt.title('{:03} {}'.format(mouse_id, task))
-                plt.show()
+            plt.show()
 
             plt.savefig('{}no{:03d}_prob.png'.format(self.exportpath, mouse_id))
 
-    def CFO_plot(self):
-        for mouse_id in self.mice:
-            fig = plt.figure(figsize=(15, 8), dpi=100)
-            plt.scatter(self.data.task_prob[mouse_id]['is_correct'])
-            plt.title('{:03} CFO'.format(mouse_id))
-            # .plot.scatter(x='session_id', y='is_correct')
 
     def burst_raster(self):
         None
@@ -396,13 +410,6 @@ class graph:
     def reward_latency_scatter(self):
         None
 
-    def entropy_scatter(self):
-        for mouse_id in self.mice:
-            fig = plt.figure(figsize=(15, 8), dpi=100)
-            plt.plot(self.data.mice_task[mouse_id]['hole_choice_entropy'])
-            plt.xlabel('Trial')
-            plt.ylabel('Entropy (bit)')
-            plt.title('{:03} Entropy'.format(mouse_id))
 
 
 if __name__ == "__main__":
@@ -413,6 +420,6 @@ if __name__ == "__main__":
     logpath = './'
     task = task_data(mice, tasks, logpath)
     graph_ins = graph(task, mice, tasks, logpath)
-    graph_ins.entropy_scatter()
+    # graph_ins.entropy_scatter()
     graph_ins.nose_poke_raster()
     graph_ins.same_plot()
