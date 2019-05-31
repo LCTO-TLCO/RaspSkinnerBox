@@ -153,7 +153,6 @@ def read_data(data_file, mouse_no, task):
 
     return [data, probability]
 
-# TODO Burst raster plot
 # TODO R plot(Entropy, Raster, Correct/Incorrect/Omission) 移植
 # TODO 散布図,csv出力 連続無報酬期間 vs reaction time (タスクコールからnose pokeまでの時間 正誤両方)
 # TODO 散布図,csv出力 連続無報酬期間 vs reward latency  (正解nose pokeからmagazine nose pokeまでの時間 正解のみ)
