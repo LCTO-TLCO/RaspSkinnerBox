@@ -193,6 +193,7 @@ class task_data:
                             pd.DataFrame({'type': 'reward_latency', 'continuous_noreward_period': norewarded_time,
                                           'reward_latency': reward_latency}))
                     # entropy
+            add_timedelta()
 
         self.data = rehash_session_id()
         self.data = add_hot_vector()
@@ -332,6 +333,24 @@ class task_data:
 # TODO 散布図,csv出力 連続無報酬期間 vs reaction time (タスクコールからnose pokeまでの時間 正誤両方)
 # TODO 散布図,csv出力 連続無報酬期間 vs reward latency  (正解nose pokeからmagazine nose pokeまでの時間 正解のみ)
 
+# TODO 1111(正正正正) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, fig4={P()}
+# TODO 1110
+# TODO 1101
+# TODO 1100
+# TODO 1011
+# TODO 1010
+# TODO 1001
+# TODO 1000
+# TODO 0111
+# TODO 0110
+# TODO 0101
+# TODO 0100
+# TODO 0011
+# TODO 0010
+# TODO 0001
+# TODO 0000(誤誤誤誤), 4bit固定ではなくn bit対応で構築(念のため過去の履歴がどこまで効くのか見たいので10bitとかでグラフは保存)
+# TODO 個体毎と全個体 (n数が不足すると思われるため全個体分も必要)
+
 # TODO 散布図,csv出力 連続無報酬期間 vs 区間Entropy (検討中)
 # TODO 探索行動の短期指標を定義(Exploration Index 1, EI1) : 検討中
 
@@ -386,6 +405,28 @@ class graph:
             plt.show()
             plt.savefig('{}no{:03d}_summary.png'.format(self.exportpath, mouse_id))
 
+    def omission_plot(self):
+        fig = plt.figure(figsize=(15, 8), dpi=100)
+        for mouse_id in self.mice:
+            for task in self.tasks:
+                # P(same) plot
+                xlen = len(self.data.task_prob[mouse_id][task]["c_omit"])
+                plt.subplot(1, len(self.tasks), self.tasks.index(task) + 1)
+                plt.plot(self.data.task_prob[mouse_id][task]["f_omit"], label="incorrect")
+                plt.plot(self.data.task_prob[mouse_id][task]["c_omit"], label="correct")
+                plt.ion()
+                plt.xticks(np.arange(1, xlen + 1, 1))
+                plt.xlim(0.5, xlen + 0.5)
+                plt.ylim(0, 1)
+                if self.tasks.index(task) == 0:
+                    plt.ylabel('P (omission)')
+                    plt.legend()
+                plt.xlabel('Trial')
+                plt.title('{:03} {}'.format(mouse_id, task))
+            plt.show()
+
+            plt.savefig('{}no{:03d}_omit.png'.format(self.exportpath, mouse_id))
+
     def same_plot(self):
         fig = plt.figure(figsize=(15, 8), dpi=100)
         for mouse_id in self.mice:
@@ -393,8 +434,8 @@ class graph:
                 # P(same) plot
                 xlen = len(self.data.task_prob[mouse_id][task]["c_same"])
                 plt.subplot(1, len(self.tasks), self.tasks.index(task) + 1)
-                plt.plot(self.data.task_prob[mouse_id][task]["c_same"], label="correct")
                 plt.plot(self.data.task_prob[mouse_id][task]["f_same"], label="incorrect")
+                plt.plot(self.data.task_prob[mouse_id][task]["c_same"], label="correct")
                 plt.ion()
                 plt.xticks(np.arange(1, xlen + 1, 1))
                 plt.xlim(0.5, xlen + 0.5)
@@ -429,4 +470,5 @@ if __name__ == "__main__":
     # graph_ins.entropy_scatter()
     # graph_ins.nose_poke_raster()
     graph_ins.same_plot()
+    graph_ins.omission_plot()
     graph_ins.ent_raster_cumsum()
