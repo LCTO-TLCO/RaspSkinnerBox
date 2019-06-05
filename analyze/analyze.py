@@ -14,6 +14,7 @@ class task_data:
     def __init__(self, mice: list, tasks, logpath):
         self.data_file = ""
         self.data = None
+        self.data_ci = None
         self.mouse_no = mice
         self.tasks = tasks
         self.probability = {}
@@ -104,6 +105,8 @@ class task_data:
                 data.loc[data['hole_no'].str.contains(str(hole_no)), "is_hole{}".format(hole_no)] = 1
                 data.loc[~data['hole_no'].str.contains(str(hole_no)), "is_hole{}".format(hole_no)] = None
 
+            self.data_ci = data[data["event_type"].isin(["reward", "failure"])]
+
             # cumsum
             # for i in range(0, len(task_start_index)):
             #     index_start = task_start_index[i]
@@ -143,6 +146,7 @@ class task_data:
             # entropy
             ent = [0] * 150
             for i in range(0, len(data[data.event_type.str.contains('(reward|failure|time over)')]) - 150):
+                # TODO entropyの計算にomissionは入れない
                 denominator = 150.0  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
                 current_entropy = min_max(
                     [data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
@@ -222,19 +226,19 @@ class task_data:
         probability = pd.DataFrame(columns=prob_index, index=range(1, forward_trace + 1)).fillna(0.0)
 
         # count
-        # correctスタート
         def count_all():
+            # correctスタート
             for idx, dt in after_c_starts.iterrows():
                 is_continued = True
                 for j in range(1, min(forward_trace, len(self.data) - idx)):
                     # 報酬を得たときと同じ選択(CF両方)をしたときの処理
-                    if dt["hole_no"] == self.data.shift(-j)["hole_no"][idx] and is_continued:
+                    if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][idx] and is_continued: # TODO omissionを除いてカウントしたい
                         probability["c_same"][j] = probability["c_same"][j] + 1
                     # omissionの場合
                     elif self.data.shift(-j)["is_omission"][idx]:
                         probability["c_omit"][j] = probability["c_omit"][j] + 1
                         # is_continued = False
-                    elif dt["hole_no"] != self.data.shift(-j)["hole_no"][idx] and is_continued:
+                    elif dt["hole_no"] != self.data_ci.shift(-j)["hole_no"][idx] and is_continued:
                         probability["c_diff"][j] = probability["c_diff"][j] + 1
                     # 違うhole
             #            else:
@@ -244,7 +248,7 @@ class task_data:
                 is_continued = True
                 for j in range(1, min(forward_trace, len(self.data) - idx)):
                     # 連続で失敗しているときの処理
-                    if dt["hole_no"] == self.data.shift(-j)["hole_no"][idx] and is_continued:
+                    if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][idx] and is_continued:  # TODO omissionを除いてカウントしたい
                         probability["f_same"][j] = probability["f_same"][j] + 1
                     elif self.data.shift(-j)["is_omission"][idx] and is_continued:
                         probability["f_omit"][j] = probability["f_omit"][j] + 1
@@ -276,7 +280,7 @@ class task_data:
                     is_continued = True
                     for j in range(1, min(forward_trace, len(self.data) - idx)):
                         # 報酬を得たときと同じ選択(CF両方)をしたときの処理
-                        if dt["hole_no"] == self.data.shift(-j)["hole_no"][idx] and is_continued:
+                        if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][idx] and is_continued: # TODO omissionを除いてカウントしたい
                             prob["c_same"][j] = prob["c_same"][j] + 1
                         # omissionの場合
                         elif self.data.shift(-j)["is_omission"][idx]:
@@ -292,7 +296,7 @@ class task_data:
                     is_continued = True
                     for j in range(1, min(forward_trace, len(self.data) - idx)):
                         # 連続で失敗しているときの処理
-                        if dt["hole_no"] == self.data.shift(-j)["hole_no"][idx] and is_continued:
+                        if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][idx] and is_continued:  # TODO omissionを除いてカウントしたい
                             prob["f_same"][j] = prob["f_same"][j] + 1
                         elif self.data.shift(-j)["is_omission"][idx] and is_continued:
                             prob["f_omit"][j] = prob["f_omit"][j] + 1
@@ -304,11 +308,11 @@ class task_data:
                         else:
                             is_continued = False
                 # calculate
-                prob["c_same"] = prob["c_same"] / after_c_all_task[task] if not after_c_all_task[task] == 0 else 0.0
+                prob["c_same"] = prob["c_same"] / after_c_all_task[task] if not after_c_all_task[task] == 0 else 0.0 # TODO omissionを除いてカウントしたい ので母数を修正
                 prob["c_diff"] = prob["c_diff"] / after_c_all_task[task] if not after_c_all_task[task] == 0 else 0.0
                 prob["c_omit"] = prob["c_omit"] / after_c_all_task[task] if not after_c_all_task[task] == 0 else 0.0
                 prob["c_checksum"] = prob["c_same"] + prob["c_diff"] + prob["c_omit"]
-                prob["f_same"] = prob["f_same"] / after_f_all_task[task] if not after_f_all_task[task] == 0 else 0.0
+                prob["f_same"] = prob["f_same"] / after_f_all_task[task] if not after_f_all_task[task] == 0 else 0.0 # TODO omissionを除いてカウントしたい ので母数を修正
                 prob["f_diff"] = prob["f_diff"] / after_f_all_task[task] if not after_f_all_task[task] == 0 else 0.0
                 prob["f_omit"] = prob["f_omit"] / after_f_all_task[task] if not after_f_all_task[task] == 0 else 0.0
                 prob["f_checksum"] = prob["f_same"] + prob["f_diff"] + prob["f_omit"]
@@ -367,20 +371,20 @@ class graph:
     # data plot
     # TODO これは全nose pokeなので、burstは別に用意する
     def nose_poke_raster(self, mouse_id, ax):
+        colors = ["blue", "red", "black"]
         labels = ["correct", "incorrect", "omission"]
         # flags = data.loc[:, data.colums.str.match("is_[(omission|correct|incorrect)")]
         datasets = [(self.data.mice_task[mouse_id][self.data.mice_task[mouse_id]
                                                    ["is_{}".format(flag)] == 1]) for flag in labels]
-        # 同一session_idに複数のhole choiceとomissionが入っているのを修正 session_idが信用できない -> A.rehash する関数実装
-        for dt, la in zip(datasets, labels):
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole1'] * 1, s=15, color="blue")
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole3'] * 2, s=15, color="blue")
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole5'] * 3, s=15, color="blue")
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole7'] * 4, s=15, color="blue")
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole9'] * 5, s=15, color="blue")
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_omission'] * 0, s=15, color="red")
+        for dt, la, cl in zip(datasets, labels, colors):
+            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole1'] * 1, s=15, color=cl)
+            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole3'] * 2, s=15, color=cl)
+            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole5'] * 3, s=15, color=cl)
+            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole7'] * 4, s=15, color=cl)
+            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole9'] * 5, s=15, color=cl)
+            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_omission'] * 0, s=15, color=cl) # TODO omissionだけsession_idが重複している?
         ax.set_ylabel("Hole")
-        plt.xlim(0, dt['session_id'].max()-dt['session_id'].min()) # TODO もうちょっとカッコよく
+        plt.xlim(0, dt['session_id'].max()-dt['session_id'].min())
 
     def CFO_cumsum_plot(self, mouse_id, ax):
         ax.plot(self.data.mice_task[mouse_id]['cumsum_correct_taskreset'])
@@ -460,8 +464,9 @@ class graph:
 
 
 if __name__ == "__main__":
-    # mice = [6, 7, 8, 11, 12, 13]
-    mice = [13]
+    # mice = [6, 7, 8, 11, 12, 13, 17]
+#    mice = [17]
+    mice = [8]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
@@ -472,3 +477,9 @@ if __name__ == "__main__":
     graph_ins.same_plot()
     graph_ins.omission_plot()
     graph_ins.ent_raster_cumsum()
+
+    # TODO 複数マウスで同一figureにplotしてしまっているので、別figureをそれぞれ立ち上げて描画・保存
+
+    print('hoge')
+
+    # TODO ウィンドウ消えないで
