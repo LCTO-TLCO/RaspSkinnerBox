@@ -39,6 +39,7 @@ class task_data:
             line_no = 0
             print("max_id_col:{}".format(len(id_col)))
             session_id = 0
+            # TODO reward, failureのあとのtime overが同じsession_idを持っている
             while line_no < len(id_col) - 1:
                 tmp = id_col[line_no:][id_col["event_type"].isin(["reward", "failure", "time over"])][
                     "session_id"].head(1)
@@ -148,9 +149,7 @@ class task_data:
             for i in range(0, len(data[data.event_type.str.contains('(reward|failure|time over)')]) - 150):
                 # TODO entropyの計算にomissionは入れない
                 denominator = 150.0  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
-                current_entropy = min_max(
-                    [data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
-                     [1, 3, 5, 7, 9]])
+                current_entropy = min_max([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in [1, 3, 5, 7, 9]])
                 ent.append(entropy(current_entropy, base=2))
             data["hole_choice_entropy"] = ent
 
@@ -197,7 +196,7 @@ class task_data:
                             pd.DataFrame({'type': 'reward_latency', 'continuous_noreward_period': norewarded_time,
                                           'reward_latency': reward_latency}))
                     # entropy
-            add_timedelta()
+        add_timedelta()
 
         self.data = rehash_session_id()
         self.data = add_hot_vector()
@@ -337,22 +336,22 @@ class task_data:
 # TODO 散布図,csv出力 連続無報酬期間 vs reaction time (タスクコールからnose pokeまでの時間 正誤両方)
 # TODO 散布図,csv出力 連続無報酬期間 vs reward latency  (正解nose pokeからmagazine nose pokeまでの時間 正解のみ)
 
-# TODO 1111(正正正正) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, fig4={P()}
+# TODO 1111*(正正正正) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, fig4={P()}
 # TODO 1110
 # TODO 1101
-# TODO 1100
+# TODO 1100*
 # TODO 1011
-# TODO 1010
+# TODO 1010*
 # TODO 1001
-# TODO 1000
-# TODO 0111
+# TODO 1000*
+# TODO 0111*
 # TODO 0110
-# TODO 0101
+# TODO 0101*
 # TODO 0100
 # TODO 0011
 # TODO 0010
-# TODO 0001
-# TODO 0000(誤誤誤誤), 4bit固定ではなくn bit対応で構築(念のため過去の履歴がどこまで効くのか見たいので10bitとかでグラフは保存)
+# TODO 0001*
+# TODO 0000*(誤誤誤誤), 4bit固定ではなくn bit対応で構築(念のため過去の履歴がどこまで効くのか見たいので10bitとかでグラフは保存), *はグラフ表示
 # TODO 個体毎と全個体 (n数が不足すると思われるため全個体分も必要)
 
 # TODO 散布図,csv出力 連続無報酬期間 vs 区間Entropy (検討中)
@@ -466,7 +465,7 @@ class graph:
 if __name__ == "__main__":
     # mice = [6, 7, 8, 11, 12, 13, 17]
 #    mice = [17]
-    mice = [8]
+    mice = [7]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
