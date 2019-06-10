@@ -39,7 +39,8 @@ class task_data:
             line_no = 0
             print("max_id_col:{}".format(len(id_col)))
             session_id = 0
-            # TODO reward, failureのあとのtime overが同じsession_idを持っている
+            # TODO reward, failureのあとのtime overが同じsession_idを持っている?(ことがある?)
+            # TODO この部分の処理が重い (while文内のどこか)
             while line_no < len(id_col) - 1:
                 tmp = id_col[line_no:][id_col["event_type"].isin(["reward", "failure", "time over"])][
                     "session_id"].head(1)
@@ -463,9 +464,9 @@ class graph:
 
 
 if __name__ == "__main__":
-    # mice = [6, 7, 8, 11, 12, 13, 17]
+    # mice = [6, 7, 8, 11, 12, 13, 17, 18]
 #    mice = [17]
-    mice = [7]
+    mice = [6]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
@@ -481,4 +482,4 @@ if __name__ == "__main__":
 
     print('hoge')
 
-    # TODO ウィンドウ消えないで
+    # TODO ウィンドウが消えてしまう
