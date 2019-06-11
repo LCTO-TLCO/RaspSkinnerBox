@@ -2,6 +2,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import datetime
 import numpy as np
+import pandas as pd
 
 
 class graph:
@@ -139,10 +140,13 @@ class graph:
             plt.savefig('fig/{}no{:03d}_reaction_time.png'.format(self.exportpath, mouse_id))
 
     def reward_latency_scatter(self):
-        fig = plt.figure(figsize=(15, 8), dpi=100)
         for mouse_id in self.mice:
-            data = self.data.time_delta_data[mouse_id][self.data.time_delta_data[mouse_id].type == "reward_latency"]
-            fig.add_subplot(1, 1, 1).scatter(data.continuous_noreward_period, data.reward_latency)
-            plt.title('{:03} reward_latency'.format(mouse_id))
-            plt.show(block=True)
-            plt.savefig('fig/{}no{:03d}_reward_latency.png'.format(self.exportpath, mouse_id))
+            for task in self.tasks:
+                fig = plt.figure(figsize=(15, 8), dpi=100)
+                data = self.data.mice_delta[mouse_id][task][
+                    self.data.mice_delta[mouse_id][task].type == "reward_latency"]
+                fig.add_subplot(1, 1, 1).scatter(pd.to_timedelta(data.continuous_noreward_period),
+                                                 pd.to_timedelta(data.reward_latency))
+                plt.title('{:03} reward_latency {}'.format(mouse_id, task))
+                plt.show(block=True)
+                plt.savefig('fig/{}no{:03d}_{}_reward_latency.png'.format(self.exportpath, mouse_id, task))

@@ -10,8 +10,6 @@ from graph import graph
 debug = True
 
 
-# from pandas.core.window import Rolling
-
 class task_data:
     def __init__(self, mice: list, tasks, logpath):
         global debug
@@ -30,8 +28,7 @@ class task_data:
         if debug:
             for mouse_id in self.mouse_no:
                 self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[
-                    mouse_id] = \
-                    self.dev_read_data(mouse_id)
+                    mouse_id] = self.dev_read_data(mouse_id)
         else:
             for mouse_id in self.mouse_no:
                 self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
@@ -217,7 +214,7 @@ class task_data:
                              'reaction_time': reaction_time, 'correct_incorrect': correct_incorrect},
                             ignore_index=True)
                     # reward latency
-                    if bool(sum(current_target["event_type"].isin(["task reward"]))) and bool(
+                    if bool(sum(current_target["event_type"].isin(["reward"]))) and bool(
                             sum(current_target["event_type"].isin(["task called"]))):
                         nose_poke = current_target[current_target["event_type"] == "nose poke"]
                         reward_latency = current_target[
@@ -368,13 +365,14 @@ class task_data:
         return self.data, probability, task_prob, self.delta
 
     def dev_read_data(self, mouse_no):
-        self.data = pd.read_csv('{}data/no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, "all"))
-        probability = pd.read_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, "all"))
         task_prob = {}
+        data = pd.read_csv('{}data/no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, "all"))
+        probability = pd.read_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, "all"))
+        delta = {}
         for task in self.tasks:
-            self.delta = pd.read_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
+            delta[task] = pd.read_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
             task_prob[task] = pd.read_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
-        return self.data, probability, task_prob, self.delta
+        return data, probability, task_prob, delta
 
     def export_csv(self, mouse_no):
         self.mice_task[mouse_no].to_csv('{}data/no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, "all"))
@@ -421,9 +419,10 @@ if __name__ == "__main__":
     graph_ins = graph(task, mice, tasks, logpath)
     # graph_ins.entropy_scatter()
     # graph_ins.nose_poke_raster()
-    graph_ins.same_plot()
-    graph_ins.omission_plot()
+    # graph_ins.same_plot()
+    # graph_ins.omission_plot()
     # graph_ins.ent_raster_cumsum()
+    graph_ins.reward_latency_scatter()
 
     # TODO 複数マウスで同一figureにplotしてしまっているので、別figureをそれぞれ立ち上げて描画・保存
 
