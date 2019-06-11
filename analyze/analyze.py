@@ -7,11 +7,14 @@ import math, string, sys, fileinput
 from scipy.stats import entropy
 from graph import graph
 
+debug = True
+
 
 # from pandas.core.window import Rolling
 
 class task_data:
     def __init__(self, mice: list, tasks, logpath):
+        global debug
         self.data_file = ""
         self.data = None
         self.data_ci = None
@@ -24,11 +27,18 @@ class task_data:
         self.mice_delta = {}
         self.logpath = logpath
         print('reading data...', end='')
-        for mouse_id in self.mouse_no:
-            self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
-            self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[mouse_id] = \
-                self.read_data()
-            self.export_csv(mouse_id)
+        if debug:
+            for mouse_id in self.mouse_no:
+                self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[
+                    mouse_id] = \
+                    self.dev_read_data(mouse_id)
+        else:
+            for mouse_id in self.mouse_no:
+                self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
+                self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[
+                    mouse_id] = \
+                    self.read_data()
+                self.export_csv(mouse_id)
         print('done')
 
     def read_data(self):
@@ -46,6 +56,9 @@ class task_data:
             # TODO この部分の処理が重い (while文内のどこか)
             while line_no < len(id_col) - 1:
                 if id_col["task"].iloc[line_no] == "T0":
+                    if id_col["event_type"].iloc[line_no] == "start":
+                        id_col.session_id.iloc[line_no] = session_id
+                        line_no = line_no + 1
                     id_col.iloc[line_no]["session_id"] = session_id
                     line_no = line_no + 1
                     session_id = session_id + 1
@@ -57,7 +70,9 @@ class task_data:
                     end_col_no = \
                         next_sessionstart_row.index[0] - 1 + 1
                 id_col[line_no:end_col_no]["session_id"] = session_id
-                line_no = end_col_no + 1
+                line_no = end_col_no if not end_col_no == 0 else len(id_col)
+                if end_col_no == -1:
+                    id_col[end_col_no] = session_id
                 session_id = session_id + 1
             data["session_id"] = id_col["session_id"]
             print("rehash done")
@@ -175,40 +190,46 @@ class task_data:
 
         def add_timedelta():
             data = self.data
+            data = data[data.session_id.isin(
+                data[(data["event_type"] == "reward") | (data["event_type"] == "failure")]["session_id"])]
             deltas = {}
             for task in self.tasks:
                 delta_df = pd.DataFrame(
-                    columns=["type", "continuous_noreward_period", "reaction_time", "reward_latency"])
+                    # columns=["type", "continuous_noreward_period", "reaction_time", "reward_latency"]
+                )
                 for session in data[data.task == task]["session_id"].unique():
                     # reaction time
                     current_target = data[(data["session_id"] == session) & (data["task"] == task)]
                     if bool(sum(current_target["event_type"].isin(["task called"]))):
                         task_call = current_target[current_target["event_type"] == "task called"]
                         task_end = current_target[current_target["event_type"] == "nose poke"]
-                        reaction_time = task_end.timestamps - task_call.timestamps
+                        reaction_time = task_end.timestamps.iloc[0] - task_call.timestamps.iloc[0]
                         # 連続無報酬期間
                         previous_reward = data[
-                            (data["event_type"] == "reward") & (data["timestamps"] < task_call["timestamps"])].tail(1)
-                        norewarded_time = task_call.timestamps - previous_reward.timestamps
-                        correct_incorrect = "correct" if current_target["event_type"].isin(["reward"]) else "incorrect"
+                            (data["event_type"] == "reward") & (
+                                    data["timestamps"] < task_call["timestamps"].iloc[0])].tail(1)
+                        norewarded_time = task_call.timestamps.iloc[0] - previous_reward.timestamps.iloc[0]
+                        correct_incorrect = "correct" if bool(
+                            sum(current_target["event_type"].isin(["reward"]))) else "incorrect"
                         # df 追加
-                        delta_df.append(pd.DataFrame(
+                        delta_df = delta_df.append(
                             {'type': 'reaction_time', 'continuous_noreward_period': norewarded_time,
-                             'reaction_time': reaction_time, 'correct_incorrect': correct_incorrect}))
+                             'reaction_time': reaction_time, 'correct_incorrect': correct_incorrect},
+                            ignore_index=True)
                     # reward latency
                     if bool(sum(current_target["event_type"].isin(["task reward"]))) and bool(
                             sum(current_target["event_type"].isin(["task called"]))):
                         nose_poke = current_target[current_target["event_type"] == "nose poke"]
                         reward_latency = current_target[
-                                             current_target["event_type"] == "magazine nose poked"].timestamps - \
-                                         nose_poke.timestamps
+                                             current_target["event_type"] == "magazine nose poked"].timestamps.iloc[0] - \
+                                         nose_poke.timestamps.iloc[0]
                         previous_reward = data[
-                            (data["event_type"] == "reward") & (data["timestamps"] < nose_poke["timestamps"])].tail(1)
-                        norewarded_time = nose_poke.timestamps - previous_reward.timestamps
-                        delta_df.append(
-                            pd.DataFrame({'type': 'reward_latency', 'continuous_noreward_period': norewarded_time,
-                                          'reward_latency': reward_latency}))
-                # TODO Empty dataframe
+                            (data["event_type"] == "reward") & (
+                                    data["timestamps"] < nose_poke["timestamps"].iloc[0])].tail(1)
+                        norewarded_time = nose_poke.timestamps.iloc[0] - previous_reward.timestamps.iloc[0]
+                        delta_df = delta_df.append(
+                            {'type': 'reward_latency', 'continuous_noreward_period': norewarded_time,
+                             'reward_latency': reward_latency}, ignore_index=True)
                 deltas[task] = delta_df
             return deltas
 
@@ -346,11 +367,21 @@ class task_data:
         count_task()
         return self.data, probability, task_prob, self.delta
 
-    def export_csv(self, mouse_no):
+    def dev_read_data(self, mouse_no):
+        self.data = pd.read_csv('{}data/no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, "all"))
+        probability = pd.read_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, "all"))
+        task_prob = {}
         for task in self.tasks:
-            self.mice_task[mouse_no].to_csv('{}data/no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, task))
-            self.probability[mouse_no].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
+            self.delta = pd.read_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
+            task_prob[task] = pd.read_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
+        return self.data, probability, task_prob, self.delta
+
+    def export_csv(self, mouse_no):
+        self.mice_task[mouse_no].to_csv('{}data/no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, "all"))
+        self.probability[mouse_no].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, "all"))
+        for task in self.tasks:
             self.mice_delta[mouse_no][task].to_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
+            self.task_prob[mouse_no][task].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
 
 
 # TODO Burst raster plot
@@ -392,10 +423,8 @@ if __name__ == "__main__":
     # graph_ins.nose_poke_raster()
     graph_ins.same_plot()
     graph_ins.omission_plot()
-    graph_ins.ent_raster_cumsum()
+    # graph_ins.ent_raster_cumsum()
 
     # TODO 複数マウスで同一figureにplotしてしまっているので、別figureをそれぞれ立ち上げて描画・保存
 
     print('hoge')
-
-    # TODO ウィンドウが消えてしまう
