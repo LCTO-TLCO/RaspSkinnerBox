@@ -41,6 +41,8 @@ class task_data:
             line_no = 0
             print("max_id_col:{}".format(len(id_col)))
             session_id = 0
+            # TODO reward, failureのあとのtime overが同じsession_idを持っている?(ことがある?)
+            # TODO この部分の処理が重い (while文内のどこか)
             while line_no < len(id_col) - 1:
                 tmp = id_col[line_no:][id_col["event_type"].isin(["reward", "failure", "time over"])][
                     "session_id"].head(1)
@@ -345,22 +347,22 @@ class task_data:
 # TODO 散布図,csv出力 連続無報酬期間 vs reaction time (タスクコールからnose pokeまでの時間 正誤両方)
 # TODO 散布図,csv出力 連続無報酬期間 vs reward latency  (正解nose pokeからmagazine nose pokeまでの時間 正解のみ)
 
-# TODO 1111(正正正正) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, fig4={P()}
+# TODO 1111*(正正正正) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, fig4={P()}
 # TODO 1110
 # TODO 1101
-# TODO 1100
+# TODO 1100*
 # TODO 1011
-# TODO 1010
+# TODO 1010*
 # TODO 1001
-# TODO 1000
-# TODO 0111
+# TODO 1000*
+# TODO 0111*
 # TODO 0110
-# TODO 0101
+# TODO 0101*
 # TODO 0100
 # TODO 0011
 # TODO 0010
-# TODO 0001
-# TODO 0000(誤誤誤誤), 4bit固定ではなくn bit対応で構築(念のため過去の履歴がどこまで効くのか見たいので10bitとかでグラフは保存)
+# TODO 0001*
+# TODO 0000*(誤誤誤誤), 4bit固定ではなくn bit対応で構築(念のため過去の履歴がどこまで効くのか見たいので10bitとかでグラフは保存), *はグラフ表示
 # TODO 個体毎と全個体 (n数が不足すると思われるため全個体分も必要)
 
 # TODO 散布図,csv出力 連続無報酬期間 vs 区間Entropy (検討中)
@@ -386,4 +388,4 @@ if __name__ == "__main__":
 
     print('hoge')
 
-    # TODO ウィンドウ消えないで
+    # TODO ウィンドウが消えてしまう
