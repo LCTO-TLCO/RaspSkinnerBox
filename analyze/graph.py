@@ -151,6 +151,5 @@ class graph:
                 fig.add_subplot(1, 1, 1).scatter(pd.to_timedelta(data.continuous_noreward_period),
                                                  pd.to_timedelta(data.reward_latency))
                 plt.title('{:03} reward_latency {}'.format(mouse_id, task))
-                plt.legend()
                 plt.savefig('fig/{}no{:03d}_{}_reward_latency.png'.format(self.exportpath, mouse_id, task))
             plt.show(block=True)
