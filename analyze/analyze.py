@@ -422,7 +422,8 @@ if __name__ == "__main__":
     # graph_ins.same_plot()
     # graph_ins.omission_plot()
     # graph_ins.ent_raster_cumsum()
-    graph_ins.reward_latency_scatter()
+    # graph_ins.reward_latency_scatter()
+    graph_ins.reaction_scatter()
 
     # TODO 複数マウスで同一figureにplotしてしまっているので、別figureをそれぞれ立ち上げて描画・保存
 

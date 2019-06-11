@@ -126,18 +126,22 @@ class graph:
             plt.savefig('fig/{}no{:03d}_reaction_time.png'.format(self.exportpath, mouse_id))
 
     def reaction_scatter(self):
-        fig = plt.figure(figsize=(15, 8), dpi=100)
         for mouse_id in self.mice:
-            data = self.data.time_delta_data[self.data.time_delta_data[mouse_id].type == "reaction_time"]
-            fig.add_subplot(1, 1, 1).scatter(
-                data[mouse_id][data["correct_incorrect"] == "correct"].continuous_noreward_period,
-                data.reaction_time)
-            fig.add_subplot(1, 1, 1).scatter(
-                data[mouse_id][data["correct_incorrect"] == "incorrect"].continuous_noreward_period,
-                data.reaction_time)
-            plt.title('{:03} reaction_time'.format(mouse_id))
+            for task in self.tasks:
+                fig = plt.figure(figsize=(15, 8), dpi=100)
+                data = self.data.mice_delta[mouse_id][task][
+                    self.data.mice_delta[mouse_id][task].type == "reaction_time"]
+                fig.add_subplot(1, 1, 1).scatter(
+                    pd.to_timedelta(data[data["correct_incorrect"] == "correct"].continuous_noreward_period),
+                    pd.to_timedelta(data[data["correct_incorrect"] == "correct"].reaction_time))
+                fig.add_subplot(1, 1, 1).scatter(
+                    pd.to_timedelta(
+                        data[data["correct_incorrect"] == "incorrect"].continuous_noreward_period),
+                    pd.to_timedelta(data[data["correct_incorrect"] == "incorrect"].reaction_time))
+                plt.title('{:03} reaction_time {}'.format(mouse_id, task))
+                plt.legend()
+                plt.savefig('fig/{}no{:03d}_reaction_time.png'.format(self.exportpath, mouse_id))
             plt.show(block=True)
-            plt.savefig('fig/{}no{:03d}_reaction_time.png'.format(self.exportpath, mouse_id))
 
     def reward_latency_scatter(self):
         for mouse_id in self.mice:
@@ -148,5 +152,6 @@ class graph:
                 fig.add_subplot(1, 1, 1).scatter(pd.to_timedelta(data.continuous_noreward_period),
                                                  pd.to_timedelta(data.reward_latency))
                 plt.title('{:03} reward_latency {}'.format(mouse_id, task))
-                plt.show(block=True)
+                plt.legend()
                 plt.savefig('fig/{}no{:03d}_{}_reward_latency.png'.format(self.exportpath, mouse_id, task))
+            plt.show(block=True)
