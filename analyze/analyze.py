@@ -2,10 +2,10 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import pyper
 import datetime
 import math, string, sys, fileinput
 from scipy.stats import entropy
+from graph import graph
 
 
 # from pandas.core.window import Rolling
@@ -15,16 +15,18 @@ class task_data:
         self.data_file = ""
         self.data = None
         self.data_ci = None
+        self.delta = None
         self.mouse_no = mice
         self.tasks = tasks
         self.probability = {}
         self.mice_task = {}
         self.task_prob = {}
+        self.mice_delta = {}
         self.logpath = logpath
         print('reading data...', end='')
         for mouse_id in self.mouse_no:
-            self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
-            self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id] = \
+            self.data_file = "./{}no{:03d}_action.csv".format(self.logpath, mouse_id)
+            self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[mouse_id] = \
                 self.read_data()
             self.export_csv(mouse_id)
         print('done')
@@ -166,7 +168,7 @@ class task_data:
         def add_timedelta():
             data = pd.read_csv(self.data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
             delta_df = pd.DataFrame(
-                columns=["type", "continuous_noreward_period", "reaction_time", "reward_latency", "entropy"])
+                columns=["type", "continuous_noreward_period", "reaction_time", "reward_latency"])
             for task in self.tasks:
                 for session in data[data.task == task]["session_id"].unique():
                     # reaction time
@@ -196,12 +198,11 @@ class task_data:
                         delta_df.append(
                             pd.DataFrame({'type': 'reward_latency', 'continuous_noreward_period': norewarded_time,
                                           'reward_latency': reward_latency}))
-                    # entropy
-            add_timedelta()
+            return delta_df
 
         self.data = rehash_session_id()
         self.data = add_hot_vector()
-        # add_timedelta()
+        self.delta = add_timedelta()
 
         # action Probability
         after_c_all = float(len(self.data[self.data["is_correct"] == 1]))
@@ -232,7 +233,8 @@ class task_data:
                 is_continued = True
                 for j in range(1, min(forward_trace, len(self.data) - idx)):
                     # 報酬を得たときと同じ選択(CF両方)をしたときの処理
-                    if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][idx] and is_continued: # TODO omissionを除いてカウントしたい
+                    if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][
+                        idx] and is_continued:  # TODO omissionを除いてカウントしたい
                         probability["c_same"][j] = probability["c_same"][j] + 1
                     # omissionの場合
                     elif self.data.shift(-j)["is_omission"][idx]:
@@ -248,7 +250,8 @@ class task_data:
                 is_continued = True
                 for j in range(1, min(forward_trace, len(self.data) - idx)):
                     # 連続で失敗しているときの処理
-                    if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][idx] and is_continued:  # TODO omissionを除いてカウントしたい
+                    if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][
+                        idx] and is_continued:  # TODO omissionを除いてカウントしたい
                         probability["f_same"][j] = probability["f_same"][j] + 1
                     elif self.data.shift(-j)["is_omission"][idx] and is_continued:
                         probability["f_omit"][j] = probability["f_omit"][j] + 1
@@ -280,7 +283,8 @@ class task_data:
                     is_continued = True
                     for j in range(1, min(forward_trace, len(self.data) - idx)):
                         # 報酬を得たときと同じ選択(CF両方)をしたときの処理
-                        if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][idx] and is_continued: # TODO omissionを除いてカウントしたい
+                        if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][
+                            idx] and is_continued:  # TODO omissionを除いてカウントしたい
                             prob["c_same"][j] = prob["c_same"][j] + 1
                         # omissionの場合
                         elif self.data.shift(-j)["is_omission"][idx]:
@@ -296,7 +300,8 @@ class task_data:
                     is_continued = True
                     for j in range(1, min(forward_trace, len(self.data) - idx)):
                         # 連続で失敗しているときの処理
-                        if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][idx] and is_continued:  # TODO omissionを除いてカウントしたい
+                        if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][
+                            idx] and is_continued:  # TODO omissionを除いてカウントしたい
                             prob["f_same"][j] = prob["f_same"][j] + 1
                         elif self.data.shift(-j)["is_omission"][idx] and is_continued:
                             prob["f_omit"][j] = prob["f_omit"][j] + 1
@@ -308,11 +313,13 @@ class task_data:
                         else:
                             is_continued = False
                 # calculate
-                prob["c_same"] = prob["c_same"] / after_c_all_task[task] if not after_c_all_task[task] == 0 else 0.0 # TODO omissionを除いてカウントしたい ので母数を修正
+                prob["c_same"] = prob["c_same"] / after_c_all_task[task] if not after_c_all_task[
+                                                                                    task] == 0 else 0.0  # TODO omissionを除いてカウントしたい ので母数を修正
                 prob["c_diff"] = prob["c_diff"] / after_c_all_task[task] if not after_c_all_task[task] == 0 else 0.0
                 prob["c_omit"] = prob["c_omit"] / after_c_all_task[task] if not after_c_all_task[task] == 0 else 0.0
                 prob["c_checksum"] = prob["c_same"] + prob["c_diff"] + prob["c_omit"]
-                prob["f_same"] = prob["f_same"] / after_f_all_task[task] if not after_f_all_task[task] == 0 else 0.0 # TODO omissionを除いてカウントしたい ので母数を修正
+                prob["f_same"] = prob["f_same"] / after_f_all_task[task] if not after_f_all_task[
+                                                                                    task] == 0 else 0.0  # TODO omissionを除いてカウントしたい ので母数を修正
                 prob["f_diff"] = prob["f_diff"] / after_f_all_task[task] if not after_f_all_task[task] == 0 else 0.0
                 prob["f_omit"] = prob["f_omit"] / after_f_all_task[task] if not after_f_all_task[task] == 0 else 0.0
                 prob["f_checksum"] = prob["f_same"] + prob["f_diff"] + prob["f_omit"]
@@ -325,12 +332,13 @@ class task_data:
 
         count_all()
         count_task()
-        return self.data, probability, task_prob
+        return self.data, probability, task_prob, self.delta
 
     def export_csv(self, mouse_no):
         for task in self.tasks:
-            self.mice_task[mouse_no].to_csv('{}no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, task))
-            self.probability[mouse_no].to_csv('{}no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
+            self.mice_task[mouse_no].to_csv('{}data/no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, task))
+            self.probability[mouse_no].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
+            self.mice_delta[mouse_no].to_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
 
 
 # TODO Burst raster plot
@@ -358,115 +366,11 @@ class task_data:
 # TODO 散布図,csv出力 連続無報酬期間 vs 区間Entropy (検討中)
 # TODO 探索行動の短期指標を定義(Exploration Index 1, EI1) : 検討中
 
-class graph:
-    def __init__(self, task_datas, mice, tasks, exportpath):
-        plt.style.use("ggplot")
-        font = {'family': 'meiryo'}
-        mpl.rc('font', **font)
-        self.data = task_datas
-        self.mice = mice
-        self.tasks = tasks
-        self.exportpath = exportpath
-
-    # data plot
-    # TODO これは全nose pokeなので、burstは別に用意する
-    def nose_poke_raster(self, mouse_id, ax):
-        colors = ["blue", "red", "black"]
-        labels = ["correct", "incorrect", "omission"]
-        # flags = data.loc[:, data.colums.str.match("is_[(omission|correct|incorrect)")]
-        datasets = [(self.data.mice_task[mouse_id][self.data.mice_task[mouse_id]
-                                                   ["is_{}".format(flag)] == 1]) for flag in labels]
-        for dt, la, cl in zip(datasets, labels, colors):
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole1'] * 1, s=15, color=cl)
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole3'] * 2, s=15, color=cl)
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole5'] * 3, s=15, color=cl)
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole7'] * 4, s=15, color=cl)
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_hole9'] * 5, s=15, color=cl)
-            ax.scatter(dt['session_id']-dt['session_id'].min(), dt['is_omission'] * 0, s=15, color=cl) # TODO omissionだけsession_idが重複している?
-        ax.set_ylabel("Hole")
-        plt.xlim(0, dt['session_id'].max()-dt['session_id'].min())
-
-    def CFO_cumsum_plot(self, mouse_id, ax):
-        ax.plot(self.data.mice_task[mouse_id]['cumsum_correct_taskreset'])
-        ax.plot(self.data.mice_task[mouse_id]['cumsum_incorrect_taskreset'])
-        ax.plot(self.data.mice_task[mouse_id]['cumsum_omission_taskreset'])
-        plt.xlim(0, len(self.data.mice_task[mouse_id]))
-        plt.ylabel('Cumulative')
-
-    def entropy_scatter(self, mouse_id, ax):
-        ax.plot(self.data.mice_task[mouse_id]['hole_choice_entropy'])
-        plt.ylabel('Entropy (bit)')
-        plt.xlim(0, len(self.data.mice_task[mouse_id]))
-
-    def ent_raster_cumsum(self):
-        fig = plt.figure(figsize=(15, 8), dpi=100)
-        for mouse_id in self.mice:
-            self.entropy_scatter(mouse_id, fig.add_subplot(3, 1, 1))
-            plt.title('{:03} summary'.format(mouse_id))
-            self.nose_poke_raster(mouse_id, fig.add_subplot(3, 1, 2))
-            self.CFO_cumsum_plot(mouse_id, fig.add_subplot(3, 1, 3))
-            plt.xlabel('Trial')
-            plt.show()
-            plt.savefig('{}no{:03d}_summary.png'.format(self.exportpath, mouse_id))
-
-    def omission_plot(self):
-        fig = plt.figure(figsize=(15, 8), dpi=100)
-        for mouse_id in self.mice:
-            for task in self.tasks:
-                # P(same) plot
-                xlen = len(self.data.task_prob[mouse_id][task]["c_omit"])
-                plt.subplot(1, len(self.tasks), self.tasks.index(task) + 1)
-                plt.plot(self.data.task_prob[mouse_id][task]["f_omit"], label="incorrect")
-                plt.plot(self.data.task_prob[mouse_id][task]["c_omit"], label="correct")
-                plt.ion()
-                plt.xticks(np.arange(1, xlen + 1, 1))
-                plt.xlim(0.5, xlen + 0.5)
-                plt.ylim(0, 1)
-                if self.tasks.index(task) == 0:
-                    plt.ylabel('P (omission)')
-                    plt.legend()
-                plt.xlabel('Trial')
-                plt.title('{:03} {}'.format(mouse_id, task))
-            plt.show()
-
-            plt.savefig('{}no{:03d}_omit.png'.format(self.exportpath, mouse_id))
-
-    def same_plot(self):
-        fig = plt.figure(figsize=(15, 8), dpi=100)
-        for mouse_id in self.mice:
-            for task in self.tasks:
-                # P(same) plot
-                xlen = len(self.data.task_prob[mouse_id][task]["c_same"])
-                plt.subplot(1, len(self.tasks), self.tasks.index(task) + 1)
-                plt.plot(self.data.task_prob[mouse_id][task]["f_same"], label="incorrect")
-                plt.plot(self.data.task_prob[mouse_id][task]["c_same"], label="correct")
-                plt.ion()
-                plt.xticks(np.arange(1, xlen + 1, 1))
-                plt.xlim(0.5, xlen + 0.5)
-                plt.ylim(0, 1)
-                if self.tasks.index(task) == 0:
-                    plt.ylabel('P (same choice)')
-                    plt.legend()
-                plt.xlabel('Trial')
-                plt.title('{:03} {}'.format(mouse_id, task))
-            plt.show()
-
-            plt.savefig('{}no{:03d}_prob.png'.format(self.exportpath, mouse_id))
-
-    def burst_raster(self):
-        None
-
-    def reaction_scatter(self):
-        None
-
-    def reward_latency_scatter(self):
-        None
-
 
 if __name__ == "__main__":
     # mice = [6, 7, 8, 11, 12, 13, 17]
-#    mice = [17]
-    mice = [8]
+    #    mice = [17]
+    mice = [12]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
