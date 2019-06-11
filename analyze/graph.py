@@ -139,8 +139,7 @@ class graph:
                         data[data["correct_incorrect"] == "incorrect"].continuous_noreward_period),
                     pd.to_timedelta(data[data["correct_incorrect"] == "incorrect"].reaction_time))
                 plt.title('{:03} reaction_time {}'.format(mouse_id, task))
-                plt.legend()
-                plt.savefig('fig/{}no{:03d}_reaction_time.png'.format(self.exportpath, mouse_id))
+                plt.savefig('fig/{}no{:03d}_{}_reaction_time.png'.format(self.exportpath, mouse_id,task))
             plt.show(block=True)
 
     def reward_latency_scatter(self):
