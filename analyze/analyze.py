@@ -25,7 +25,7 @@ class task_data:
         self.logpath = logpath
         print('reading data...', end='')
         for mouse_id in self.mouse_no:
-            self.data_file = "./{}no{:03d}_action.csv".format(self.logpath, mouse_id)
+            self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
             self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[mouse_id] = \
                 self.read_data()
             self.export_csv(mouse_id)
@@ -41,16 +41,22 @@ class task_data:
             line_no = 0
             print("max_id_col:{}".format(len(id_col)))
             session_id = 0
+            end_col_no = -1
             # TODO reward, failureのあとのtime overが同じsession_idを持っている?(ことがある?)
             # TODO この部分の処理が重い (while文内のどこか)
             while line_no < len(id_col) - 1:
-                tmp = id_col[line_no:][id_col["event_type"].isin(["reward", "failure", "time over"])][
-                    "session_id"].head(1)
-                if len(tmp) == 0:
-                    end_col_no = len(id_col)
+                if id_col["task"].iloc[line_no] == "T0":
+                    id_col.iloc[line_no]["session_id"] = session_id
+                    line_no = line_no + 1
+                    session_id = session_id + 1
+                    continue
+                next_sessionstart_row = id_col[line_no + 1:][id_col["event_type"].isin(["start"])]["session_id"].head(1)
+                if len(next_sessionstart_row) == 0:
+                    end_col_no = -1
                 else:
-                    end_col_no = tmp.index[0]
-                id_col[line_no:end_col_no + 1]["session_id"] = session_id
+                    end_col_no = \
+                        next_sessionstart_row.index[0] - 1 + 1
+                id_col[line_no:end_col_no]["session_id"] = session_id
                 line_no = end_col_no + 1
                 session_id = session_id + 1
             data["session_id"] = id_col["session_id"]
@@ -148,15 +154,15 @@ class task_data:
                 return result
 
             # entropy
-            ent = [0] * 150
-            for i in range(0, len(data[data.event_type.str.contains('(reward|failure|time over)')]) - 150):
-                # TODO entropyの計算にomissionは入れない
-                denominator = 150.0  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
-                current_entropy = min_max(
-                    [data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
-                     [1, 3, 5, 7, 9]])
-                ent.append(entropy(current_entropy, base=2))
-            data["hole_choice_entropy"] = ent
+            # ent = [0] * 150
+            # for i in range(0, len(data[data.event_type.str.contains('(reward|failure|time over)')]) - 150):
+            #     # TODO entropyの計算にomissionは入れない
+            #     denominator = 150.0  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
+            #     current_entropy = min_max(
+            #         [data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
+            #          [1, 3, 5, 7, 9]])
+            #     ent.append(entropy(current_entropy, base=2))
+            # data["hole_choice_entropy"] = ent
 
             # burst
             # data["burst_group"] = 1
@@ -168,16 +174,17 @@ class task_data:
             return data
 
         def add_timedelta():
-            data = pd.read_csv(self.data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
-            delta_df = pd.DataFrame(
-                columns=["type", "continuous_noreward_period", "reaction_time", "reward_latency"])
+            data = self.data
+            deltas = {}
             for task in self.tasks:
+                delta_df = pd.DataFrame(
+                    columns=["type", "continuous_noreward_period", "reaction_time", "reward_latency"])
                 for session in data[data.task == task]["session_id"].unique():
                     # reaction time
                     current_target = data[(data["session_id"] == session) & (data["task"] == task)]
-                    if "task called" in current_target["event_type"]:
-                        task_call = current_target[current_target["event_target"] == "task called"]
-                        task_end = current_target[current_target["event_target"] == "nose poke"]
+                    if bool(sum(current_target["event_type"].isin(["task called"]))):
+                        task_call = current_target[current_target["event_type"] == "task called"]
+                        task_end = current_target[current_target["event_type"] == "nose poke"]
                         reaction_time = task_end.timestamps - task_call.timestamps
                         # 連続無報酬期間
                         previous_reward = data[
@@ -189,7 +196,8 @@ class task_data:
                             {'type': 'reaction_time', 'continuous_noreward_period': norewarded_time,
                              'reaction_time': reaction_time, 'correct_incorrect': correct_incorrect}))
                     # reward latency
-                    if "reward" in current_target["event_type"] and "task called" in current_target["event_type"]:
+                    if bool(sum(current_target["event_type"].isin(["task reward"]))) and bool(
+                            sum(current_target["event_type"].isin(["task called"]))):
                         nose_poke = current_target[current_target["event_type"] == "nose poke"]
                         reward_latency = current_target[
                                              current_target["event_type"] == "magazine nose poked"].timestamps - \
@@ -200,11 +208,13 @@ class task_data:
                         delta_df.append(
                             pd.DataFrame({'type': 'reward_latency', 'continuous_noreward_period': norewarded_time,
                                           'reward_latency': reward_latency}))
-            return delta_df
+                # TODO Empty dataframe
+                deltas[task] = delta_df
+            return deltas
 
         self.data = rehash_session_id()
-        self.data = add_hot_vector()
         self.delta = add_timedelta()
+        self.data = add_hot_vector()
 
         # action Probability
         after_c_all = float(len(self.data[self.data["is_correct"] == 1]))
@@ -340,7 +350,7 @@ class task_data:
         for task in self.tasks:
             self.mice_task[mouse_no].to_csv('{}data/no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, task))
             self.probability[mouse_no].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
-            self.mice_delta[mouse_no].to_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
+            self.mice_delta[mouse_no][task].to_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
 
 
 # TODO Burst raster plot
