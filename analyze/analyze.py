@@ -7,7 +7,7 @@ import math, string, sys, fileinput
 from scipy.stats import entropy
 from graph import graph
 
-debug = True
+debug = False
 
 
 class task_data:
@@ -382,31 +382,14 @@ class task_data:
             self.task_prob[mouse_no][task].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
 
 
-# TODO Burst raster plot
-# TODO 散布図,csv出力 連続無報酬期間 vs reaction time (タスクコールからnose pokeまでの時間 正誤両方)
-# TODO 散布図,csv出力 連続無報酬期間 vs reward latency  (正解nose pokeからmagazine nose pokeまでの時間 正解のみ)
+# TODO 1. csv出力 連続無報酬期間 vs reaction time (タスクコールからnose pokeまでの時間 正誤両方)
+# TODO 2. csv出力 連続無報酬期間 vs reward latency  (正解nose pokeからmagazine nose pokeまでの時間 正解のみ)
+# TODO 3. 1111(正正正正)～0000(誤誤誤誤) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, 4bit固定ではなくn bit対応で構築
+# TODO 4. 散布図,csv出力 連続無報酬期間 vs 区間Entropy(10 step分) タスク毎
+# TODO 5. 横軸:時間（1時間単位） vs 縦軸:区間entropy(単位時間内), correct/incorrect/omission
+# TODO 6. Burst raster plot
 
-# TODO 1111*(正正正正) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, fig4={P()}
-# TODO 1110
-# TODO 1101
-# TODO 1100*
-# TODO 1011
-# TODO 1010*
-# TODO 1001
-# TODO 1000*
-# TODO 0111*
-# TODO 0110
-# TODO 0101*
-# TODO 0100
-# TODO 0011
-# TODO 0010
-# TODO 0001*
-# TODO 0000*(誤誤誤誤), 4bit固定ではなくn bit対応で構築(念のため過去の履歴がどこまで効くのか見たいので10bitとかでグラフは保存), *はグラフ表示
 # TODO 個体毎と全個体 (n数が不足すると思われるため全個体分も必要)
-
-# TODO 散布図,csv出力 連続無報酬期間 vs 区間Entropy (検討中)
-# TODO 探索行動の短期指標を定義(Exploration Index 1, EI1) : 検討中
-
 
 if __name__ == "__main__":
     # mice = [6, 7, 8, 11, 12, 13, 17]
