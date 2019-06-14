@@ -7,7 +7,7 @@ import math, string, sys, fileinput
 from scipy.stats import entropy
 from graph import graph
 
-debug = False
+debug = True
 
 
 class task_data:
@@ -166,15 +166,15 @@ class task_data:
                 return result
 
             # entropy
-            # ent = [0] * 150
-            # for i in range(0, len(data[data.event_type.str.contains('(reward|failure|time over)')]) - 150):
-            #     # TODO entropyの計算にomissionは入れない
-            #     denominator = 150.0  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
-            #     current_entropy = min_max(
-            #         [data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
-            #          [1, 3, 5, 7, 9]])
-            #     ent.append(entropy(current_entropy, base=2))
-            # data["hole_choice_entropy"] = ent
+            ent = [0] * 150
+            for i in range(0, len(data[data.event_type.str.contains('(reward|failure|time over)')]) - 150):
+                # TODO entropyの計算にomissionは入れない
+                denominator = 150.0  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
+                current_entropy = min_max(
+                    [data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
+                     [1, 3, 5, 7, 9]])
+                ent.append(entropy(current_entropy, base=2))
+            data["hole_choice_entropy"] = ent
 
             # burst
             # data["burst_group"] = 1

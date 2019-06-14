@@ -126,20 +126,35 @@ class graph:
             plt.savefig('fig/{}no{:03d}_reaction_time.png'.format(self.exportpath, mouse_id))
 
     def reaction_scatter(self):
+        fig = {}
         for mouse_id in self.mice:
+            fig[mouse_id] = {}
             for task in self.tasks:
-                fig = plt.figure(figsize=(15, 8), dpi=100)
+                fig[mouse_id][task] = plt.figure(figsize=(15, 8), dpi=100)
                 data = self.data.mice_delta[mouse_id][task][
                     self.data.mice_delta[mouse_id][task].type == "reaction_time"]
-                fig.add_subplot(1, 1, 1).scatter(
-                    pd.to_timedelta(data[data["correct_incorrect"] == "correct"].continuous_noreward_period).values / 1000000000,
-                    pd.to_timedelta(data[data["correct_incorrect"] == "correct"].reaction_time).values / 1000000000)
-                fig.add_subplot(1, 1, 1).scatter(
+                ax = fig[mouse_id][task].add_subplot(1, 1, 1)
+                ax.scatter(
                     pd.to_timedelta(
-                        data[data["correct_incorrect"] == "incorrect"].continuous_noreward_period).values / 1000000000,
-                    pd.to_timedelta(data[data["correct_incorrect"] == "incorrect"].reaction_time).values / 1000000000)
+                        data[
+                            data["correct_incorrect"] == "correct"].continuous_noreward_period).values / np.timedelta64(
+                        1, 's'),
+                    pd.to_timedelta(data[data["correct_incorrect"] == "correct"].reaction_time).values / np.timedelta64(
+                        1, 's'),
+                    label="correct")
+                ax.scatter(
+                    pd.to_timedelta(
+                        data[data[
+                                 "correct_incorrect"] == "incorrect"].continuous_noreward_period).values / np.timedelta64(
+                        1, 's'),
+                    pd.to_timedelta(
+                        data[data["correct_incorrect"] == "incorrect"].reaction_time).values / np.timedelta64(1, 's'),
+                    label="incorrect")
                 plt.title('{:03} reaction_time {}'.format(mouse_id, task))
-                plt.savefig('fig/{}no{:03d}_{}_reaction_time.png'.format(self.exportpath, mouse_id,task))
+                ax.set_xlabel("no-rewarded time(s)")
+                ax.set_ylabel("reaction time(s)")
+                ax.legend(bbox_to_anchor=(1.01, 1), loc='upper left')
+                plt.savefig('fig/{}no{:03d}_{}_reaction_time.png'.format(self.exportpath, mouse_id, task))
             plt.show(block=True)
 
     def reward_latency_scatter(self):
@@ -148,8 +163,13 @@ class graph:
                 fig = plt.figure(figsize=(15, 8), dpi=100)
                 data = self.data.mice_delta[mouse_id][task][
                     self.data.mice_delta[mouse_id][task].type == "reward_latency"]
-                fig.add_subplot(1, 1, 1).scatter(pd.to_timedelta(data.continuous_noreward_period).values / 1000000000,
-                                                 pd.to_timedelta(data.reward_latency).values / 1000000000) # TODO 秒未満の情報が欠けてしまっている?
+                ax = fig.add_subplot(1, 1, 1)
+                ax.scatter(pd.to_timedelta(data.continuous_noreward_period).values / np.timedelta64(1, 's'),
+                           pd.to_timedelta(data.reward_latency).values / np.timedelta64(1, 's'))
+                # TODO 秒未満の情報が欠けてしまっている?
                 plt.title('{:03} reward_latency {}'.format(mouse_id, task))
+                ax.set_xlabel("no-rewarded time(s)")
+                ax.set_ylabel("reward latency(s)")
+                ax.legend(bbox_to_anchor=(1.01, 1), loc='upper left')
                 plt.savefig('fig/{}no{:03d}_{}_reward_latency.png'.format(self.exportpath, mouse_id, task))
             plt.show(block=True)
