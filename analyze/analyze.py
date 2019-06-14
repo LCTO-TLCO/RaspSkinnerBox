@@ -1,13 +1,10 @@
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import datetime
-import math, string, sys, fileinput
+import math
 from scipy.stats import entropy
 from graph import graph
 
-debug = True
+debug = False
 
 
 class task_data:
@@ -24,6 +21,7 @@ class task_data:
         self.task_prob = {}
         self.mice_delta = {}
         self.logpath = logpath
+        self.session_id = 0
         print('reading data...', end='')
         if debug:
             for mouse_id in self.mouse_no:
@@ -44,34 +42,25 @@ class task_data:
 
         def rehash_session_id():
             data = pd.read_csv(self.data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
-            id_col = data.filter(items=["session_id", "task", "event_type"])
-            line_no = 0
-            print("max_id_col:{}".format(len(id_col)))
+            print("max_id_col:{}".format(len(data)))
             session_id = 0
-            end_col_no = -1
+
             # TODO reward, failureのあとのtime overが同じsession_idを持っている?(ことがある?)
             # TODO この部分の処理が重い (while文内のどこか)
-            while line_no < len(id_col) - 1:
-                if id_col["task"].iloc[line_no] == "T0":
-                    if id_col["event_type"].iloc[line_no] == "start":
-                        id_col.session_id.iloc[line_no] = session_id
-                        line_no = line_no + 1
-                    id_col.iloc[line_no]["session_id"] = session_id
-                    line_no = line_no + 1
-                    session_id = session_id + 1
-                    continue
-                next_sessionstart_row = id_col[line_no + 1:][id_col["event_type"].isin(["start"])]["session_id"].head(1)
-                if len(next_sessionstart_row) == 0:
-                    end_col_no = -1
+            def rehash(x_index):
+                if data.at[data.index[x_index], "task"] == "T0":
+                    if data.at[data.index[x_index], "event_type"] == "start" or data.shift(1).at[
+                        data.index[x_index], "event_type"] == "start":
+                        return 0
+                    self.session_id = self.session_id + 1
+                    return self.session_id
+                if data.at[data.index[x_index], "event_type"] == "start":
+                    self.session_id = self.session_id + 1
+                    return self.session_id
                 else:
-                    end_col_no = \
-                        next_sessionstart_row.index[0] - 1 + 1
-                id_col[line_no:end_col_no]["session_id"] = session_id
-                line_no = end_col_no if not end_col_no == 0 else len(id_col)
-                if end_col_no == -1:
-                    id_col[end_col_no] = session_id
-                session_id = session_id + 1
-            data["session_id"] = id_col["session_id"]
+                    return self.session_id
+
+            data["session_id"] = list(map(rehash, data.index))
             print("rehash done")
             return data
 
@@ -231,6 +220,7 @@ class task_data:
             return deltas
 
         self.data = rehash_session_id()
+        self.data_ci = self.data
         self.delta = add_timedelta()
         self.data = add_hot_vector()
 

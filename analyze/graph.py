@@ -166,7 +166,6 @@ class graph:
                 ax = fig.add_subplot(1, 1, 1)
                 ax.scatter(pd.to_timedelta(data.continuous_noreward_period).values / np.timedelta64(1, 's'),
                            pd.to_timedelta(data.reward_latency).values / np.timedelta64(1, 's'))
-                # TODO 秒未満の情報が欠けてしまっている?
                 plt.title('{:03} reward_latency {}'.format(mouse_id, task))
                 ax.set_xlabel("no-rewarded time(s)")
                 ax.set_ylabel("reward latency(s)")
