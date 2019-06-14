@@ -1,3 +1,4 @@
+from datetime import datetime
 import pandas as pd
 import numpy as np
 import math
@@ -61,7 +62,7 @@ class task_data:
                     return self.session_id
 
             data["session_id"] = list(map(rehash, data.index))
-            print("rehash done")
+            print("{} ; rehash done".format(datetime.now()))
             return data
 
         def add_hot_vector():
@@ -172,8 +173,10 @@ class task_data:
             #         data["burst_group"][i] = data["burst_group"][i - 1]
             #         continue
             #     data["burst_group"][i] = data["burst_group"][i - 1] + 1
+            print("{} ; hot vector added".format(datetime.now()))
             return data
 
+        # TODO この関数が処理速度重い
         def add_timedelta():
             data = self.data
             data = data[data.session_id.isin(
@@ -189,12 +192,14 @@ class task_data:
                     if bool(sum(current_target["event_type"].isin(["task called"]))):
                         task_call = current_target[current_target["event_type"] == "task called"]
                         task_end = current_target[current_target["event_type"] == "nose poke"]
-                        reaction_time = task_end.timestamps.iloc[0] - task_call.timestamps.iloc[0]
+                        reaction_time = task_end.at[task_end.index[0], "timestamps"] - task_call.at[
+                            task_call.index[0], "timestamps"]
                         # 連続無報酬期間
                         previous_reward = data[
                             (data["event_type"] == "reward") & (
-                                    data["timestamps"] < task_call["timestamps"].iloc[0])].tail(1)
-                        norewarded_time = task_call.timestamps.iloc[0] - previous_reward.timestamps.iloc[0]
+                                    data["timestamps"] < task_call.at[task_call.index[0], "timestamps"])].tail(1)
+                        norewarded_time = task_call.at[task_call.index[0], "timestamps"] - previous_reward.at[
+                            previous_reward.index[0], "timestamps"]
                         correct_incorrect = "correct" if bool(
                             sum(current_target["event_type"].isin(["reward"]))) else "incorrect"
                         # df 追加
@@ -206,17 +211,19 @@ class task_data:
                     if bool(sum(current_target["event_type"].isin(["reward"]))) and bool(
                             sum(current_target["event_type"].isin(["task called"]))):
                         nose_poke = current_target[current_target["event_type"] == "nose poke"]
-                        reward_latency = current_target[
-                                             current_target["event_type"] == "magazine nose poked"].timestamps.iloc[0] - \
-                                         nose_poke.timestamps.iloc[0]
+                        reward_latency = current_target[current_target["event_type"] == "magazine nose poked"]
+                        reward_latency = reward_latency.at[reward_latency.index[0], "timestamps"] - \
+                                         nose_poke.at[nose_poke.index[0], "timestamps"]
                         previous_reward = data[
                             (data["event_type"] == "reward") & (
-                                    data["timestamps"] < nose_poke["timestamps"].iloc[0])].tail(1)
-                        norewarded_time = nose_poke.timestamps.iloc[0] - previous_reward.timestamps.iloc[0]
+                                    data["timestamps"] < nose_poke.at[nose_poke.index[0], "timestamps"])].tail(1)
+                        norewarded_time = nose_poke.at[nose_poke.index[0], "timestamps"] - previous_reward.at[
+                            previous_reward.index[0], "timestamps"]
                         delta_df = delta_df.append(
                             {'type': 'reward_latency', 'continuous_noreward_period': norewarded_time,
                              'reward_latency': reward_latency}, ignore_index=True)
                 deltas[task] = delta_df
+            print("{} ; time delta added".format(datetime.now()))
             return deltas
 
         self.data = rehash_session_id()
@@ -350,8 +357,36 @@ class task_data:
                 # append
                 task_prob[task] = prob
 
+        # TODO
+        def analyze_pattern(bit=4):
+            pattern = {}
+            pattern_range = range(0, pow(2, bit))
+            for task in self.tasks:
+                pattern[task] = {}
+                prob = pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range],
+                                    index=range(1, forward_trace)).fillna(0.0)
+                data = self.data
+                # search pattern
+                for single_pattern in pattern_range:
+                    f_pattern_matching = lambda x: min(
+                        [np.isnan(data.shift(bit - i).at[data.shift(bit - i).index[x], "is_correct"]) == bool(
+                            math.floor(single_pattern / pow(2, i - 1)) % 2) for i in range(0, bit + 1)])
+                    pattern[task].update({single_pattern: data[map(f_pattern_matching, data.index[:-3])]})
+                # count
+                f_same_base = lambda x, idx: data.at[data.index[x.index], "hole_no"] == data.shift(-idx).at[
+                    data.index[x.index], "hole_no"]
+                f_same_prev = lambda x, idx: data.shift(-idx + 1).at[data.index[x.index], "hole_no"] == \
+                                             data.shift(-idx).at[data.index[x.index], "hole_no"]
+                f_omit = lambda x, idx: bool(self.data_ci.iloc[x.index + idx].is_ommition)
+                for pat_tmp in pattern.keys():
+                    same_base = [pattern[task][pat_tmp].map(f_same_base, idx) for idx in range(1, bit)]
+                    same_prev = [pattern[task][pat_tmp].map(f_same_prev, idx) for idx in range(1, bit)]
+                    omit = [pattern[task][pat_tmp].map(f_omit, idx) for idx in range(1, bit)]
+                    # TODO append
+
         count_all()
         count_task()
+        analyze_pattern()
         return self.data, probability, task_prob, self.delta
 
     def dev_read_data(self, mouse_no):
