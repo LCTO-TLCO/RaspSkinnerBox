@@ -371,6 +371,7 @@ class task_data:
                     f_pattern_matching = lambda x: min(
                         [np.isnan(data.shift(bit - i).at[data.shift(bit - i).index[x], "is_correct"]) == bool(
                             math.floor(single_pattern / pow(2, i - 1)) % 2) for i in range(0, bit + 1)])
+                    # TODO Empty Dataframe
                     pattern[task].update({single_pattern: data[map(f_pattern_matching, data.index[:-3])]})
                 # count
                 f_same_base = lambda x, idx: data.at[data.index[x.index], "hole_no"] == data.shift(-idx).at[
