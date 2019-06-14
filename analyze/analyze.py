@@ -387,7 +387,7 @@ class task_data:
 
         count_all()
         count_task()
-        analyze_pattern()
+        # analyze_pattern()
         return self.data, probability, task_prob, self.delta
 
     def dev_read_data(self, mouse_no):
