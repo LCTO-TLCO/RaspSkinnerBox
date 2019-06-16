@@ -135,27 +135,42 @@ class graph:
                     self.data.mice_delta[mouse_id][task].type == "reaction_time"]
                 ax = fig[mouse_id][task].add_subplot(1, 1, 1)
                 ax.scatter(
-                    pd.to_timedelta(
-                        data[
-                            data["correct_incorrect"] == "correct"].continuous_noreward_period).values / np.timedelta64(
-                        1, 's'),
-                    pd.to_timedelta(data[data["correct_incorrect"] == "correct"].reaction_time).values / np.timedelta64(
-                        1, 's'),
-                    label="correct")
+                        data[data["correct_incorrect"] == "correct"].noreward_duration_sec,
+                        data[data["correct_incorrect"] == "correct"].reaction_time_sec,
+                        label="correct")
                 ax.scatter(
-                    pd.to_timedelta(
-                        data[data[
-                                 "correct_incorrect"] == "incorrect"].continuous_noreward_period).values / np.timedelta64(
-                        1, 's'),
-                    pd.to_timedelta(
-                        data[data["correct_incorrect"] == "incorrect"].reaction_time).values / np.timedelta64(1, 's'),
-                    label="incorrect")
+                        data[data["correct_incorrect"] == "incorrect"].noreward_duration_sec,
+                        data[data["correct_incorrect"] == "incorrect"].reaction_time_sec,
+                        label="incorrect")
                 plt.title('{:03} reaction_time {}'.format(mouse_id, task))
-                ax.set_xlabel("no-rewarded time(s)")
-                ax.set_ylabel("reaction time(s)")
+                ax.set_xlabel("No reward duration (s)")
+                ax.set_ylabel("Reaction time (s)")
                 ax.legend(bbox_to_anchor=(1.01, 1), loc='upper left')
                 plt.savefig('fig/{}no{:03d}_{}_reaction_time.png'.format(self.exportpath, mouse_id, task))
-            plt.show(block=True)
+        plt.show(block=True)
+
+    def reaction_hist2d(self):
+        for mouse_id in self.mice:
+            for task in self.tasks:
+                if 'data_all' in locals():
+                    data_all = data_all.append(self.data.mice_delta[mouse_id][task][
+                        self.data.mice_delta[mouse_id][task].type == "reaction_time"])
+                else:
+                    data_all = self.data.mice_delta[mouse_id][task][
+                        self.data.mice_delta[mouse_id][task].type == "reaction_time"]
+
+        fig = plt.figure(figsize=(15, 8), dpi=100)
+        ax = fig.add_subplot(1, 1, 1)
+
+        h, xedges, yedges, img = ax.hist2d(data_all.noreward_duration_sec, data_all.reaction_time_sec,
+                                           bins=[np.linspace(0, 1000, 51), np.linspace(0, 15, 31)])
+        ax.grid()
+
+        plt.title('reaction_time all mice all task')
+        ax.set_xlabel("No reward duration (s)")
+        ax.set_ylabel("Reaction time (s)")
+        plt.savefig('fig/{}allmicetask_reaction_time_hist.png'.format(self.exportpath))
+        plt.show(block=True)
 
     def reward_latency_scatter(self):
         for mouse_id in self.mice:
@@ -164,11 +179,61 @@ class graph:
                 data = self.data.mice_delta[mouse_id][task][
                     self.data.mice_delta[mouse_id][task].type == "reward_latency"]
                 ax = fig.add_subplot(1, 1, 1)
-                ax.scatter(pd.to_timedelta(data.continuous_noreward_period).values / np.timedelta64(1, 's'),
-                           pd.to_timedelta(data.reward_latency).values / np.timedelta64(1, 's'))
+                ax.scatter(data.noreward_duration_sec, data.reward_latency_sec)
                 plt.title('{:03} reward_latency {}'.format(mouse_id, task))
-                ax.set_xlabel("no-rewarded time(s)")
-                ax.set_ylabel("reward latency(s)")
-                ax.legend(bbox_to_anchor=(1.01, 1), loc='upper left')
+                ax.set_xlabel("No reward duration (s)")
+                ax.set_ylabel("Reward latency (s)")
                 plt.savefig('fig/{}no{:03d}_{}_reward_latency.png'.format(self.exportpath, mouse_id, task))
-            plt.show(block=True)
+        plt.show(block=True)
+
+    def reward_latency_hist2d(self):
+        # 各マウス 各タスク
+        for mouse_id in self.mice:
+            for task in self.tasks:
+                fig = plt.figure(figsize=(15, 8), dpi=100)
+                data = self.data.mice_delta[mouse_id][task][
+                    self.data.mice_delta[mouse_id][task].type == "reward_latency"]
+                ax = fig.add_subplot(1, 1, 1)
+                h, xedges, yedges, img = ax.hist2d(data.noreward_duration_sec, data.reward_latency_sec,
+                                                   bins=[np.linspace(0, 1000, 51), np.linspace(0, 10, 21)])
+                ax.grid()
+                plt.title('{:03} reward_latency {}'.format(mouse_id, task))
+                ax.set_xlabel("No reward duration (s)")
+                ax.set_ylabel("Reward latency (s)")
+                plt.savefig('fig/{}no{:03d}_{}_reward_latency_hist2d.png'.format(self.exportpath, mouse_id, task))
+
+        # 全マウス 各タスク TODO pandas依存の書き方に直す
+        for task in self.tasks:
+            data_all_mice = pd.DataFrame([], columns=data.columns)
+            for mouse_id in self.mice:
+                data_all_mice = data_all_mice.append(self.data.mice_delta[mouse_id][task][
+                    self.data.mice_delta[mouse_id][task].type == "reward_latency"])
+
+            fig = plt.figure(figsize=(15, 8), dpi=100)
+            ax = fig.add_subplot(1, 1, 1)
+            h, xedges, yedges, img = ax.hist2d(data_all_mice.noreward_duration_sec, data_all_mice.reward_latency_sec,
+                                               bins=[np.linspace(0, 1000, 51), np.linspace(0, 10, 21)])
+            ax.grid()
+            plt.title('All mice reward_latency {}'.format(task))
+            ax.set_xlabel("No reward duration (s)")
+            ax.set_ylabel("Reward latency (s)")
+            plt.savefig('fig/{}allmice_{}_reward_latency_hist2d.png'.format(self.exportpath,  task))
+
+        # 全マウス 全タスク TODO pandas依存の書き方に直す
+        fig = plt.figure(figsize=(15, 8), dpi=100)
+        ax = fig.add_subplot(1, 1, 1)
+        data_all = pd.DataFrame([], columns=data.columns)
+        for mouse_id in self.mice:
+            for task in self.tasks:
+                data_all = data_all.append(self.data.mice_delta[mouse_id][task][
+                    self.data.mice_delta[mouse_id][task].type == "reward_latency"])
+
+        h, xedges, yedges, img = ax.hist2d(data_all.noreward_duration_sec, data_all.reward_latency_sec,
+                                           bins=[np.linspace(0, 1000, 51), np.linspace(0, 10, 21)])
+        ax.grid()
+        plt.title('reward_latency ALL mice/task')
+        ax.set_xlabel("No reward duration (s)")
+        ax.set_ylabel("Reward latency (s)")
+        plt.savefig('fig/{}all_micetask_reward_latency_hist2d.png'.format(self.exportpath))
+
+        plt.show(block=True)
