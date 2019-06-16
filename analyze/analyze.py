@@ -47,7 +47,6 @@ class task_data:
             session_id = 0
 
             # TODO reward, failureのあとのtime overが同じsession_idを持っている?(ことがある?)
-            # TODO この部分の処理が重い (while文内のどこか)
             def rehash(x_index):
                 if data.at[data.index[x_index], "task"] == "T0":
                     if data.at[data.index[x_index], "event_type"] == "start" or data.shift(1).at[
@@ -205,9 +204,7 @@ class task_data:
                         # df 追加
                         delta_df = delta_df.append(
                             {'type': 'reaction_time',
-                             #'continuous_noreward_period': norewarded_time,
                              'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
-                             #'reaction_time': reaction_time,
                              'reaction_time_sec': pd.to_timedelta(reaction_time) / np.timedelta64(1, 's'),
                              'correct_incorrect': correct_incorrect},
                             ignore_index=True)
@@ -225,11 +222,12 @@ class task_data:
                             previous_reward.index[0], "timestamps"]
                         delta_df = delta_df.append(
                             {'type': 'reward_latency',
-                             #'continuous_noreward_period': norewarded_time,
                              'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
-                            #'reward_latency': reward_latency,
                              'reward_latency_sec': pd.to_timedelta(reward_latency) / np.timedelta64(1, 's')
                              }, ignore_index=True)
+                    # TODO 区間entropy(未来方向に10step) for文の代わりにmap ヘルパー関数使用
+
+
                 deltas[task] = delta_df
             print("{} ; time delta added".format(datetime.now()))
             return deltas
@@ -306,10 +304,6 @@ class task_data:
             probability["f_diff"] = probability["f_diff"] / after_f_all if not after_f_all == 0 else 0.0
             probability["f_omit"] = probability["f_omit"] / after_f_all if not after_f_all == 0 else 0.0
             probability["f_checksum"] = probability["f_same"] + probability["f_diff"] + probability["f_omit"]
-
-            # prob$c_NotMax %/=% after_c_all
-            # prob$f_NotMax %/=% after_f_all
-            # prob$o_NotMax %/=% after_o_all
 
         def count_task() -> dict:
             for task in self.tasks:
@@ -419,12 +413,10 @@ class task_data:
             self.task_prob[mouse_no][task].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
 
 
-# TODO 1. 1111(正正正正)～0000(誤誤誤誤) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, 4bit固定ではなくn bit対応で構築
-# TODO 2. 散布図,csv出力 連続無報酬期間 vs 区間Entropy(10 step分) タスク毎
+# TODO 1. hist2d 連続無報酬期間 vs 区間Entropy(10 step分) 全マウス・タスク毎
+# TODO 2. 1111(正正正正)～0000(誤誤誤誤) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, 4bit固定ではなくn bit対応で構築
 # TODO 3. 横軸:時間（1時間単位） vs 縦軸:区間entropy(単位時間内), correct/incorrect/omission
 # TODO 4. Burst raster plot
-
-# TODO 個体毎と全個体 (n数が不足すると思われるため全個体分も必要)
 
 if __name__ == "__main__":
     print("{} ; started".format(datetime.now()))
@@ -444,7 +436,5 @@ if __name__ == "__main__":
     graph_ins.reaction_hist2d()
     #graph_ins.reward_latency_scatter()
     graph_ins.reward_latency_hist2d()
-
-    # TODO 複数マウスで同一figureにplotしてしまっているので、別figureをそれぞれ立ち上げて描画・保存
 
     print("{} ; all done".format(datetime.now()))

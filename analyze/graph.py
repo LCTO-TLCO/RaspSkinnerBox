@@ -188,23 +188,25 @@ class graph:
 
     def reward_latency_hist2d(self):
         # 各マウス 各タスク
-        for mouse_id in self.mice:
-            for task in self.tasks:
-                fig = plt.figure(figsize=(15, 8), dpi=100)
-                data = self.data.mice_delta[mouse_id][task][
-                    self.data.mice_delta[mouse_id][task].type == "reward_latency"]
-                ax = fig.add_subplot(1, 1, 1)
-                h, xedges, yedges, img = ax.hist2d(data.noreward_duration_sec, data.reward_latency_sec,
-                                                   bins=[np.linspace(0, 1000, 51), np.linspace(0, 10, 21)])
-                ax.grid()
-                plt.title('{:03} reward_latency {}'.format(mouse_id, task))
-                ax.set_xlabel("No reward duration (s)")
-                ax.set_ylabel("Reward latency (s)")
-                plt.savefig('fig/{}no{:03d}_{}_reward_latency_hist2d.png'.format(self.exportpath, mouse_id, task))
+        if False:
+            for mouse_id in self.mice:
+                for task in self.tasks:
+                    fig = plt.figure(figsize=(15, 8), dpi=100)
+                    data = self.data.mice_delta[mouse_id][task][
+                        self.data.mice_delta[mouse_id][task].type == "reward_latency"]
+                    ax = fig.add_subplot(1, 1, 1)
+                    h, xedges, yedges, img = ax.hist2d(data.noreward_duration_sec, data.reward_latency_sec,
+                                                       bins=[np.linspace(0, 1000, 51), np.linspace(0, 10, 21)])
+                    ax.grid()
+                    plt.title('{:03} reward_latency {}'.format(mouse_id, task))
+                    ax.set_xlabel("No reward duration (s)")
+                    ax.set_ylabel("Reward latency (s)")
+                    plt.savefig('fig/{}no{:03d}_{}_reward_latency_hist2d.png'.format(self.exportpath, mouse_id, task))
 
         # 全マウス 各タスク TODO pandas依存の書き方に直す
         for task in self.tasks:
-            data_all_mice = pd.DataFrame([], columns=data.columns)
+#            data_all_mice = pd.DataFrame([], columns=data.columns)
+            data_all_mice = pd.DataFrame([])
             for mouse_id in self.mice:
                 data_all_mice = data_all_mice.append(self.data.mice_delta[mouse_id][task][
                     self.data.mice_delta[mouse_id][task].type == "reward_latency"])
@@ -222,7 +224,8 @@ class graph:
         # 全マウス 全タスク TODO pandas依存の書き方に直す
         fig = plt.figure(figsize=(15, 8), dpi=100)
         ax = fig.add_subplot(1, 1, 1)
-        data_all = pd.DataFrame([], columns=data.columns)
+        #data_all = pd.DataFrame([], columns=data.columns)
+        data_all = pd.DataFrame([])
         for mouse_id in self.mice:
             for task in self.tasks:
                 data_all = data_all.append(self.data.mice_delta[mouse_id][task][
