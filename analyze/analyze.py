@@ -5,7 +5,7 @@ import math
 from scipy.stats import entropy
 from graph import graph
 
-debug = False
+debug = True
 
 
 class task_data:
@@ -204,8 +204,12 @@ class task_data:
                             sum(current_target["event_type"].isin(["reward"]))) else "incorrect"
                         # df 追加
                         delta_df = delta_df.append(
-                            {'type': 'reaction_time', 'continuous_noreward_period': norewarded_time,
-                             'reaction_time': reaction_time, 'correct_incorrect': correct_incorrect},
+                            {'type': 'reaction_time',
+                             #'continuous_noreward_period': norewarded_time,
+                             'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
+                             #'reaction_time': reaction_time,
+                             'reaction_time_sec': pd.to_timedelta(reaction_time) / np.timedelta64(1, 's'),
+                             'correct_incorrect': correct_incorrect},
                             ignore_index=True)
                     # reward latency
                     if bool(sum(current_target["event_type"].isin(["reward"]))) and bool(
@@ -220,8 +224,12 @@ class task_data:
                         norewarded_time = nose_poke.at[nose_poke.index[0], "timestamps"] - previous_reward.at[
                             previous_reward.index[0], "timestamps"]
                         delta_df = delta_df.append(
-                            {'type': 'reward_latency', 'continuous_noreward_period': norewarded_time,
-                             'reward_latency': reward_latency}, ignore_index=True)
+                            {'type': 'reward_latency',
+                             #'continuous_noreward_period': norewarded_time,
+                             'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
+                            #'reward_latency': reward_latency,
+                             'reward_latency_sec': pd.to_timedelta(reward_latency) / np.timedelta64(1, 's')
+                             }, ignore_index=True)
                 deltas[task] = delta_df
             print("{} ; time delta added".format(datetime.now()))
             return deltas
@@ -289,7 +297,7 @@ class task_data:
                         # is_continued = False
                     else:
                         is_continued = False
-            # calculate
+            # calculate7
             probability["c_same"] = probability["c_same"] / after_c_all if not after_c_all == 0 else 0.0
             probability["c_diff"] = probability["c_diff"] / after_c_all if not after_c_all == 0 else 0.0
             probability["c_omit"] = probability["c_omit"] / after_c_all if not after_c_all == 0 else 0.0
@@ -405,22 +413,23 @@ class task_data:
         self.probability[mouse_no].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, "all"))
         for task in self.tasks:
             self.mice_delta[mouse_no][task].to_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
+            reward_latency_data = self.mice_delta[mouse_no][task][
+                self.mice_delta[mouse_no][task].type == "reward_latency"]
+            reward_latency_data.to_csv('{}data/no{:03d}_{}_rewardlatency.csv'.format(self.logpath, mouse_no, task))
             self.task_prob[mouse_no][task].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
 
 
-# TODO 1. csv出力 連続無報酬期間 vs reaction time (タスクコールからnose pokeまでの時間 正誤両方)
-# TODO 2. csv出力 連続無報酬期間 vs reward latency  (正解nose pokeからmagazine nose pokeまでの時間 正解のみ)
-# TODO 3. 1111(正正正正)～0000(誤誤誤誤) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, 4bit固定ではなくn bit対応で構築
-# TODO 4. 散布図,csv出力 連続無報酬期間 vs 区間Entropy(10 step分) タスク毎
-# TODO 5. 横軸:時間（1時間単位） vs 縦軸:区間entropy(単位時間内), correct/incorrect/omission
-# TODO 6. Burst raster plot
+# TODO 1. 1111(正正正正)～0000(誤誤誤誤) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, 4bit固定ではなくn bit対応で構築
+# TODO 2. 散布図,csv出力 連続無報酬期間 vs 区間Entropy(10 step分) タスク毎
+# TODO 3. 横軸:時間（1時間単位） vs 縦軸:区間entropy(単位時間内), correct/incorrect/omission
+# TODO 4. Burst raster plot
 
 # TODO 個体毎と全個体 (n数が不足すると思われるため全個体分も必要)
 
 if __name__ == "__main__":
-    # mice = [6, 7, 8, 11, 12, 13, 17]
-    #    mice = [17]
-    mice = [12]
+    print("{} ; started".format(datetime.now()))
+    mice = [6, 7, 8, 11, 12, 13, 17]
+    #mice = [17]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
@@ -431,9 +440,11 @@ if __name__ == "__main__":
     # graph_ins.same_plot()
     # graph_ins.omission_plot()
     # graph_ins.ent_raster_cumsum()
-    graph_ins.reward_latency_scatter()
-    graph_ins.reaction_scatter()
+    #graph_ins.reaction_scatter()
+    graph_ins.reaction_hist2d()
+    #graph_ins.reward_latency_scatter()
+    graph_ins.reward_latency_hist2d()
 
     # TODO 複数マウスで同一figureにplotしてしまっているので、別figureをそれぞれ立ち上げて描画・保存
 
-    print('hoge')
+    print("{} ; all done".format(datetime.now()))
