@@ -156,8 +156,7 @@ class task_data:
 
             # entropy
             ent = [0] * 150
-            for i in range(0, len(data[data.event_type.str.contains('(reward|failure|time over)')]) - 150):
-                # TODO entropyの計算にomissionは入れない
+            for i in range(0, len(data[data.event_type.str.contains('(reward|failure)')]) - 150):
                 denominator = 150.0  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
                 current_entropy = min_max(
                     [data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
