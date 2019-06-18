@@ -5,7 +5,7 @@ import math
 from scipy.stats import entropy
 from graph import graph
 
-debug = True
+debug = False
 
 
 class task_data:
@@ -23,6 +23,7 @@ class task_data:
         self.mice_delta = {}
         self.logpath = logpath
         self.session_id = 0
+        self.data_not_omission = None
         print('reading data...', end='')
         if debug:
             for mouse_id in self.mouse_no:
@@ -46,7 +47,6 @@ class task_data:
             print("max_id_col:{}".format(len(data)))
             session_id = 0
 
-            # TODO reward, failureのあとのtime overが同じsession_idを持っている?(ことがある?)
             def rehash(x_index):
                 if data.at[data.index[x_index], "task"] == "T0":
                     if data.at[data.index[x_index], "event_type"] == "start" or data.shift(1).at[
@@ -63,6 +63,62 @@ class task_data:
             data["session_id"] = list(map(rehash, data.index))
             print("{} ; rehash done".format(datetime.now()))
             return data
+
+        # TODO この関数が処理速度重い
+        def add_timedelta():
+            data = self.data
+            data = data[data.session_id.isin(
+                data[(data["event_type"] == "reward") | (data["event_type"] == "failure")]["session_id"])]
+            deltas = {}
+            for task in self.tasks:
+                def calculate(session):
+                    delta_df = pd.DataFrame()
+                    # reaction time
+                    current_target = data[data.session_id.isin(session)]
+                    if bool(sum(current_target["event_type"].isin(["task called"]))):
+                        task_call = current_target[current_target["event_type"] == "task called"]
+                        task_end = current_target[current_target["event_type"] == "nose poke"]
+                        reaction_time = task_end.at[task_end.index[0], "timestamps"] - task_call.at[
+                            task_call.index[0], "timestamps"]
+                        # 連続無報酬期間
+                        previous_reward = data[
+                            (data["event_type"] == "reward") & (
+                                    data["timestamps"] < task_call.at[task_call.index[0], "timestamps"])].tail(1)
+                        norewarded_time = task_call.at[task_call.index[0], "timestamps"] - previous_reward.at[
+                            previous_reward.index[0], "timestamps"]
+                        correct_incorrect = "correct" if bool(
+                            sum(current_target["event_type"].isin(["reward"]))) else "incorrect"
+                        # df 追加
+                        delta_df = delta_df.append(
+                            {'type': 'reaction_time',
+                             'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
+                             'reaction_time_sec': pd.to_timedelta(reaction_time) / np.timedelta64(1, 's'),
+                             'correct_incorrect': correct_incorrect},
+                            ignore_index=True)
+                    # reward latency
+                    if bool(sum(current_target["event_type"].isin(["reward"]))) and bool(
+                            sum(current_target["event_type"].isin(["task called"]))):
+                        nose_poke = current_target[current_target["event_type"] == "nose poke"]
+                        reward_latency = current_target[current_target["event_type"] == "magazine nose poked"]
+                        reward_latency = reward_latency.at[reward_latency.index[0], "timestamps"] - \
+                                         nose_poke.at[nose_poke.index[0], "timestamps"]
+                        previous_reward = data[
+                            (data["event_type"] == "reward") & (
+                                    data["timestamps"] < nose_poke.at[nose_poke.index[0], "timestamps"])].tail(1)
+                        norewarded_time = nose_poke.at[nose_poke.index[0], "timestamps"] - previous_reward.at[
+                            previous_reward.index[0], "timestamps"]
+                        delta_df = delta_df.append(
+                            {'type': 'reward_latency',
+                             'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
+                             'reward_latency_sec': pd.to_timedelta(reward_latency) / np.timedelta64(1, 's')
+                             }, ignore_index=True)
+                    return delta_df
+                    # TODO 区間entropy(未来方向に10step) for文の代わりにmap ヘルパー関数使用
+
+                delta_df = data[data.task == task].groupby(["session_id"]).session_id.apply(calculate)
+                deltas[task] = delta_df
+            print("{} ; time delta added".format(datetime.now()))
+            return deltas
 
         def add_hot_vector():
             #    data = data[data["event_type"].isin(["reward", "failure", "time over"])]
@@ -156,13 +212,15 @@ class task_data:
 
             # entropy
             ent = [0] * 150
-            for i in range(0, len(data[data.event_type.str.contains('(reward|failure)')]) - 150):
+            for i in range(0, len(data[data.event_type.isin(['reward', 'failure'])]) - 150):
                 denominator = 150.0  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
                 current_entropy = min_max(
                     [data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
                      [1, 3, 5, 7, 9]])
                 ent.append(entropy(current_entropy, base=2))
-            data["hole_choice_entropy"] = ent
+            # region Description
+            data[data.event_type.isin(['reward', 'failure'])]["hole_choice_entropy"] = ent
+            # endregion
 
             # burst
             # data["burst_group"] = 1
@@ -174,67 +232,12 @@ class task_data:
             print("{} ; hot vector added".format(datetime.now()))
             return data
 
-        # TODO この関数が処理速度重い
-        def add_timedelta():
-            data = self.data
-            data = data[data.session_id.isin(
-                data[(data["event_type"] == "reward") | (data["event_type"] == "failure")]["session_id"])]
-            deltas = {}
-            for task in self.tasks:
-                delta_df = pd.DataFrame(
-                    # columns=["type", "continuous_noreward_period", "reaction_time", "reward_latency"]
-                )
-                for session in data[data.task == task]["session_id"].unique():
-                    # reaction time
-                    current_target = data[(data["session_id"] == session) & (data["task"] == task)]
-                    if bool(sum(current_target["event_type"].isin(["task called"]))):
-                        task_call = current_target[current_target["event_type"] == "task called"]
-                        task_end = current_target[current_target["event_type"] == "nose poke"]
-                        reaction_time = task_end.at[task_end.index[0], "timestamps"] - task_call.at[
-                            task_call.index[0], "timestamps"]
-                        # 連続無報酬期間
-                        previous_reward = data[
-                            (data["event_type"] == "reward") & (
-                                    data["timestamps"] < task_call.at[task_call.index[0], "timestamps"])].tail(1)
-                        norewarded_time = task_call.at[task_call.index[0], "timestamps"] - previous_reward.at[
-                            previous_reward.index[0], "timestamps"]
-                        correct_incorrect = "correct" if bool(
-                            sum(current_target["event_type"].isin(["reward"]))) else "incorrect"
-                        # df 追加
-                        delta_df = delta_df.append(
-                            {'type': 'reaction_time',
-                             'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
-                             'reaction_time_sec': pd.to_timedelta(reaction_time) / np.timedelta64(1, 's'),
-                             'correct_incorrect': correct_incorrect},
-                            ignore_index=True)
-                    # reward latency
-                    if bool(sum(current_target["event_type"].isin(["reward"]))) and bool(
-                            sum(current_target["event_type"].isin(["task called"]))):
-                        nose_poke = current_target[current_target["event_type"] == "nose poke"]
-                        reward_latency = current_target[current_target["event_type"] == "magazine nose poked"]
-                        reward_latency = reward_latency.at[reward_latency.index[0], "timestamps"] - \
-                                         nose_poke.at[nose_poke.index[0], "timestamps"]
-                        previous_reward = data[
-                            (data["event_type"] == "reward") & (
-                                    data["timestamps"] < nose_poke.at[nose_poke.index[0], "timestamps"])].tail(1)
-                        norewarded_time = nose_poke.at[nose_poke.index[0], "timestamps"] - previous_reward.at[
-                            previous_reward.index[0], "timestamps"]
-                        delta_df = delta_df.append(
-                            {'type': 'reward_latency',
-                             'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
-                             'reward_latency_sec': pd.to_timedelta(reward_latency) / np.timedelta64(1, 's')
-                             }, ignore_index=True)
-                    # TODO 区間entropy(未来方向に10step) for文の代わりにmap ヘルパー関数使用
-
-
-                deltas[task] = delta_df
-            print("{} ; time delta added".format(datetime.now()))
-            return deltas
-
         self.data = rehash_session_id()
         self.data_ci = self.data
         self.delta = add_timedelta()
         self.data = add_hot_vector()
+        self.data_not_omission = self.data[
+            self.data.session_id.isin(self.data.session_id[self.data.event_type.isin(["time over"])])]
 
         # action Probability
         after_c_all = float(len(self.data[self.data["is_correct"] == 1]))
@@ -366,14 +369,15 @@ class task_data:
                 pattern[task] = {}
                 prob = pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range],
                                     index=range(1, forward_trace)).fillna(0.0)
-                data = self.data
+                data = self.data[self.data.task == task]
                 # search pattern
                 for single_pattern in pattern_range:
-                    f_pattern_matching = lambda x: min(
-                        [np.isnan(data.shift(bit - i).at[data.shift(bit - i).index[x], "is_correct"]) == bool(
-                            math.floor(single_pattern / pow(2, i - 1)) % 2) for i in range(0, bit + 1)])
-                    # TODO Empty Dataframe
-                    pattern[task].update({single_pattern: data[map(f_pattern_matching, data.index[:-3])]})
+                    f_pattern_matching = lambda x: min([
+                        (not np.isnan(data.shift(-(bit - i)).at[data.index[x], "is_correct"])) ==
+                        bool(math.floor(single_pattern / pow(2, i)) % 2)
+                        for i in range(0, bit)
+                    ])
+                    pattern[task].update({single_pattern: data[:-3][data[:-3].index.map(f_pattern_matching)]})
                 # count
                 f_same_base = lambda x, idx: data.at[data.index[x.index], "hole_no"] == data.shift(-idx).at[
                     data.index[x.index], "hole_no"]
@@ -388,7 +392,7 @@ class task_data:
 
         count_all()
         count_task()
-        # analyze_pattern()
+        analyze_pattern()
         return self.data, probability, task_prob, self.delta
 
     def dev_read_data(self, mouse_no):
@@ -421,8 +425,8 @@ class task_data:
 
 if __name__ == "__main__":
     print("{} ; started".format(datetime.now()))
-    mice = [6, 7, 8, 11, 12, 13, 17]
-    #mice = [17]
+    # mice = [6, 7, 8, 11, 12, 13, 17]
+    mice = [12]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
@@ -433,9 +437,9 @@ if __name__ == "__main__":
     # graph_ins.same_plot()
     # graph_ins.omission_plot()
     # graph_ins.ent_raster_cumsum()
-    #graph_ins.reaction_scatter()
+    # graph_ins.reaction_scatter()
     graph_ins.reaction_hist2d()
-    #graph_ins.reward_latency_scatter()
+    # graph_ins.reward_latency_scatter()
     graph_ins.reward_latency_hist2d()
 
     print("{} ; all done".format(datetime.now()))
