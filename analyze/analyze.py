@@ -390,6 +390,14 @@ class task_data:
                     omit = [pattern[task][pat_tmp].map(f_omit, idx) for idx in range(1, bit)]
                     # TODO append
 
+        def burst():
+            # RFOで絞り込み
+            # 時間を計算、バースト番号振り分け
+            # データ全体の該当部分にはめ込む
+            # 前の値で補完
+            # df.fillna(method="ffill")
+            pass
+
         count_all()
         count_task()
         analyze_pattern()
