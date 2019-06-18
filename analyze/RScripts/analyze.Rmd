@@ -31,8 +31,8 @@ header <- c("timestamps","task","session_id","correct_times","event_type","hole_
 #}
 #behavior_data <- as_tibble(read.csv("../RaspSkinnerBox/log/testlog2.csv",header = F, col.names = header))
 #behavior_data <- read_csv('log/cage1_no2.txt', col_names=header, col_types='Tciicic')
-behavior_data <- read_csv('../RaspSkinnerBox/log/cage1_no2.txt', col_names=header, col_types='Tciicic')
-# behavior_data <- read_csv('./log/no012_action.csv', col_names=header, col_types='Tciicic')
+# behavior_data <- read_csv('../RaspSkinnerBox/log/cage1_no2.txt', col_names=header, col_types='Tciicic')
+behavior_data <- read_csv('../RaspSkinnerBox/log/no013_action.csv', col_names=header, col_types='Tciicic')
 
 ```
 
