@@ -373,7 +373,7 @@ class task_data:
                 task_prob[task] = prob
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
-        # TODO
+        # TODO　めちゃくちゃ時間かかってる
         def analyze_pattern(bit=4):
             pattern = {}
             fig_prob = {}
