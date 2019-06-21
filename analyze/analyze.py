@@ -369,6 +369,7 @@ class task_data:
                 pattern[task] = {}
                 prob = pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range],
                                     index=range(1, forward_trace)).fillna(0.0)
+
                 data = self.data[self.data.task == task]
                 # search pattern
                 for single_pattern in pattern_range:
@@ -427,7 +428,7 @@ class task_data:
 # TODO 1. モデルクラス{ログからのQ値更新, 次ステップの行動選択予測, 予測との一致度の記録, 総合一致度の算出}
 # TODO 2. 複数モデル×パラメータセット, パラメータセットの定義(GA,GP探索を見据えて), テストの実行(並列実行 joblib)
 # TODO 3. hist2d 連続無報酬期間 vs 区間Entropy(10 step分) 全マウス・タスク毎
-# TODO 4. 1111(正正正正)～0000(誤誤誤誤) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, 4bit固定ではなくn bit対応で構築
+# TODO 4. 1111(正正正正)～0000(誤誤誤誤) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)},fig4{次の10区間の区間エントロピー}, 4bit固定ではなくn bit対応で構築
 # TODO 5. 横軸:時間（1時間単位） vs 縦軸:区間entropy(単位時間内), correct/incorrect/omission
 # TODO 6. Burst raster plot
 
