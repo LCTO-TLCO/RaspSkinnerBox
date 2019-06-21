@@ -5,6 +5,20 @@ import math
 from scipy.stats import entropy
 from graph import graph
 
+import copy
+import random
+import operator
+import random
+
+
+from deap import algorithms
+from deap import base
+from deap import creator
+from deap import tools
+from deap import gp
+
+from scoop import futures
+
 debug = True
 
 
@@ -413,14 +427,100 @@ class task_data:
             self.task_prob[mouse_no][task].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
 
 
-# TODO 1. モデルクラス{ログからのQ値更新, 次ステップの行動選択予測, 予測との一致度の記録, 総合一致度の算出}
-# TODO 2. 複数モデル×パラメータセット, パラメータセットの定義(GA,GP探索を見据えて), テストの実行(並列実行 joblib)
-# TODO 3. hist2d 連続無報酬期間 vs 区間Entropy(10 step分) 全マウス・タスク毎
-# TODO 4. 1111(正正正正)～0000(誤誤誤誤) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, 4bit固定ではなくn bit対応で構築
-# TODO 5. 横軸:時間（1時間単位） vs 縦軸:区間entropy(単位時間内), correct/incorrect/omission
-# TODO 6. Burst raster plot
+# Define new functions
+def protectedDiv(left, right):
+    try:
+        return left / right
+    except ZeroDivisionError:
+        return 1
 
-if __name__ == "__main__":
+adfset2 = gp.PrimitiveSet("ADF2", 2)
+adfset2.addPrimitive(operator.add, 2)
+adfset2.addPrimitive(operator.sub, 2)
+adfset2.addPrimitive(operator.mul, 2)
+adfset2.addPrimitive(protectedDiv, 2)
+adfset2.addPrimitive(operator.neg, 1)
+adfset2.addPrimitive(math.cos, 1)
+adfset2.addPrimitive(math.sin, 1)
+
+adfset1 = gp.PrimitiveSet("ADF1", 2)
+adfset1.addPrimitive(operator.add, 2)
+adfset1.addPrimitive(operator.sub, 2)
+adfset1.addPrimitive(operator.mul, 2)
+adfset1.addPrimitive(protectedDiv, 2)
+adfset1.addPrimitive(operator.neg, 1)
+adfset1.addPrimitive(math.cos, 1)
+adfset1.addPrimitive(math.sin, 1)
+adfset1.addADF(adfset2)
+
+adfset0 = gp.PrimitiveSet("ADF0", 2)
+adfset0.addPrimitive(operator.add, 2)
+adfset0.addPrimitive(operator.sub, 2)
+adfset0.addPrimitive(operator.mul, 2)
+adfset0.addPrimitive(protectedDiv, 2)
+adfset0.addPrimitive(operator.neg, 1)
+adfset0.addPrimitive(math.cos, 1)
+adfset0.addPrimitive(math.sin, 1)
+adfset0.addADF(adfset1)
+adfset0.addADF(adfset2)
+
+pset = gp.PrimitiveSet("MAIN", 1)
+pset.addPrimitive(operator.add, 2)
+pset.addPrimitive(operator.sub, 2)
+pset.addPrimitive(operator.mul, 2)
+pset.addPrimitive(protectedDiv, 2)
+pset.addPrimitive(operator.neg, 1)
+pset.addPrimitive(math.cos, 1)
+pset.addPrimitive(math.sin, 1)
+pset.addEphemeralConstant("rand{}".format(random.randint(0,1000)), lambda: random.randint(-1, 1))
+pset.addADF(adfset0)
+pset.addADF(adfset1)
+pset.addADF(adfset2)
+pset.renameArguments(ARG0='x')
+
+psets = (pset, adfset0, adfset1, adfset2)
+
+creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+creator.create("Tree", gp.PrimitiveTree)
+
+creator.create("Individual", list, fitness=creator.FitnessMin)
+
+toolbox = base.Toolbox()
+toolbox.register('adf_expr0', gp.genFull, pset=adfset0, min_=1, max_=2)
+toolbox.register('adf_expr1', gp.genFull, pset=adfset1, min_=1, max_=2)
+toolbox.register('adf_expr2', gp.genFull, pset=adfset2, min_=1, max_=2)
+toolbox.register('main_expr', gp.genHalfAndHalf, pset=pset, min_=1, max_=2)
+
+toolbox.register('ADF0', tools.initIterate, creator.Tree, toolbox.adf_expr0)
+toolbox.register('ADF1', tools.initIterate, creator.Tree, toolbox.adf_expr1)
+toolbox.register('ADF2', tools.initIterate, creator.Tree, toolbox.adf_expr2)
+toolbox.register('MAIN', tools.initIterate, creator.Tree, toolbox.main_expr)
+
+func_cycle = [toolbox.MAIN, toolbox.ADF0, toolbox.ADF1, toolbox.ADF2]
+
+toolbox.register('individual', tools.initCycle, creator.Individual, func_cycle)
+toolbox.register('population', tools.initRepeat, list, toolbox.individual)
+
+def evalSymbReg(individual):
+    # Transform the tree expression in a callable function
+    func = toolbox.compile(individual)
+    # Evaluate the sum of squared difference between the expression
+    # and the real function : x**4 + x**3 + x**2 + x
+    values = (x/10. for x in range(-10, 10))
+    diff_func = lambda x: (func(x) -(x*4))**2
+    diff = sum(map(diff_func, values))
+    return diff,
+
+toolbox.register('compile', gp.compileADF, psets=psets)
+toolbox.register('evaluate', evalSymbReg)
+toolbox.register('select', tools.selTournament, tournsize=3)
+toolbox.register('mate', gp.cxOnePoint)
+toolbox.register('expr', gp.genFull, min_=1, max_=2)
+toolbox.register('mutate', gp.mutUniform, expr=toolbox.expr)
+toolbox.register("map", futures.map)
+
+def main():
+
     print("{} ; started".format(datetime.now()))
     mice = [6, 7, 8, 11, 12, 13, 17]
     #mice = [17]
@@ -439,6 +539,71 @@ if __name__ == "__main__":
     #graph_ins.reward_latency_scatter()
     # graph_ins.reward_latency_hist2d()
 
+    random.seed(1024)
+    ind = toolbox.individual()
 
+    pop = toolbox.population(n=100)
+    hof = tools.HallOfFame(1)
+    stats = tools.Statistics(lambda ind: ind.fitness.values)
+    stats.register("avg", np.mean)
+    stats.register("std", np.std)
+    stats.register("min", np.min)
+    stats.register("max", np.max)
+
+    logbook = tools.Logbook()
+    logbook.header = "gen", "evals", "std", "min", "avg", "max"
+
+    CXPB, MUTPB, NGEN = 0.5, 0.2, 4000
+
+    # Evaluate the entire population
+    for ind in pop:
+        ind.fitness.values = toolbox.evaluate(ind)
+
+    hof.update(pop)
+    record = stats.compile(pop)
+    logbook.record(gen=0, evals=len(pop), **record)
+    print(logbook.stream)
+
+    for g in range(1, NGEN):
+        # Select the offspring
+        offspring = toolbox.select(pop, len(pop))
+        # Clone the offspring
+        offspring = [toolbox.clone(ind) for ind in offspring]
+
+        # Apply crossover and mutation
+        for ind1, ind2 in zip(offspring[::2], offspring[1::2]):
+            for tree1, tree2 in zip(ind1, ind2):
+                if random.random() < CXPB:
+                    toolbox.mate(tree1, tree2)
+                    del ind1.fitness.values
+                    del ind2.fitness.values
+
+        for ind in offspring:
+            for tree, pset in zip(ind, psets):
+                if random.random() < MUTPB:
+                    toolbox.mutate(individual=tree, pset=pset)
+                    del ind.fitness.values
+
+        # Evaluate the individuals with an invalid fitness
+        invalids = [ind for ind in offspring if not ind.fitness.valid]
+        for ind in invalids:
+            ind.fitness.values = toolbox.evaluate(ind)
+
+        # Replacement of the population by the offspring
+        pop = offspring
+        hof.update(pop)
+        record = stats.compile(pop)
+        logbook.record(gen=g, evals=len(invalids), **record)
+        print(logbook.stream)
+
+    print('Best individual : ', hof[0][0], hof[0].fitness)
 
     print("{} ; all done".format(datetime.now()))
+
+    # print log
+    return pop, hof
+
+
+if __name__ == "__main__":
+    main()
+
