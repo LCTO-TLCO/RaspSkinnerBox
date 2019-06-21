@@ -117,7 +117,7 @@ class task_data:
 
                 delta_df = data[data.task == task].session_id.drop_duplicates().map(calculate)
                 deltas[task] = delta_df
-            print("{} ; time delta added".format(datetime.now()))
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
             return deltas
 
         def add_hot_vector():
@@ -210,7 +210,7 @@ class task_data:
             #         data["burst_group"][i] = data["burst_group"][i - 1]
             #         continue
             #     data["burst_group"][i] = data["burst_group"][i - 1] + 1
-            print("{} ; hot vector added".format(datetime.now()))
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
             return data
 
         def calc_entropy(section=150):
@@ -235,7 +235,7 @@ class task_data:
                 ent.append(entropy(current_entropy, base=2))
             # region Description
             # data[data.event_type.isin(['reward', 'failure'])]["hole_choice_entropy"] = ent
-            print("{} ; entropy added".format(datetime.now()))
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
             return ent
             # endregion
 
@@ -316,7 +316,7 @@ class task_data:
             probability["f_omit"] = probability["f_omit"] / after_f_all if not after_f_all == 0 else 0.0
             probability["f_checksum"] = probability["f_same"] + probability["f_diff"] + probability["f_omit"]
 
-            print("{} ; countall".format(datetime.now()))
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
         def count_task() -> dict:
             for task in self.tasks:
@@ -371,7 +371,7 @@ class task_data:
                 # prob$o_NotMax %/=% after_o_all
                 # append
                 task_prob[task] = prob
-            print("{} ; count task".format(datetime.now()))
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
         # TODO
         def analyze_pattern(bit=4):
@@ -416,7 +416,7 @@ class task_data:
                         pattern[task][pattern[task].pattern == pat_tmp])
             # save
             self.pattern_prob = pattern
-            print("{} ; pattern analyzed".format(datetime.now()))
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
         def burst():
             # で絞り込み
@@ -424,7 +424,7 @@ class task_data:
             # データ全体の該当部分にはめ込む
             # 前の値で補完
             # df.fillna(method="ffill")
-            pass
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
         count_all()
         count_task()
@@ -450,6 +450,7 @@ class task_data:
                 self.mice_delta[mouse_no][task].type == "reward_latency"]
             reward_latency_data.to_csv('{}data/no{:03d}_{}_rewardlatency.csv'.format(self.logpath, mouse_no, task))
             self.task_prob[mouse_no][task].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
+        print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
 
 # TODO 1. モデルクラス{ログからのQ値更新, 次ステップの行動選択予測, 予測との一致度の記録, 総合一致度の算出}
