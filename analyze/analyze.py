@@ -242,8 +242,8 @@ class task_data:
         self.data = rehash_session_id()
         self.data = add_hot_vector()
         self.data_ci = self.data
-        self.data[self.data.event_type.isin(['reward', 'failure'])].hole_choice_entropy = calc_entropy()
-        self.data[self.data.event_type.isin(['reward', 'failure'])].entropy_10 = calc_entropy(10)
+        self.data[self.data.event_type.isin(['reward', 'failure'])]["hole_choice_entropy"] = calc_entropy()
+        self.data[self.data.event_type.isin(['reward', 'failure'])]["entropy_10"] = calc_entropy(10)
         self.delta = add_timedelta()
         self.data_not_omission = self.data[
             ~self.data.session_id.isin(self.data.session_id[self.data.event_type.isin(["time over"])])]
