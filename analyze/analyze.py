@@ -1,9 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 import math
 from scipy.stats import entropy
 from graph import graph
+import sys
 
 debug = False
 
@@ -17,6 +18,7 @@ class task_data:
         self.delta = None
         self.mouse_no = mice
         self.tasks = tasks
+        self.pattern_prob = {}
         self.probability = {}
         self.mice_task = {}
         self.task_prob = {}
@@ -24,17 +26,19 @@ class task_data:
         self.logpath = logpath
         self.session_id = 0
         self.data_not_omission = None
+        self.fig_prob_tmp = None
+        self.fig_prob = {}
+
         print('reading data...', end='')
         if debug:
             for mouse_id in self.mouse_no:
                 self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[
-                    mouse_id] = self.dev_read_data(mouse_id)
+                    mouse_id], self.fig_prob[mouse_id] = self.dev_read_data(mouse_id)
         else:
             for mouse_id in self.mouse_no:
                 self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
                 self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[
-                    mouse_id] = \
-                    self.read_data()
+                    mouse_id], self.fig_prob[mouse_id] = self.read_data()
                 self.export_csv(mouse_id)
         print('done')
 
@@ -61,20 +65,19 @@ class task_data:
                     return self.session_id
 
             data["session_id"] = list(map(rehash, data.index))
-            print("{} ; rehash done".format(datetime.now()))
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
             return data
 
-        # TODO この関数が処理速度重い
+        # TODO どこかで盛大にエラー
         def add_timedelta():
             data = self.data
-            data = data[data.session_id.isin(
-                data[(data["event_type"] == "reward") | (data["event_type"] == "failure")]["session_id"])]
+            data = data[data.session_id.isin(data[data.event_type.isin(['reward', 'failure'])]["session_id"])]
             deltas = {}
             for task in self.tasks:
                 def calculate(session):
                     delta_df = pd.DataFrame()
                     # reaction time
-                    current_target = data[data.session_id.isin(session)]
+                    current_target = data[data.session_id.isin([session])]
                     if bool(sum(current_target["event_type"].isin(["task called"]))):
                         task_call = current_target[current_target["event_type"] == "task called"]
                         task_end = current_target[current_target["event_type"] == "nose poke"]
@@ -113,18 +116,17 @@ class task_data:
                              'reward_latency_sec': pd.to_timedelta(reward_latency) / np.timedelta64(1, 's')
                              }, ignore_index=True)
                     return delta_df
-                    # TODO 区間entropy(未来方向に10step) for文の代わりにmap ヘルパー関数使用
 
-                delta_df = data[data.task == task].groupby(["session_id"]).session_id.apply(calculate)
-                deltas[task] = delta_df
-            print("{} ; time delta added".format(datetime.now()))
+                delta_df = data[data.task == task].session_id.drop_duplicates().map(calculate)
+                deltas[task] = pd.concat(list(delta_df), sort=False)
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
             return deltas
 
         def add_hot_vector():
             #    data = data[data["event_type"].isin(["reward", "failure", "time over"])]
             data = self.data
-            data = data[data["event_type"].isin(["reward", "failure", "time over"])]
-            data = data[data["task"].isin(self.tasks)]
+            # data = data[data["event_type"].isin(["reward", "failure", "time over"])]
+            # data = data[data["task"].isin(self.tasks)]
 
             data = data.reset_index()
             # task interval
@@ -169,8 +171,8 @@ class task_data:
             data["cumsum_omission"] = data["is_omission"].cumsum(axis=0)
 
             for hole_no in range(1, 9 + 1, 2):
-                data.loc[data['hole_no'].str.contains(str(hole_no)), "is_hole{}".format(hole_no)] = 1
-                data.loc[~data['hole_no'].str.contains(str(hole_no)), "is_hole{}".format(hole_no)] = None
+                data.loc[data['hole_no'] == str(hole_no), "is_hole{}".format(hole_no)] = 1
+                data.loc[~(data['hole_no'] == str(hole_no)), "is_hole{}".format(hole_no)] = None
 
             self.data_ci = data[data["event_type"].isin(["reward", "failure"])]
 
@@ -203,6 +205,20 @@ class task_data:
 
             add_cumsum()
 
+            # burst
+            # data["burst_group"] = 1
+            # for i in range(1, len(data)):
+            #     if data["timestamps"][i] - data["timestamps"][i - 1] <= datetime.timedelta(seconds=60):
+            #         data["burst_group"][i] = data["burst_group"][i - 1]
+            #         continue
+            #     data["burst_group"][i] = data["burst_group"][i - 1] + 1
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
+            return data
+
+        def calc_entropy(section=150):
+            # TODO 最低限のデータを使う
+            data = self.data
+
             def min_max(x, axis=None):
                 np.array(x)
                 min = np.array(x).min(axis=axis)
@@ -211,33 +227,28 @@ class task_data:
                 return result
 
             # entropy
-            ent = [0] * 150
-            for i in range(0, len(data[data.event_type.isin(['reward', 'failure'])]) - 150):
-                denominator = 150.0  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
+            ent = [0] * section
+            for i in range(0, len(data[data.event_type.isin(['reward', 'failure'])]) - section):
+                denominator = float(
+                    section)  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
                 current_entropy = min_max(
-                    [data["is_hole{}".format(str(hole_no))][i:i + 150].sum() / denominator for hole_no in
+                    [data["is_hole{}".format(str(hole_no))][i:i + section].sum() / denominator for hole_no in
                      [1, 3, 5, 7, 9]])
                 ent.append(entropy(current_entropy, base=2))
             # region Description
-            data[data.event_type.isin(['reward', 'failure'])]["hole_choice_entropy"] = ent
+            # data[data.event_type.isin(['reward', 'failure'])]["hole_choice_entropy"] = ent
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
+            return ent
             # endregion
 
-            # burst
-            # data["burst_group"] = 1
-            # for i in range(1, len(data)):
-            #     if data["timestamps"][i] - data["timestamps"][i - 1] <= datetime.timedelta(seconds=60):
-            #         data["burst_group"][i] = data["burst_group"][i - 1]
-            #         continue
-            #     data["burst_group"][i] = data["burst_group"][i - 1] + 1
-            print("{} ; hot vector added".format(datetime.now()))
-            return data
-
         self.data = rehash_session_id()
-        self.data_ci = self.data
-        self.delta = add_timedelta()
         self.data = add_hot_vector()
+        self.data_ci = self.data
+        self.data[self.data.event_type.isin(['reward', 'failure'])]["hole_choice_entropy"] = calc_entropy()
+        self.data[self.data.event_type.isin(['reward', 'failure'])]["entropy_10"] = calc_entropy(10)
+        self.delta = add_timedelta()
         self.data_not_omission = self.data[
-            self.data.session_id.isin(self.data.session_id[self.data.event_type.isin(["time over"])])]
+            ~self.data.session_id.isin(self.data.session_id[self.data.event_type.isin(["time over"])])]
 
         # action Probability
         after_c_all = float(len(self.data[self.data["is_correct"] == 1]))
@@ -268,14 +279,14 @@ class task_data:
                 is_continued = True
                 for j in range(1, min(forward_trace, len(self.data) - idx)):
                     # 報酬を得たときと同じ選択(CF両方)をしたときの処理
-                    if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][
-                        idx] and is_continued:  # TODO omissionを除いてカウントしたい
+                    if dt["hole_no"] == self.data_ci["hole_no"][
+                        idx + j] and is_continued:  # TODO omissionを除いてカウントしたい
                         probability["c_same"][j] = probability["c_same"][j] + 1
                     # omissionの場合
-                    elif self.data.shift(-j)["is_omission"][idx]:
+                    elif self.data["is_omission"][idx + j]:
                         probability["c_omit"][j] = probability["c_omit"][j] + 1
                         # is_continued = False
-                    elif dt["hole_no"] != self.data_ci.shift(-j)["hole_no"][idx] and is_continued:
+                    elif dt["hole_no"] != self.data_ci["hole_no"][idx + j] and is_continued:
                         probability["c_diff"][j] = probability["c_diff"][j] + 1
                     # 違うhole
             #            else:
@@ -285,14 +296,14 @@ class task_data:
                 is_continued = True
                 for j in range(1, min(forward_trace, len(self.data) - idx)):
                     # 連続で失敗しているときの処理
-                    if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][
-                        idx] and is_continued:  # TODO omissionを除いてカウントしたい
+                    if dt["hole_no"] == self.data_ci["hole_no"][
+                        idx + j] and is_continued:  # TODO omissionを除いてカウントしたい
                         probability["f_same"][j] = probability["f_same"][j] + 1
-                    elif self.data.shift(-j)["is_omission"][idx] and is_continued:
+                    elif self.data["is_omission"][idx + j] and is_continued:
                         probability["f_omit"][j] = probability["f_omit"][j] + 1
-                    elif dt["hole_no"] != self.data.shift(-j)["hole_no"][idx] and not \
-                            self.data.shift(-j)["is_omission"][
-                                idx] and is_continued:
+                    elif dt["hole_no"] != self.data["hole_no"][idx + j] and not \
+                            self.data["is_omission"][
+                                idx + j] and is_continued:
                         probability["f_diff"][j] = probability["f_diff"][j] + 1
                         # is_continued = False
                     else:
@@ -307,6 +318,8 @@ class task_data:
             probability["f_omit"] = probability["f_omit"] / after_f_all if not after_f_all == 0 else 0.0
             probability["f_checksum"] = probability["f_same"] + probability["f_diff"] + probability["f_omit"]
 
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
+
         def count_task() -> dict:
             for task in self.tasks:
                 prob = pd.DataFrame(columns=prob_index, index=range(1, forward_trace)).fillna(0.0)
@@ -314,14 +327,14 @@ class task_data:
                     is_continued = True
                     for j in range(1, min(forward_trace, len(self.data) - idx)):
                         # 報酬を得たときと同じ選択(CF両方)をしたときの処理
-                        if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][
-                            idx] and is_continued:  # TODO omissionを除いてカウントしたい
+                        if dt["hole_no"] == self.data_ci["hole_no"][
+                            idx + j] and is_continued:  # TODO omissionを除いてカウントしたい
                             prob["c_same"][j] = prob["c_same"][j] + 1
                         # omissionの場合
-                        elif self.data.shift(-j)["is_omission"][idx]:
+                        elif self.data["is_omission"][idx + j]:
                             prob["c_omit"][j] = prob["c_omit"][j] + 1
                             # is_continued = False
-                        elif dt["hole_no"] != self.data.shift(-j)["hole_no"][idx] and is_continued:
+                        elif dt["hole_no"] != self.data["hole_no"][idx + j] and is_continued:
                             prob["c_diff"][j] = prob["c_diff"][j] + 1
                         # 違うhole
                 #            else:
@@ -331,14 +344,14 @@ class task_data:
                     is_continued = True
                     for j in range(1, min(forward_trace, len(self.data) - idx)):
                         # 連続で失敗しているときの処理
-                        if dt["hole_no"] == self.data_ci.shift(-j)["hole_no"][
-                            idx] and is_continued:  # TODO omissionを除いてカウントしたい
+                        if dt["hole_no"] == self.data_ci["hole_no"][
+                            idx + j] and is_continued:  # TODO omissionを除いてカウントしたい
                             prob["f_same"][j] = prob["f_same"][j] + 1
-                        elif self.data.shift(-j)["is_omission"][idx] and is_continued:
+                        elif self.data["is_omission"][idx + j] and is_continued:
                             prob["f_omit"][j] = prob["f_omit"][j] + 1
-                        elif dt["hole_no"] != self.data.shift(-j)["hole_no"][idx] and not \
-                                self.data.shift(-j)["is_omission"][
-                                    idx] and is_continued:
+                        elif dt["hole_no"] != self.data["hole_no"][idx + j] and not \
+                                self.data["is_omission"][
+                                    idx + j] and is_continued:
                             prob["f_diff"][j] = prob["f_diff"][j] + 1
                             # is_continued = False
                         else:
@@ -360,74 +373,115 @@ class task_data:
                 # prob$o_NotMax %/=% after_o_all
                 # append
                 task_prob[task] = prob
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
-        # TODO
         def analyze_pattern(bit=4):
             pattern = {}
+            fig_prob = {}
             pattern_range = range(0, pow(2, bit))
             for task in self.tasks:
                 pattern[task] = {}
-                prob = pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range],
-                                    index=range(1, forward_trace)).fillna(0.0)
-                data = self.data[self.data.task == task]
+                fig_prob[task] = {"fig1": pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range]
+                                                       ).fillna(0.0),
+                                  "fig2": pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range]
+                                                       ).fillna(0.0),
+                                  "fig3": pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range],
+                                                       ).fillna(0.0)}
+                # "fig3": pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range],
+                #                      index=range(2, bit + 1)).fillna(0.0)}
+                data = self.data[
+                    (self.data.task == task) & (
+                        self.data.event_type.isin(["reward", "failure", "time over"]))].reset_index(drop=True)
+                data_ci = data[data.event_type.isin(["reward", "failure"])].reset_index(drop=True)
                 # search pattern
-                for single_pattern in pattern_range:
-                    f_pattern_matching = lambda x: min([
-                        (not np.isnan(data.shift(-(bit - i)).at[data.index[x], "is_correct"])) ==
-                        bool(math.floor(single_pattern / pow(2, i)) % 2)
-                        for i in range(0, bit)
-                    ])
-                    pattern[task].update({single_pattern: data[:-3][data[:-3].index.map(f_pattern_matching)]})
+
+                f_pattern_matching = lambda x: sum([
+                    (not np.isnan(data.at[x + (bit - i), "is_correct"])) * pow(2, i)
+                    for i in range(0, bit)])
+                pattern[task] = data_ci[:-(bit - 1)].assign(pattern=data_ci[:-(bit - 1)].index.map(f_pattern_matching))
                 # count
-                f_same_base = lambda x, idx: data.at[data.index[x.index], "hole_no"] == data.shift(-idx).at[
-                    data.index[x.index], "hole_no"]
-                f_same_prev = lambda x, idx: data.shift(-idx + 1).at[data.index[x.index], "hole_no"] == \
-                                             data.shift(-idx).at[data.index[x.index], "hole_no"]
-                f_omit = lambda x, idx: bool(self.data_ci.iloc[x.index + idx].is_ommition)
-                for pat_tmp in pattern.keys():
-                    same_base = [pattern[task][pat_tmp].map(f_same_base, idx) for idx in range(1, bit)]
-                    same_prev = [pattern[task][pat_tmp].map(f_same_prev, idx) for idx in range(1, bit)]
-                    omit = [pattern[task][pat_tmp].map(f_omit, idx) for idx in range(1, bit)]
-                    # TODO append
+
+                f_same_base = lambda x: [data_ci.at[data_ci[data_ci.session_id == x].index[0], "hole_no"] == \
+                                         data_ci.at[data_ci[data_ci.session_id == x].index[0] + idx, "hole_no"] for idx
+                                         in range(1, bit)]
+                f_same_prev = lambda x: [data_ci.at[data_ci[data_ci.session_id == x].index[0] + idx - 1, "hole_no"] == \
+                                         data_ci.at[data_ci[data_ci.session_id == x].index[0] + idx, "hole_no"] for idx
+                                         in range(1, bit)]
+                f_omit = lambda x: [bool(data.at[data[data.session_id == x].index[0] + idx, "is_omission"]) for idx in
+                                    range(1, bit)]
+                functions = lambda x: [f_same_base(x), f_same_prev(x), f_omit(x)]
+                # pattern count -> probability
+                for pat_tmp in pattern_range:
+                    f_p = pd.DataFrame(list(pattern[task][pattern[task].pattern == pat_tmp].session_id.map(functions)),
+                                       columns=["fig1", "fig2", "fig3"]).fillna(0.0)
+                    if len(f_p):
+                        fig_prob[task]["fig1"]["{:04b}".format(pat_tmp)] = pd.DataFrame(
+                            list(f_p.fig1)).sum().fillna(0.0) / len(pattern[task][pattern[task].pattern == pat_tmp])
+                        fig_prob[task]["fig2"]["{:04b}".format(pat_tmp)] = pd.DataFrame(
+                            list(f_p.fig2)).sum().fillna(0.0) / len(pattern[task][pattern[task].pattern == pat_tmp])
+                        fig_prob[task]["fig3"]["{:04b}".format(pat_tmp)] = pd.DataFrame(
+                            list(f_p.fig3)).sum().fillna(0.0) / len(pattern[task][pattern[task].pattern == pat_tmp])
+                    else:
+                        for figure in list(f_p.columns):
+                            fig_prob[task][figure]["{:04b}".format(pat_tmp)] = fig_prob[task][figure][
+                                "{:04b}".format(pat_tmp)].fillna(0.0)
+
+            # save
+            self.pattern_prob = pattern
+            self.fig_prob_tmp = fig_prob
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
         def burst():
-            # RFOで絞り込み
+            # で絞り込み
             # 時間を計算、バースト番号振り分け
             # データ全体の該当部分にはめ込む
             # 前の値で補完
             # df.fillna(method="ffill")
-            pass
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
         count_all()
         count_task()
         analyze_pattern()
-        return self.data, probability, task_prob, self.delta
+        return self.data, probability, task_prob, self.delta, self.fig_prob_tmp
 
     def dev_read_data(self, mouse_no):
         task_prob = {}
+        delta = {}
+        fig_prob = {}
         data = pd.read_csv('{}data/no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, "all"))
         probability = pd.read_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, "all"))
-        delta = {}
+
         for task in self.tasks:
             delta[task] = pd.read_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
             task_prob[task] = pd.read_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
-        return data, probability, task_prob, delta
+            for fig_num in ["fig1", "fig2", "fig3"]:
+                fig_prob[task][fig_num] = pd.read_csv('{}data/no{:03d}_{}_fig.csv'.format(self.logpath, mouse_no, task))
+
+        return data, probability, task_prob, delta, fig_prob
 
     def export_csv(self, mouse_no):
+        # FutureWarning: The signature of `Series.to_csv` was aligned to that of `DataFrame.to_csv`, and
+        # argument 'header' will change its default value from False to True: please pass an explicit value to suppress this warning.
+        #   self.mice_delta[mouse_no][task].to_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
         self.mice_task[mouse_no].to_csv('{}data/no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, "all"))
         self.probability[mouse_no].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, "all"))
         for task in self.tasks:
             self.mice_delta[mouse_no][task].to_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
+            # AttributeError: 'Series' object has no attribute 'type'
             reward_latency_data = self.mice_delta[mouse_no][task][
                 self.mice_delta[mouse_no][task].type == "reward_latency"]
             reward_latency_data.to_csv('{}data/no{:03d}_{}_rewardlatency.csv'.format(self.logpath, mouse_no, task))
             self.task_prob[mouse_no][task].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
+            [self.fig_prob[mouse_no][task][fig_num].to_csv(
+                '{}data/no{:03d}_{}_{}_prob_fig.csv'.format(self.logpath, mouse_no, task, fig_num)) for fig_num in
+                ["fig1", "fig2", "fig3"]]
+        print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
 
 # TODO 1. モデルクラス{ログからのQ値更新, 次ステップの行動選択予測, 予測との一致度の記録, 総合一致度の算出}
 # TODO 2. 複数モデル×パラメータセット, パラメータセットの定義(GA,GP探索を見据えて), テストの実行(並列実行 joblib)
 # TODO 3. hist2d 連続無報酬期間 vs 区間Entropy(10 step分) 全マウス・タスク毎
-# TODO 4. 1111(正正正正)～0000(誤誤誤誤) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)}, 4bit固定ではなくn bit対応で構築
+# TODO 4. 1111(正正正正)～0000(誤誤誤誤) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)},fig4{次の10区間の区間エントロピー}, 4bit固定ではなくn bit対応で構築
 # TODO 5. 横軸:時間（1時間単位） vs 縦軸:区間entropy(単位時間内), correct/incorrect/omission
 # TODO 6. Burst raster plot
 
@@ -446,8 +500,8 @@ if __name__ == "__main__":
     # graph_ins.omission_plot()
     # graph_ins.ent_raster_cumsum()
     # graph_ins.reaction_scatter()
-    graph_ins.reaction_hist2d()
+    # graph_ins.reaction_hist2d()
     # graph_ins.reward_latency_scatter()
-    graph_ins.reward_latency_hist2d()
+    # graph_ins.reward_latency_hist2d()
 
     print("{} ; all done".format(datetime.now()))

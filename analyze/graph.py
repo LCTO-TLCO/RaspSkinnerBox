@@ -31,7 +31,7 @@ class graph:
             ax.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole7'] * 4, s=15, color=cl)
             ax.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole9'] * 5, s=15, color=cl)
             ax.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_omission'] * 0, s=15,
-                       color=cl)  # TODO omissionだけsession_idが重複している?
+                       color=cl)
         ax.set_ylabel("Hole")
         plt.xlim(0, dt['session_id'].max() - dt['session_id'].min())
 
@@ -203,9 +203,9 @@ class graph:
                     ax.set_ylabel("Reward latency (s)")
                     plt.savefig('fig/{}no{:03d}_{}_reward_latency_hist2d.png'.format(self.exportpath, mouse_id, task))
 
-        # 全マウス 各タスク TODO pandas依存の書き方に直す
+        # 全マウス 各タスク TODO pandas依存の書き方に直す → histpandasにはないので不可
         for task in self.tasks:
-#            data_all_mice = pd.DataFrame([], columns=data.columns)
+            # data_all_mice = pd.DataFrame([], columns=data.columns)
             data_all_mice = pd.DataFrame([])
             for mouse_id in self.mice:
                 data_all_mice = data_all_mice.append(self.data.mice_delta[mouse_id][task][
