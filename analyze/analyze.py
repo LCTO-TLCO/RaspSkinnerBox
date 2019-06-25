@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 import math
@@ -116,10 +116,9 @@ class task_data:
                              'reward_latency_sec': pd.to_timedelta(reward_latency) / np.timedelta64(1, 's')
                              }, ignore_index=True)
                     return delta_df
-                    # TODO 区間entropy(未来方向に10step) for文の代わりにmap ヘルパー関数使用
 
                 delta_df = data[data.task == task].session_id.drop_duplicates().map(calculate)
-                deltas[task] = pd.concat(list(delta_df))
+                deltas[task] = pd.concat(list(delta_df), sort=False)
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
             return deltas
 
@@ -424,7 +423,8 @@ class task_data:
                             list(f_p.fig3)).sum().fillna(0.0) / len(pattern[task][pattern[task].pattern == pat_tmp])
                     else:
                         for figure in list(f_p.columns):
-                            fig_prob[task][figure]["{:04b}".format(pat_tmp)] = fig_prob[task][figure]["{:04b}".format(pat_tmp)].fillna(0.0)
+                            fig_prob[task][figure]["{:04b}".format(pat_tmp)] = fig_prob[task][figure][
+                                "{:04b}".format(pat_tmp)].fillna(0.0)
 
             # save
             self.pattern_prob = pattern
