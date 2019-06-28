@@ -6,7 +6,7 @@ from scipy.stats import entropy
 from graph import graph
 import sys
 
-debug = False
+debug = True
 
 
 class task_data:
@@ -480,8 +480,10 @@ class task_data:
         for task in self.tasks:
             delta[task] = pd.read_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
             task_prob[task] = pd.read_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, task))
+            fig_prob[task] = {}
             for fig_num in ["fig1", "fig2", "fig3"]:
-                fig_prob[task][fig_num] = pd.read_csv('{}data/no{:03d}_{}_fig.csv'.format(self.logpath, mouse_no, task))
+                fig_prob[task][fig_num] = pd.read_csv(
+                    '{}data/no{:03d}_{}_{}_prob_fig.csv'.format(self.logpath, mouse_no, task, fig_num))
 
         return data, probability, task_prob, delta, fig_prob
 
