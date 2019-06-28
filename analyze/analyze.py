@@ -25,6 +25,7 @@ class task_data:
         self.mice_delta = {}
         self.logpath = logpath
         self.session_id = 0
+        self.burst_id = 0
         self.data_not_omission = None
         self.fig_prob_tmp = None
         self.fig_prob = {}
@@ -43,13 +44,15 @@ class task_data:
         print('done')
 
     def read_data(self):
-        header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"]
-        task_prob = {}
 
         def rehash_session_id():
             data = pd.read_csv(self.data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
             print("max_id_col:{}".format(len(data)))
-            session_id = 0
+
+            def remove_terminate(index):
+                if data.at[index, "event_type"] == data.at[index + 1, "event_type"] and data.at[
+                    index, "event_type"] == "start":
+                    data.drop(index, inplace=True)
 
             def rehash(x_index):
                 if data.at[data.index[x_index], "task"] == "T0":
@@ -64,6 +67,8 @@ class task_data:
                 else:
                     return self.session_id
 
+            list(map(remove_terminate, data.index[:-1]))
+            data.reset_index(drop=True, inplace=True)
             data["session_id"] = list(map(rehash, data.index))
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
             return data
@@ -125,10 +130,10 @@ class task_data:
         def add_hot_vector():
             #    data = data[data["event_type"].isin(["reward", "failure", "time over"])]
             data = self.data
-            # data = data[data["event_type"].isin(["reward", "failure", "time over"])]
+            # data = data[data[".seevent_type"].isin(["reward", "failure", "time over"])]
             # data = data[data["task"].isin(self.tasks)]
 
-            data = data.reset_index()
+            data = data.reset_index(drop=True)
             # task interval
             task_start_index = [0]
             for i in range(1, len(data)):
@@ -241,38 +246,6 @@ class task_data:
             return ent
             # endregion
 
-        self.data = rehash_session_id()
-        self.data = add_hot_vector()
-        self.data_ci = self.data
-        self.data[self.data.event_type.isin(['reward', 'failure'])]["hole_choice_entropy"] = calc_entropy()
-        self.data[self.data.event_type.isin(['reward', 'failure'])]["entropy_10"] = calc_entropy(10)
-        self.delta = add_timedelta()
-        self.data_not_omission = self.data[
-            ~self.data.session_id.isin(self.data.session_id[self.data.event_type.isin(["time over"])])]
-
-        # action Probability
-        after_c_all = float(len(self.data[self.data["is_correct"] == 1]))
-        after_f_all = float(len(self.data[self.data["is_incorrect"] == 1]))
-        after_c_starts = self.data[self.data["is_correct"] == 1]
-        after_f_starts = self.data[self.data["is_incorrect"] == 1]
-        after_c_all_task = {}
-        after_f_all_task = {}
-        after_c_starts_task = {}
-        after_f_starts_task = {}
-        for task in self.tasks:
-            after_c_starts_task[task] = self.data[(self.data["is_correct"] == 1) & (self.data["task"] == task)]
-            after_f_starts_task[task] = self.data[(self.data["is_incorrect"] == 1) & (self.data["task"] == task)]
-            after_c_all_task[task] = float(len(after_c_starts_task[task]))
-            after_f_all_task[task] = float(len(after_f_starts_task[task]))
-
-        # after_o_all = len(data[data["event_type"] == "time over"])
-        forward_trace = 5
-        prob_index = ["c_same", "c_diff", "c_omit", "c_checksum", "f_same", "f_diff", "f_omit", "f_checksum",
-                      "c_NotMax",
-                      "f_NotMax", "o_NotMax"]
-        probability = pd.DataFrame(columns=prob_index, index=range(1, forward_trace + 1)).fillna(0.0)
-
-        # count
         def count_all():
             # correctスタート
             for idx, dt in after_c_starts.iterrows():
@@ -425,23 +398,76 @@ class task_data:
                         for figure in list(f_p.columns):
                             fig_prob[task][figure]["{:04b}".format(pat_tmp)] = fig_prob[task][figure][
                                 "{:04b}".format(pat_tmp)].fillna(0.0)
-
+                    for figure in list(f_p.columns):
+                        # fig_prob[task][figure]["{:04b}".format(pat_tmp)].append(pd.Series([len(
+                        #     pattern[task][pattern[task].pattern == pat_tmp])], index="n"))
+                        fig_prob[task][figure].at["n", "{:04b}".format(pat_tmp)] = len(
+                            pattern[task][pattern[task].pattern == pat_tmp])
             # save
             self.pattern_prob = pattern
             self.fig_prob_tmp = fig_prob
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
         def burst():
-            # で絞り込み
-            # 時間を計算、バースト番号振り分け
-            # データ全体の該当部分にはめ込む
-            # 前の値で補完
-            # df.fillna(method="ffill")
+            def calc_burst(session):
+                if session == 0:
+                    self.burst_id = 0
+                    return self.burst_id
+                if data.at[data.index[data.session_id == session][0], "timestamps"] - \
+                        data.at[data.index[data.session_id == session - 1][0], "timestamps"] >= timedelta(
+                    seconds=60):
+                    self.burst_id = self.burst_id + 1
+
+                return self.burst_id
+
+            data = self.data[self.data.event_type.isin(["reward", "failure", "time over"])]
+            # self.data["burst"] = np.nan
+            # self.data.loc[self.data.index[self.data.session_id == 0], "burst"] = 0
+            self.data = self.data.merge(
+                pd.DataFrame({"session_id": self.data.session_id.unique(),
+                              "burst": list(map(calc_burst, self.data.session_id.unique()))}),
+                on="session_id", how="left")
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
+
+        header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"]
+        task_prob = {}
+        self.data = rehash_session_id()
+        self.data = add_hot_vector()
+        self.data_ci = self.data
+        self.data.loc[
+            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "hole_choice_entropy"] = calc_entropy()
+        self.data.loc[
+            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_10"] = calc_entropy(10)
+        self.delta = add_timedelta()
+        self.data_not_omission = self.data[
+            ~self.data.session_id.isin(self.data.session_id[self.data.event_type.isin(["time over"])])]
+
+        # action Probability
+        after_c_all = float(len(self.data[self.data["is_correct"] == 1]))
+        after_f_all = float(len(self.data[self.data["is_incorrect"] == 1]))
+        after_c_starts = self.data[self.data["is_correct"] == 1]
+        after_f_starts = self.data[self.data["is_incorrect"] == 1]
+        after_c_all_task = {}
+        after_f_all_task = {}
+        after_c_starts_task = {}
+        after_f_starts_task = {}
+        for task in self.tasks:
+            after_c_starts_task[task] = self.data[(self.data["is_correct"] == 1) & (self.data["task"] == task)]
+            after_f_starts_task[task] = self.data[(self.data["is_incorrect"] == 1) & (self.data["task"] == task)]
+            after_c_all_task[task] = float(len(after_c_starts_task[task]))
+            after_f_all_task[task] = float(len(after_f_starts_task[task]))
+
+        # after_o_all = len(data[data["event_type"] == "time over"])
+        forward_trace = 5
+        prob_index = ["c_same", "c_diff", "c_omit", "c_checksum", "f_same", "f_diff", "f_omit", "f_checksum",
+                      "c_NotMax",
+                      "f_NotMax", "o_NotMax"]
+        probability = pd.DataFrame(columns=prob_index, index=range(1, forward_trace + 1)).fillna(0.0)
 
         count_all()
         count_task()
-        analyze_pattern()
+        analyze_pattern(3)
+        burst()
         return self.data, probability, task_prob, self.delta, self.fig_prob_tmp
 
     def dev_read_data(self, mouse_no):
