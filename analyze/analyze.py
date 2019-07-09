@@ -6,6 +6,7 @@ from scipy.stats import entropy
 from graph import graph
 import sys
 
+# debug = True
 debug = False
 
 
@@ -29,6 +30,7 @@ class task_data:
         self.data_not_omission = None
         self.fig_prob_tmp = None
         self.fig_prob = {}
+        self.bit = 3
 
         print('reading data...', end='')
         if debug:
@@ -466,9 +468,14 @@ class task_data:
 
         count_all()
         count_task()
-        bit = 3
-        pp = analyze_pattern(bit)
+        # bit analyze
+        pp = analyze_pattern(self.bit)
         pp = pd.concat([pp[task].loc[:, pp[task].columns.isin(["session_id", "pattern"])] for task in self.tasks])
+        self.data = pd.merge(self.data, pp, how='left')
+        # 2 bit analyze
+        pp = analyze_pattern(2)
+        pp = pd.concat([pp[task].loc[:, pp[task].columns.isin(["session_id", "pattern"])] for task in self.tasks])
+        pp = pp.rename(columns={"pattern":"pattern_2bit"})
         self.data = pd.merge(self.data, pp, how='left')
         burst()
         return self.data, probability, task_prob, self.delta, self.fig_prob_tmp, pattern
