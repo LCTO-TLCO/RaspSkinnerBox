@@ -255,7 +255,7 @@ class graph:
                 # ax.set_xticks(np.array(
                 # list(map(lambda x: x + 1,
                 #          [int(num) for num in data.index])) # ))
-                # plt.gca().get_xaxis().set_major_locator(mpl.ticker.MaxNLocator(integer=True))
+                plt.gca().get_xaxis().set_major_locator(mpl.ticker.MaxNLocator(integer=True))
                 plt.savefig('fig/{}no{:03d}_{}_fig2.png'.format(self.exportpath, mouse_id, task))
             plt.show(block=True)
 
