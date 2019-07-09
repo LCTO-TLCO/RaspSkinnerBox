@@ -532,7 +532,7 @@ if __name__ == "__main__":
     # graph_ins.norew_reward_latency_scatter()
     # graph_ins.norew_reward_latency_hist2d()
     # graph_ins.prob_same_base()
-    graph_ins.prob_same_prev()
+    # graph_ins.prob_same_prev()
     # graph_ins.prob_omit()
     graph_ins.next_10_ent()
     graph_ins.norew_ent_10()

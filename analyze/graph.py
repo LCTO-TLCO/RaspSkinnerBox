@@ -288,18 +288,20 @@ class graph:
         pass
 
     def norew_ent_10(self):
+        """ hist2d """
         for mouse_id in self.mice:
             for task in self.tasks:
                 fig = plt.figure(figsize=(15, 8), dpi=100)
                 data = self.data.mice_delta[mouse_id][task][
                     self.data.mice_delta[mouse_id][task].type == "reward_latency"]
                 ax = fig.add_subplot(1, 1, 1)
-                ax.scatter(data.noreward_duration_sec, data.reward_latency_sec)
+                H = ax.hist2d(data.noreward_duration_sec, data.reward_latency_sec)
                 plt.title('{:03} reward_latency {}'.format(mouse_id, task))
                 ax.set_xlabel("No reward duration (s)")
-                ax.set_ylabel("Reward latency (s)")
+                ax.set_ylabel("10 step entropy")
+                fig.colorbar(H[3], ax=ax)
                 plt.savefig('fig/{}no{:03d}_{}_reward_latency.png'.format(self.exportpath, mouse_id, task))
-        plt.show(block=True)
+            plt.show(block=True)
 
     def time_ent_10(self):
         for mouse_id in self.mice:
