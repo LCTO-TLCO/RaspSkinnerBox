@@ -351,14 +351,14 @@ class task_data:
         def analyze_pattern(bit=4):
             pattern = {}
             fig_prob = {}
-            pattern_range = range(0, pow(2, bit))
+            pattern_range = range(0, pow(2, bit-1))
             for task in self.tasks:
                 pattern[task] = {}
-                fig_prob[task] = {"fig1": pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range]
+                fig_prob[task] = {"fig1": pd.DataFrame(columns=["{:b}".format(i).zfill(bit) for i in pattern_range]
                                                        ).fillna(0.0),
-                                  "fig2": pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range]
+                                  "fig2": pd.DataFrame(columns=["{:b}".format(i).zfill(bit) for i in pattern_range]
                                                        ).fillna(0.0),
-                                  "fig3": pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range],
+                                  "fig3": pd.DataFrame(columns=["{:b}".format(i).zfill(bit) for i in pattern_range],
                                                        ).fillna(0.0)}
                 # "fig3": pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range],
                 #                      index=range(2, bit + 1)).fillna(0.0)}
@@ -388,20 +388,20 @@ class task_data:
                     f_p = pd.DataFrame(list(pattern[task][pattern[task].pattern == pat_tmp].session_id.map(functions)),
                                        columns=["fig1", "fig2", "fig3"]).fillna(0.0)
                     if len(f_p):
-                        fig_prob[task]["fig1"]["{:04b}".format(pat_tmp)] = pd.DataFrame(
+                        fig_prob[task]["fig1"]["{:b}".format(pat_tmp).zfill(bit)] = pd.DataFrame(
                             list(f_p.fig1)).sum().fillna(0.0) / len(pattern[task][pattern[task].pattern == pat_tmp])
-                        fig_prob[task]["fig2"]["{:04b}".format(pat_tmp)] = pd.DataFrame(
+                        fig_prob[task]["fig2"]["{:b}".format(pat_tmp).zfill(bit)] = pd.DataFrame(
                             list(f_p.fig2)).sum().fillna(0.0) / len(pattern[task][pattern[task].pattern == pat_tmp])
-                        fig_prob[task]["fig3"]["{:04b}".format(pat_tmp)] = pd.DataFrame(
+                        fig_prob[task]["fig3"]["{:b}".format(pat_tmp).zfill(bit)] = pd.DataFrame(
                             list(f_p.fig3)).sum().fillna(0.0) / len(pattern[task][pattern[task].pattern == pat_tmp])
                     else:
                         for figure in list(f_p.columns):
-                            fig_prob[task][figure]["{:04b}".format(pat_tmp)] = fig_prob[task][figure][
-                                "{:04b}".format(pat_tmp)].fillna(0.0)
+                            fig_prob[task][figure]["{:b}".format(pat_tmp).zfill(bit)] = fig_prob[task][figure][
+                                "{:b}".format(pat_tmp).zfill(bit)].fillna(0.0)
                     for figure in list(f_p.columns):
                         # fig_prob[task][figure]["{:04b}".format(pat_tmp)].append(pd.Series([len(
                         #     pattern[task][pattern[task].pattern == pat_tmp])], index="n"))
-                        fig_prob[task][figure].at["n", "{:04b}".format(pat_tmp)] = len(
+                        fig_prob[task][figure].at["n", "{:b}".format(pat_tmp).zfill(bit)] = len(
                             pattern[task][pattern[task].pattern == pat_tmp])
             # save
             self.pattern_prob = pattern
@@ -483,7 +483,7 @@ class task_data:
             fig_prob[task] = {}
             for fig_num in ["fig1", "fig2", "fig3"]:
                 fig_prob[task][fig_num] = pd.read_csv(
-                    '{}data/no{:03d}_{}_{}_prob_fig.csv'.format(self.logpath, mouse_no, task, fig_num))
+                    '{}data/no{:03d}_{}_{}_prob_fig.csv'.format(self.logpath, mouse_no, task, fig_num),index_col=0)
 
         return data, probability, task_prob, delta, fig_prob
 
