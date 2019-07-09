@@ -1,3 +1,5 @@
+import sys
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import datetime
@@ -295,12 +297,14 @@ class graph:
                 data = self.data.mice_delta[mouse_id][task][
                     self.data.mice_delta[mouse_id][task].type == "reward_latency"]
                 ax = fig.add_subplot(1, 1, 1)
-                H = ax.hist2d(data.noreward_duration_sec, data.reward_latency_sec)
-                plt.title('{:03} reward_latency {}'.format(mouse_id, task))
+                H = ax.hist2d(data.noreward_duration_sec, data.reward_latency_sec,
+                              bins=[np.linspace(0, 1000, 51), np.linspace(0, 15, 31)])
+                plt.title('{:03} {} {}'.format(mouse_id, sys._getframe().f_code.co_name, task))
                 ax.set_xlabel("No reward duration (s)")
                 ax.set_ylabel("10 step entropy")
                 fig.colorbar(H[3], ax=ax)
-                plt.savefig('fig/{}no{:03d}_{}_reward_latency.png'.format(self.exportpath, mouse_id, task))
+                plt.savefig(
+                    'fig/{}no{:03d}_{}_{}.png'.format(self.exportpath, mouse_id, task, sys._getframe().f_code.co_name))
             plt.show(block=True)
 
     def time_ent_10(self):
@@ -311,10 +315,11 @@ class graph:
                     self.data.mice_delta[mouse_id][task].type == "reward_latency"]
                 ax = fig.add_subplot(1, 1, 1)
                 ax.scatter(data.noreward_duration_sec, data.reward_latency_sec)
-                plt.title('{:03} reward_latency {}'.format(mouse_id, task))
+                plt.title('{:03} {} {}'.format(mouse_id, sys._getframe().f_code.co_name, task))
                 ax.set_xlabel("No reward duration (s)")
-                ax.set_ylabel("Reward latency (s)")
-                plt.savefig('fig/{}no{:03d}_{}_reward_latency.png'.format(self.exportpath, mouse_id, task))
+                ax.set_ylabel("10 step entropy")
+                plt.savefig(
+                    'fig/{}no{:03d}_{}_{}.png'.format(self.exportpath, mouse_id, task, sys._getframe().f_code.co_name))
         plt.show(block=True)
 
     def burst_raster(self):

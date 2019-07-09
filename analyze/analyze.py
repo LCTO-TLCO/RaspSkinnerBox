@@ -536,4 +536,5 @@ if __name__ == "__main__":
     # graph_ins.prob_omit()
     graph_ins.next_10_ent()
     graph_ins.norew_ent_10()
+    graph_ins.time_ent_10()
     print("{} ; all done".format(datetime.now()))
