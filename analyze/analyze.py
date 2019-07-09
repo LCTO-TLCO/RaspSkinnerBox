@@ -534,4 +534,6 @@ if __name__ == "__main__":
     # graph_ins.prob_same_base()
     graph_ins.prob_same_prev()
     # graph_ins.prob_omit()
+    graph_ins.next_10_ent()
+    graph_ins.norew_ent_10()
     print("{} ; all done".format(datetime.now()))
