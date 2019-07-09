@@ -239,14 +239,23 @@ class graph:
         """ fig2 """
         for mouse_id in self.mice:
             for task in self.tasks:
-                ax = self.data.fig_prob[mouse_id][task]["fig2"].drop("n").plot(
-                    title='{:03} prob_same_prev_pattern {}'.format(mouse_id,  task))
+                data = self.data.fig_prob[mouse_id][task]["fig2"].drop("n")
+                data = data.set_index(pd.Index(list(map(lambda x: x + 1, [int(num) for num in data.index]))))
+                data.loc[0] = 0.2
+                data = data.sort_index()
+                ax = data.plot(title='{:03} prob_same_prev_pattern {}'.format(mouse_id, task))
                 # for pattern in list(self.data.fig_prob[mouse_id][task]["fig2"].columns):
-                    # fig = plt.figure(figsize=(15, 8), dpi=100)
-                    # data = self.data.fig_prob[mouse_id][task]["fig2"][pattern]
-                    # data.plot(title='{:03} prob_same_prev_pattern{} {}'.format(mouse_id, pattern, task))
+                # fig = plt.figure(figsize=(15, 8), dpi=100)
+                # data = self.data.fig_prob[mouse_id][task]["fig2"][pattern]
+                # data.plot(title='{:03} prob_same_prev_pattern{} {}'.format(mouse_id, pattern, task))
                 ax.set_xlabel("bit")
                 ax.set_ylabel("P(same before)")
+                ax.set_xlim(0, max([int(num) for num in data.index]))
+                # ここで軸目盛が消えてる
+                # ax.set_xticks(np.array(
+                # list(map(lambda x: x + 1,
+                #          [int(num) for num in data.index])) # ))
+                # plt.gca().get_xaxis().set_major_locator(mpl.ticker.MaxNLocator(integer=True))
                 plt.savefig('fig/{}no{:03d}_{}_fig2.png'.format(self.exportpath, mouse_id, task))
             plt.show(block=True)
 
@@ -254,11 +263,11 @@ class graph:
         for mouse_id in self.mice:
             for task in self.tasks:
                 ax = self.data.fig_prob[mouse_id][task]["fig3"].drop("n").plot(
-                    title='{:03} prob_omit_pattern {}'.format(mouse_id,  task))
+                    title='{:03} prob_omit_pattern {}'.format(mouse_id, task))
                 # for pattern in list(self.data.fig_prob[mouse_id][task]["fig3"].columns):
-                    # fig = plt.figure(figsize=(15, 8), dpi=100)
-                    # data = self.data.fig_prob[mouse_id][task]["fig3"][pattern]
-                    # data.plot(title='{:03} prob_omit_pattern{} {}'.format(mouse_id, pattern, task))
+                # fig = plt.figure(figsize=(15, 8), dpi=100)
+                # data = self.data.fig_prob[mouse_id][task]["fig3"][pattern]
+                # data.plot(title='{:03} prob_omit_pattern{} {}'.format(mouse_id, pattern, task))
                 ax.set_xlabel("bit")
                 ax.set_ylabel("Reward latency (s)")
                 plt.savefig('fig/{}no{:03d}_{}_fig3.png'.format(self.exportpath, mouse_id, task))

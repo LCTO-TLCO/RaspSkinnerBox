@@ -529,7 +529,9 @@ if __name__ == "__main__":
     # graph_ins.ent_raster_cumsum()
     # graph_ins.reaction_scatter()
     # graph_ins.reaction_hist2d()
-    # graph_ins.reward_latency_scatter()
-    # graph_ins.reward_latency_hist2d()
-
+    # graph_ins.norew_reward_latency_scatter()
+    # graph_ins.norew_reward_latency_hist2d()
+    # graph_ins.prob_same_base()
+    graph_ins.prob_same_prev()
+    # graph_ins.prob_omit()
     print("{} ; all done".format(datetime.now()))
