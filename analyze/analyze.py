@@ -6,8 +6,8 @@ from scipy.stats import entropy
 from graph import graph
 import sys
 
-# debug = True
-debug = False
+debug = True
+# debug = False
 
 
 class task_data:
@@ -350,6 +350,7 @@ class task_data:
                 task_prob[task] = prob
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
+        # TODO 結構な確率でエラー吐く
         def analyze_pattern(bit=4):
             fig_prob = {}
             pattern_range = range(0, pow(2, bit))
@@ -475,7 +476,7 @@ class task_data:
         # 2 bit analyze
         pp = analyze_pattern(2)
         pp = pd.concat([pp[task].loc[:, pp[task].columns.isin(["session_id", "pattern"])] for task in self.tasks])
-        pp = pp.rename(columns={"pattern":"pattern_2bit"})
+        pp = pp.rename(columns={"pattern": "pattern_2bit"})
         self.data = pd.merge(self.data, pp, how='left')
         burst()
         return self.data, probability, task_prob, self.delta, self.fig_prob_tmp, pattern
@@ -521,7 +522,9 @@ class task_data:
 
 if __name__ == "__main__":
     print("{} ; started".format(datetime.now()))
-    # mice = [6, 7, 8, 11, 12, 13, 17]
+    # mice = [2, 3, 6, 7, 8, 11, 12, 13, 14, 17, 18, 19]
+    # error: 2,3,7,11,13,17,18
+    # mice = [19]
     mice = [12]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     #    logpath = '../RaspSkinnerBox/log/'
@@ -530,16 +533,16 @@ if __name__ == "__main__":
     graph_ins = graph(task, mice, tasks, logpath)
     # graph_ins.entropy_scatter()
     # graph_ins.nose_poke_raster()
-    # graph_ins.same_plot()
-    # graph_ins.omission_plot()
-    # graph_ins.ent_raster_cumsum()
-    # graph_ins.reaction_scatter()
-    # graph_ins.reaction_hist2d()
-    # graph_ins.norew_reward_latency_scatter()
-    # graph_ins.norew_reward_latency_hist2d()
-    # graph_ins.prob_same_base()
-    # graph_ins.prob_same_prev()
-    # graph_ins.prob_omit()
+    graph_ins.same_plot()
+    graph_ins.omission_plot()
+    graph_ins.ent_raster_cumsum()
+    graph_ins.reaction_scatter()
+    graph_ins.reaction_hist2d()
+    graph_ins.norew_reward_latency_scatter()
+    graph_ins.norew_reward_latency_hist2d()
+    graph_ins.prob_same_base()
+    graph_ins.prob_same_prev()
+    graph_ins.prob_omit()
     # graph_ins.next_10_ent()
     graph_ins.norew_ent_10()
     graph_ins.time_ent_10()
