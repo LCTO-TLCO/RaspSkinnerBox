@@ -287,7 +287,20 @@ class graph:
             plt.show(block=True)
 
     def next_10_ent(self):
-        pass
+        for mouse_id in self.mice:
+            for task in self.tasks:
+                data = self.data.mice_task[mouse_id][task]
+                data = data.set_index(pd.Index(list(map(lambda x: x + 1, [int(num) for num in data.index]))))
+                data = data.sort_index()
+                ax = data.plot(title='{:03} {} {}'.format(mouse_id, sys._getframe().f_code.co_name, task))
+                ax.set_xlabel("bit")
+                ax.set_ylabel("next 10 entropy")
+                ax.set_xlim(0, max([int(num) for num in data.index]))
+                plt.gca().get_xaxis().set_major_locator(mpl.ticker.MaxNLocator(integer=True))
+                plt.savefig(
+                    'fig/{}no{:03d} {}_fig4.png'.format(self.exportpath, mouse_id, sys._getframe().f_code.co_name,
+                                                        task))
+            plt.show(block=True)
 
     def norew_ent_10(self):
         """ hist2d """
@@ -304,7 +317,7 @@ class graph:
                 ax.set_ylabel("10 step entropy")
                 fig.colorbar(H[3], ax=ax)
                 plt.savefig(
-                    'fig/{}no{:03d}_{}_{}.png'.format(self.exportpath, mouse_id, task, sys._getframe().f_code.co_name))
+                    'fig/{}no{:03d}_{} {}.png'.format(self.exportpath, mouse_id, sys._getframe().f_code.co_name, task))
             plt.show(block=True)
 
     def time_ent_10(self):

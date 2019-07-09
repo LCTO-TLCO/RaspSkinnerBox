@@ -39,7 +39,7 @@ class task_data:
             for mouse_id in self.mouse_no:
                 self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
                 self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[
-                    mouse_id], self.fig_prob[mouse_id] = self.read_data()
+                    mouse_id], self.fig_prob[mouse_id], self.pattern_prob[mouse_id] = self.read_data()
                 self.export_csv(mouse_id)
         print('done')
 
@@ -349,9 +349,8 @@ class task_data:
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
         def analyze_pattern(bit=4):
-            pattern = {}
             fig_prob = {}
-            pattern_range = range(0, pow(2, bit-1))
+            pattern_range = range(0, pow(2, bit))
             for task in self.tasks:
                 pattern[task] = {}
                 fig_prob[task] = {"fig1": pd.DataFrame(columns=["{:b}".format(i).zfill(bit) for i in pattern_range]
@@ -360,8 +359,6 @@ class task_data:
                                                        ).fillna(0.0),
                                   "fig3": pd.DataFrame(columns=["{:b}".format(i).zfill(bit) for i in pattern_range],
                                                        ).fillna(0.0)}
-                # "fig3": pd.DataFrame(columns=["{:04b}".format(i) for i in pattern_range],
-                #                      index=range(2, bit + 1)).fillna(0.0)}
                 data = self.data[
                     (self.data.task == task) & (
                         self.data.event_type.isin(["reward", "failure", "time over"]))].reset_index(drop=True)
@@ -403,10 +400,11 @@ class task_data:
                         #     pattern[task][pattern[task].pattern == pat_tmp])], index="n"))
                         fig_prob[task][figure].at["n", "{:b}".format(pat_tmp).zfill(bit)] = len(
                             pattern[task][pattern[task].pattern == pat_tmp])
+                # self.data[self.data.task == task].loc["pattern"] = pattern[task].pattern
             # save
-            self.pattern_prob = pattern
             self.fig_prob_tmp = fig_prob
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
+            return pattern
 
         def burst():
             def calc_burst(session):
@@ -429,7 +427,9 @@ class task_data:
                 on="session_id", how="left")
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
+        # main
         header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"]
+        pattern = {}
         task_prob = {}
         self.data = rehash_session_id()
         self.data = add_hot_vector()
@@ -466,9 +466,13 @@ class task_data:
 
         count_all()
         count_task()
-        analyze_pattern(3)
+        bit = 3
+        pp = analyze_pattern(bit)
+        for task in self.tasks:
+            self.data = pd.merge(self.data, pp[task].loc[:, pp[task].columns.isin(["session_id", "pattern"])],
+                                 how='left')
         burst()
-        return self.data, probability, task_prob, self.delta, self.fig_prob_tmp
+        return self.data, probability, task_prob, self.delta, self.fig_prob_tmp, pattern
 
     def dev_read_data(self, mouse_no):
         task_prob = {}
@@ -483,14 +487,11 @@ class task_data:
             fig_prob[task] = {}
             for fig_num in ["fig1", "fig2", "fig3"]:
                 fig_prob[task][fig_num] = pd.read_csv(
-                    '{}data/no{:03d}_{}_{}_prob_fig.csv'.format(self.logpath, mouse_no, task, fig_num),index_col=0)
+                    '{}data/no{:03d}_{}_{}_prob_fig.csv'.format(self.logpath, mouse_no, task, fig_num), index_col=0)
 
         return data, probability, task_prob, delta, fig_prob
 
     def export_csv(self, mouse_no):
-        # FutureWarning: The signature of `Series.to_csv` was aligned to that of `DataFrame.to_csv`, and
-        # argument 'header' will change its default value from False to True: please pass an explicit value to suppress this warning.
-        #   self.mice_delta[mouse_no][task].to_csv('{}data/no{:03d}_{}_time.csv'.format(self.logpath, mouse_no, task))
         self.mice_task[mouse_no].to_csv('{}data/no{:03d}_{}_data.csv'.format(self.logpath, mouse_no, "all"))
         self.probability[mouse_no].to_csv('{}data/no{:03d}_{}_prob.csv'.format(self.logpath, mouse_no, "all"))
         for task in self.tasks:
@@ -508,8 +509,7 @@ class task_data:
 
 # TODO 1. モデルクラス{ログからのQ値更新, 次ステップの行動選択予測, 予測との一致度の記録, 総合一致度の算出}
 # TODO 2. 複数モデル×パラメータセット, パラメータセットの定義(GA,GP探索を見据えて), テストの実行(並列実行 joblib)
-# TODO 3. hist2d 連続無報酬期間 vs 区間Entropy(10 step分) 全マウス・タスク毎
-# TODO 4. 1111(正正正正)～0000(誤誤誤誤) fig1={P(基点とsame), N数}, fig2={P(一つ前とsame), N数}, fig3={P(omission)},fig4{次の10区間の区間エントロピー}, 4bit固定ではなくn bit対応で構築
+# TODO 4. 1111(正正正正)～0000(誤誤誤誤) fig4{次の10区間の区間エントロピー}, 4bit固定ではなくn bit対応で構築
 # TODO 5. 横軸:時間（1時間単位） vs 縦軸:区間entropy(単位時間内), correct/incorrect/omission
 # TODO 6. Burst raster plot
 
@@ -534,7 +534,7 @@ if __name__ == "__main__":
     # graph_ins.prob_same_base()
     # graph_ins.prob_same_prev()
     # graph_ins.prob_omit()
-    graph_ins.next_10_ent()
+    # graph_ins.next_10_ent()
     graph_ins.norew_ent_10()
     graph_ins.time_ent_10()
     print("{} ; all done".format(datetime.now()))
