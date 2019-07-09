@@ -6,7 +6,7 @@ from scipy.stats import entropy
 from graph import graph
 import sys
 
-debug = True
+debug = False
 
 
 class task_data:
@@ -468,9 +468,8 @@ class task_data:
         count_task()
         bit = 3
         pp = analyze_pattern(bit)
-        for task in self.tasks:
-            self.data = pd.merge(self.data, pp[task].loc[:, pp[task].columns.isin(["session_id", "pattern"])],
-                                 how='left')
+        pp = pd.concat([pp[task].loc[:, pp[task].columns.isin(["session_id", "pattern"])] for task in self.tasks])
+        self.data = pd.merge(self.data, pp, how='left')
         burst()
         return self.data, probability, task_prob, self.delta, self.fig_prob_tmp, pattern
 
