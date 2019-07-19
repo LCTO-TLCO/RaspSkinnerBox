@@ -53,7 +53,8 @@ def task(task_no: str, remained: int):
         begin = 0
     correct_times = begin
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
-
+        if not sum(list(map(is_execution_time, current_task["time"]))):
+            continue
         export(task_no, session_no, correct_times, "start")
         # if reset_time <= datetime.now():
         #     dispense_all(reward)
