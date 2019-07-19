@@ -6,8 +6,8 @@ from scipy.stats import entropy
 from graph import graph
 import sys
 
-debug = True
-# debug = False
+# debug = True
+debug = False
 
 
 class task_data:
@@ -524,8 +524,8 @@ if __name__ == "__main__":
     print("{} ; started".format(datetime.now()))
     # mice = [2, 3, 6, 7, 8, 11, 12, 13, 14, 17, 18, 19]
     # error: 2,3,7,11,13,17,18
-    # mice = [19]
-    mice = [12]
+    mice = [18]
+    # mice = [12]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
@@ -533,17 +533,18 @@ if __name__ == "__main__":
     graph_ins = graph(task, mice, tasks, logpath)
     # graph_ins.entropy_scatter()
     # graph_ins.nose_poke_raster()
-    graph_ins.same_plot()
-    graph_ins.omission_plot()
-    graph_ins.ent_raster_cumsum()
-    graph_ins.reaction_scatter()
-    graph_ins.reaction_hist2d()
-    graph_ins.norew_reward_latency_scatter()
-    graph_ins.norew_reward_latency_hist2d()
-    graph_ins.prob_same_base()
-    graph_ins.prob_same_prev()
-    graph_ins.prob_omit()
+    # graph_ins.same_plot()
+    # graph_ins.omission_plot()
+    # graph_ins.ent_raster_cumsum()
+    # graph_ins.reaction_scatter()
+    # graph_ins.reaction_hist2d()
+    # graph_ins.norew_reward_latency_scatter()
+    # graph_ins.norew_reward_latency_hist2d()
+    # graph_ins.prob_same_base()
+    # graph_ins.prob_same_prev()
+    # graph_ins.prob_omit()
     # graph_ins.next_10_ent()
-    graph_ins.norew_ent_10()
-    graph_ins.time_ent_10()
+    # graph_ins.norew_ent_10()
+    # graph_ins.time_ent_10()
+    graph_ins.time_holeno_raster_burst()
     print("{} ; all done".format(datetime.now()))

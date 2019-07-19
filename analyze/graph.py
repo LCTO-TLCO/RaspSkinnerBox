@@ -220,8 +220,6 @@ class graph:
 
         plt.show(block=True)
 
-    # TODO ここから下
-
     def prob_same_base(self):
         """ fig1 """
         for mouse_id in self.mice:
@@ -286,6 +284,8 @@ class graph:
                 plt.savefig('fig/{}no{:03d}_{}_fig3.png'.format(self.exportpath, mouse_id, task))
             plt.show(block=True)
 
+    # TODO ここから下
+
     def next_10_ent(self):
         bit = self.data.bit
         pattern = range(0, pow(2, bit))
@@ -295,7 +295,8 @@ class graph:
                 current_data = pd.DataFrame()
                 for pat_tmp in pattern:
                     current_data["{:b}".format(pat_tmp).zfill(self.data.bit)] = data[
-                        (data.pattern == pat_tmp) & (data.event_type.isin(["reward", "failure"]))].entropy_10.reset_index()
+                        (data.pattern == pat_tmp) & (
+                            data.event_type.isin(["reward", "failure"]))].entropy_10.reset_index()
 
                 ax = current_data.plot.hist()
                 ax.set_xlabel("next 10 entropy")
@@ -360,3 +361,17 @@ class graph:
             plt.title('{:03} burst_raster'.format(mouse_id))
             plt.show(block=True)
             plt.savefig('fig/{}no{:03d}_reaction_time.png'.format(self.exportpath, mouse_id))
+
+    def time_holeno_raster_burst(self):
+        for mouse_id in self.mice:
+            for task in self.tasks:
+                data = self.data.mice_task[mouse_id][self.data.mice_task[mouse_id].task == task]
+                start_time = data.timestamps.head(1).reset_index(drop=True)[0]
+                data = data[data.event_type.isin(["reward", "failure"])]
+                data.loc[:, "past_time"] = data.time_stamps - start_time
+                fig = plt.figure(figsize=(15, 8), dpi=100)
+                ax = data.plot(x="past_time", y="hole_correct")
+                data.plot(x="past_time", y="hole_incorrect", ax=ax)
+                ax.set_xlabel("past time")
+                ax.set_ylabel("hole dots")
+            plt.show()
