@@ -2,7 +2,7 @@
 # coding:utf-8
 import sys
 from box_interface import *
-from datetime import timedelta
+from datetime import *
 from random import seed, choice
 import random
 from file_io import *
@@ -11,7 +11,7 @@ from file_io import *
 DEBUG = False
 reward = 70  # changed
 today = datetime.today()
-reset_time = datetime(today.year, today.month, today.day + 1, 10, 0, 0)
+reset_time = datetime(today.year, today.month, today.day, 6, 0, 0) + timedelta(days=1)
 # ex_limit = {True: [1, 3], False: [50, 100]}
 ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
 mouse_no = "10"
@@ -53,6 +53,7 @@ def task(task_no: str, remained: int):
         begin = 0
     correct_times = begin
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
+
         export(task_no, session_no, correct_times, "start")
         # if reset_time <= datetime.now():
         #     dispense_all(reward)
@@ -156,6 +157,14 @@ def T0():
         session_no += 1
     reward = reward - times
     print("T0 end")
+
+
+def is_execution_time(start_end: list):
+    """ 実行時刻の開始終了リストを引数にして今実行時間かどうかを判定する """
+    start, end = [datetime.combine(datetime.today(), datetime.strptime(time, "%H:%M").time()) for time in start_end]
+    # 日付繰り上がりの処理
+    end = end + timedelta(days=int(start > end))
+    return start <= datetime.now() and end >= datetime.now()
 
 
 def dispense_all(feed):
