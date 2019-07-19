@@ -1,21 +1,25 @@
 #! /usr/bin python3
 # coding:utf-8
 import sys
+import schedule
 from box_interface import *
 from datetime import *
 from random import seed, choice
 import random
 from file_io import *
+import pandas as pd
 
 # define
 DEBUG = False
-reward = 70  # changed
-today = datetime.today()
-reset_time = datetime(today.year, today.month, today.day, 6, 0, 0) + timedelta(days=1)
+reward = 70
+# reset_time = datetime(today.year, today.month, today.day, 6, 0, 0) + timedelta(days=1)
 # ex_limit = {True: [1, 3], False: [50, 100]}
 ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
 mouse_no = "10"
 limit = {True: 25, False: 1}
+is_time_limit_task = False
+current_task_name = ""
+exist_reserved_payoff = False
 # while pelet > 0 and not datetime.now().time().hour == 10:
 
 seed(32)
@@ -25,6 +29,7 @@ def run(terminate="", remained=-1):
     global mouse_no
     setup()
     file_setup(mouse_no)
+    schedule.every().day.at("06:00").do(unpayed_feeds_calculate)
     if terminate in list(ex_flow.keys()):
         i = list(ex_flow.keys()).index(terminate)
         print("i=" + str(i))
@@ -39,12 +44,14 @@ def run(terminate="", remained=-1):
 
 
 def task(task_no: str, remained: int):
-    global reward
+    global reward, is_time_limit_task, current_task_name
     current_task = ex_flow[task_no]
     print("{} start".format(task_no))
     hole_lamps_turn("off")
     session_no = last_session_id()
+    current_task_name = task_no
     begin = 0
+    is_time_limit_task = "time" in current_task
     if remained == -1:
         begin = 0
     else:
@@ -53,11 +60,13 @@ def task(task_no: str, remained: int):
         begin = 0
     correct_times = begin
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
-        if not sum(list(map(is_execution_time, current_task["time"]))):
-            continue
+        # task start
+        if "time" in current_task:
+            if (not sum(list(map(is_execution_time, current_task["time"])))) and exist_reserved_payoff:
+                unpayed_feeds_calculate()
+                continue
+        schedule.run_pending()
         export(task_no, session_no, correct_times, "start")
-        # if reset_time <= datetime.now():
-        #     dispense_all(reward)
 
         # task call
         if current_task["task_call"]:
@@ -138,7 +147,8 @@ def task(task_no: str, remained: int):
 
 def T0():
     print("T0 start")
-    global reward
+    global reward, current_task_name
+    current_task_name = "T0"
     times = 0
     session_no = 0
     task_no = "T0"
@@ -169,13 +179,9 @@ def is_execution_time(start_end: list):
 
 
 def dispense_all(feed):
-    global reset_time
     for f in range(feed):
         dispense_pelet("payoff")
-    global reward
-    reward = 100
-    reset_time = datetime(today.year, today.month, today.day + 1, 10, 0, 0)
-    # ここで実験ぶった切るならexit()
+        sleep(5)
 
 
 def ITI(secs: list):
@@ -188,12 +194,25 @@ def ITI(secs: list):
 
 def unpayed_feeds_calculate():
     """ 直前の精算時間までに吐き出した餌の数を計上し足りなければdispense_all """
-    """ 未デバッグ """
-
-    # calc len
+    global current_task_name, remained,exist_reserved_payoff
+    if is_time_limit_task:
+        # リスケ
+        if sum(list(map(is_execution_time, ex_flow[current_task_name]["time"]))):
+            exist_reserved_payoff = True
+            return
+    exist_reserved_payoff = False
+    # calc remain
+    feeds = pd.read_csv(dispence_logfile_path, names=["date", "feed_num", "reason"], parse_dates=[0])
+    feeds = feeds[(feeds.date > datetime.combine(datetime.today() - timedelta(days=1), time(6, 0, 0))) &
+                  (feeds.date > datetime.combine(datetime.today(), time(6, 0, 0)))]
+    remained = remained - feeds.feed_num.sum()
     # dispense
-    None
-
+    sleep(5 * 60)
+    while remained > 0:
+        dispense_all(min(10, remained))
+        remained -= 10
+        sleep(5 * 60)
+    remained = 70
 
 if __name__ == "__main__":
     try:
