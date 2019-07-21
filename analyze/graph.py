@@ -2,12 +2,12 @@ import sys
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import datetime
+#import datetime
 import numpy as np
 import pandas as pd
 
 
-class graph:
+class rasp_graph:
     def __init__(self, task_datas, mice, tasks, exportpath):
         plt.style.use("ggplot")
         font = {'family': 'meiryo'}

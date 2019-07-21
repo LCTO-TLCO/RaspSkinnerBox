@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import math
 from scipy.stats import entropy
-from graph import graph
+#from graph import graph
 import sys
 
 # debug = True
@@ -145,7 +145,7 @@ class task_data:
             data["hole_correct"] = -1
             data["hole_incorrect"] = -1
             data["is_correct"] = -1
-            data["is_incorrect"] = -1
+            data["correct"] = -1
             data["is_omission"] = -1
             data["cumsum_correct"] = -1
             data["cumsum_incorrect"] = -1
@@ -180,8 +180,6 @@ class task_data:
             for hole_no in range(1, 9 + 1, 2):
                 data.loc[data['hole_no'] == str(hole_no), "is_hole{}".format(hole_no)] = 1
                 data.loc[~(data['hole_no'] == str(hole_no)), "is_hole{}".format(hole_no)] = None
-
-            self.data_ci = data[data["event_type"].isin(["reward", "failure"])]
 
             # cumsum
             # for i in range(0, len(task_start_index)):
@@ -248,105 +246,65 @@ class task_data:
             return ent
             # endregion
 
-        def count_all():
-            # correctスタート
-            for idx, dt in after_c_starts.iterrows():
-                is_continued = True
-                for j in range(1, min(forward_trace, len(self.data) - idx)):
-                    # 報酬を得たときと同じ選択(CF両方)をしたときの処理
-                    if dt["hole_no"] == self.data_ci["hole_no"][
-                        idx + j] and is_continued:  # TODO omissionを除いてカウントしたい
-                        probability["c_same"][j] = probability["c_same"][j] + 1
-                    # omissionの場合
-                    elif self.data["is_omission"][idx + j]:
-                        probability["c_omit"][j] = probability["c_omit"][j] + 1
-                        # is_continued = False
-                    elif dt["hole_no"] != self.data_ci["hole_no"][idx + j] and is_continued:
-                        probability["c_diff"][j] = probability["c_diff"][j] + 1
-                    # 違うhole
-            #            else:
-            #                is_continued = False
-            # incorrectスタート
-            for idx, dt in after_f_starts.iterrows():
-                is_continued = True
-                for j in range(1, min(forward_trace, len(self.data) - idx)):
-                    # 連続で失敗しているときの処理
-                    if dt["hole_no"] == self.data_ci["hole_no"][
-                        idx + j] and is_continued:  # TODO omissionを除いてカウントしたい
-                        probability["f_same"][j] = probability["f_same"][j] + 1
-                    elif self.data["is_omission"][idx + j] and is_continued:
-                        probability["f_omit"][j] = probability["f_omit"][j] + 1
-                    elif dt["hole_no"] != self.data["hole_no"][idx + j] and not \
-                            self.data["is_omission"][
-                                idx + j] and is_continued:
-                        probability["f_diff"][j] = probability["f_diff"][j] + 1
-                        # is_continued = False
-                    else:
-                        is_continued = False
-            # calculate7
-            probability["c_same"] = probability["c_same"] / after_c_all if not after_c_all == 0 else 0.0
-            probability["c_diff"] = probability["c_diff"] / after_c_all if not after_c_all == 0 else 0.0
-            probability["c_omit"] = probability["c_omit"] / after_c_all if not after_c_all == 0 else 0.0
-            probability["c_checksum"] = probability["c_same"] + probability["c_diff"] + probability["c_omit"]
-            probability["f_same"] = probability["f_same"] / after_f_all if not after_f_all == 0 else 0.0
-            probability["f_diff"] = probability["f_diff"] / after_f_all if not after_f_all == 0 else 0.0
-            probability["f_omit"] = probability["f_omit"] / after_f_all if not after_f_all == 0 else 0.0
-            probability["f_checksum"] = probability["f_same"] + probability["f_diff"] + probability["f_omit"]
-
-            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
-
         def count_task() -> dict:
+            dc = self.data[self.data["event_type"].isin(["reward", "failure"])]
+            # dc = self.data[self.data["event_type"].isin(["reward", "failure", "time over"])]
+
+            dc = dc.reset_index()
+
+            after_c_all_task = {}
+            after_f_all_task = {}
+
+            after_c_starts_task = {}
+            after_f_starts_task = {}
+
+            prob_index = ["c_same", "c_diff", "c_omit", "c_checksum", "f_same", "f_diff", "f_omit", "f_checksum",
+                          "c_NotMax",
+                          "f_NotMax", "o_NotMax"]
+            forward_trace = 10
+
+            for task in tasks:
+                after_c_starts_task[task] = dc[(dc["is_correct"] == 1) & (dc["task"] == task)]
+                after_f_starts_task[task] = dc[(dc["is_incorrect"] == 1) & (dc["task"] == task)]
+                after_c_all_task[task] = float(len(after_c_starts_task[task]))
+                after_f_all_task[task] = float(len(after_f_starts_task[task]))
+
             for task in self.tasks:
                 prob = pd.DataFrame(columns=prob_index, index=range(1, forward_trace)).fillna(0.0)
+                # correctスタート
                 for idx, dt in after_c_starts_task[task].iterrows():
-                    is_continued = True
-                    for j in range(1, min(forward_trace, len(self.data) - idx)):
+                    for j in range(1, min(forward_trace, len(dc) - idx)):
+                        #                    for j in range(1, min(forward_trace, len(self.data_cio) - idx)):
                         # 報酬を得たときと同じ選択(CF両方)をしたときの処理
-                        if dt["hole_no"] == self.data_ci["hole_no"][
-                            idx + j] and is_continued:  # TODO omissionを除いてカウントしたい
+                        if dt["hole_no"] == dc["hole_no"][idx + j]:
                             prob["c_same"][j] = prob["c_same"][j] + 1
                         # omissionの場合
-                        elif self.data["is_omission"][idx + j]:
+                        elif dc["is_omission"][idx + j] == 1:
                             prob["c_omit"][j] = prob["c_omit"][j] + 1
-                            # is_continued = False
-                        elif dt["hole_no"] != self.data["hole_no"][idx + j] and is_continued:
+                        elif dt["hole_no"] != dc["hole_no"][idx + j]:
                             prob["c_diff"][j] = prob["c_diff"][j] + 1
-                        # 違うhole
-                #            else:
-                #                is_continued = False
+
                 # incorrectスタート
                 for idx, dt in after_f_starts_task[task].iterrows():
-                    is_continued = True
-                    for j in range(1, min(forward_trace, len(self.data) - idx)):
-                        # 連続で失敗しているときの処理
-                        if dt["hole_no"] == self.data_ci["hole_no"][
-                            idx + j] and is_continued:  # TODO omissionを除いてカウントしたい
+                    for j in range(1, min(forward_trace, len(dc) - idx)):
+                        #                    for j in range(1, min(forward_trace, len(self.data_cio) - idx)):
+                        if dt["hole_no"] == dc["hole_no"][idx + j]:
                             prob["f_same"][j] = prob["f_same"][j] + 1
-                        elif self.data["is_omission"][idx + j] and is_continued:
+                        elif dc["is_omission"][idx + j] == 1:
                             prob["f_omit"][j] = prob["f_omit"][j] + 1
-                        elif dt["hole_no"] != self.data["hole_no"][idx + j] and not \
-                                self.data["is_omission"][
-                                    idx + j] and is_continued:
+                        elif dt["hole_no"] != dc["hole_no"][idx + j]:
                             prob["f_diff"][j] = prob["f_diff"][j] + 1
-                            # is_continued = False
-                        else:
-                            is_continued = False
+
                 # calculate
-                prob["c_same"] = prob["c_same"] / after_c_all_task[task] if not after_c_all_task[
-                                                                                    task] == 0 else 0.0  # TODO omissionを除いてカウントしたい ので母数を修正
+                prob["c_same"] = prob["c_same"] / after_c_all_task[task] if not after_c_all_task[task] == 0 else 0.0
                 prob["c_diff"] = prob["c_diff"] / after_c_all_task[task] if not after_c_all_task[task] == 0 else 0.0
                 prob["c_omit"] = prob["c_omit"] / after_c_all_task[task] if not after_c_all_task[task] == 0 else 0.0
                 prob["c_checksum"] = prob["c_same"] + prob["c_diff"] + prob["c_omit"]
-                prob["f_same"] = prob["f_same"] / after_f_all_task[task] if not after_f_all_task[
-                                                                                    task] == 0 else 0.0  # TODO omissionを除いてカウントしたい ので母数を修正
+                prob["f_same"] = prob["f_same"] / after_f_all_task[task] if not after_f_all_task[task] == 0 else 0.0
                 prob["f_diff"] = prob["f_diff"] / after_f_all_task[task] if not after_f_all_task[task] == 0 else 0.0
                 prob["f_omit"] = prob["f_omit"] / after_f_all_task[task] if not after_f_all_task[task] == 0 else 0.0
                 prob["f_checksum"] = prob["f_same"] + prob["f_diff"] + prob["f_omit"]
 
-                # prob$c_NotMax %/=% after_c_all
-                # prob$f_NotMax %/=% after_f_all
-                # prob$o_NotMax %/=% after_o_all
-                # append
                 task_prob[task] = prob
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
@@ -467,7 +425,7 @@ class task_data:
                       "f_NotMax", "o_NotMax"]
         probability = pd.DataFrame(columns=prob_index, index=range(1, forward_trace + 1)).fillna(0.0)
 
-        count_all()
+#        count_all()
         count_task()
         # bit analyze
         pp = analyze_pattern(self.bit)
@@ -478,7 +436,7 @@ class task_data:
         pp = pd.concat([pp[task].loc[:, pp[task].columns.isin(["session_id", "pattern"])] for task in self.tasks])
         pp = pp.rename(columns={"pattern": "pattern_2bit"})
         self.data = pd.merge(self.data, pp, how='left')
-        burst()
+#        burst()
         return self.data, probability, task_prob, self.delta, self.fig_prob_tmp, pattern
 
     def dev_read_data(self, mouse_no):
@@ -519,7 +477,7 @@ class task_data:
 # TODO 4. 1111(正正正正)～0000(誤誤誤誤) fig4{次の10区間の区間エントロピー}, 4bit固定ではなくn bit対応で構築
 # TODO 5. 横軸:時間（1時間単位） vs 縦軸:区間entropy(単位時間内), correct/incorrect/omission
 # TODO 6. Burst raster plot
-
+#
 if __name__ == "__main__":
     print("{} ; started".format(datetime.now()))
     # mice = [2, 3, 6, 7, 8, 11, 12, 13, 14, 17, 18, 19]
@@ -529,8 +487,8 @@ if __name__ == "__main__":
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
-    task = task_data(mice, tasks, logpath)
-    graph_ins = graph(task, mice, tasks, logpath)
+    tdata = task_data(mice, tasks, logpath)
+    graph_ins = rasp_graph(tdata, mice, tasks, logpath)
     # graph_ins.entropy_scatter()
     # graph_ins.nose_poke_raster()
     # graph_ins.same_plot()
@@ -548,3 +506,93 @@ if __name__ == "__main__":
     # graph_ins.time_ent_10()
     graph_ins.time_holeno_raster_burst()
     print("{} ; all done".format(datetime.now()))
+
+
+def test1():
+    # mice = [2, 3, 6, 7, 8, 11, 12, 13, 14, 17, 18, 19]
+    # error: 2,3,7,11,13,17,18
+
+    mice = [6, 7, 8, 11, 12, 13, 14, 17, 18, 19, 23, 24, 90, 92]
+    tasks = ["All5_30", "Only5_50", "Not5_Other30"]
+
+    # 21,22 All5_30, Only5_70, Not5_Other30
+    # mice = [21, 22]
+    # tasks = ["All5_30", "Only5_70", "Not5_Other30"]
+
+    # 23,24 All5_30, Only5_50, Not5_Other30, Recall5_50
+    #mice = [23, 24]
+    #tasks = ["All5_30", "Only5_50", "Not5_Other30", "Recall5_50"]
+
+    # All5_50, Only5_50, Not5_Other50, Recall5_50
+    # mice = [25, 24]
+    # tasks = ["All5_30", "Only5_50", "Not5_Other30", "Recall5_50"]
+
+    # Base_51317, Test_51317
+    # mice = [28]
+    # tasks = ["Base_51317", "Test_51317"]
+
+    # tasks = ["All5_30", "Only5_50", "Not5_Other30", "Recall5_50", "All5_50", "Only5_70", "Not5_Other50"]
+    #    logpath = '../RaspSkinnerBox/log/'
+    logpath = './'
+    tdata = task_data(mice, tasks, logpath)
+
+#    graph_ins = graph(tdata, mice, tasks, logpath)
+    return tdata, mice, tasks
+
+def averaged_prob_same_prev(tdata, mice, tasks):
+    m = []
+    t = []
+    csame = []
+    fsame = []
+
+    for mouse_id in mice:
+        for task in tasks:
+            m += [mouse_id]
+            t += [task]
+            csame += [tdata.task_prob[mouse_id][task]['c_same']]
+            fsame += [tdata.task_prob[mouse_id][task]['f_same']]
+
+    after_prob_df = pd.DataFrame(
+        data={'mouse_id': m, 'task': t, 'c_same': csame, 'f_same': fsame},
+        columns=['mouse_id', 'task', 'c_same', 'f_same']
+    )
+
+    plt.style.use('default')
+    fig = plt.figure(figsize=(8, 4), dpi=100)
+    for task in tasks:
+        plt.subplot(1, len(tasks), tasks.index(task) + 1)
+
+        c_same = np.array(after_prob_df[after_prob_df['task'].isin([task])]['c_same'].to_list())
+        c_same_avg = np.mean(c_same, axis=0)
+        c_same_std = np.std(c_same, axis=0)
+        c_same_var = np.var(c_same, axis=0)
+
+        f_same = np.array(after_prob_df[after_prob_df['task'].isin([task])]['f_same'].to_list())
+        f_same_avg = np.mean(f_same, axis=0)
+        f_same_var = np.var(f_same, axis=0)
+
+        xlen = len(c_same_avg)
+        xax = np.array(range(1, xlen + 1))
+        plt.plot(xax, c_same_avg, label="correct start")
+        plt.errorbar(xax, c_same_avg, yerr=c_same_var, capsize=2, fmt='o', markersize=1, ecolor='black',
+                     markeredgecolor="black", color='w', lolims=True)
+
+        plt.plot(np.array(range(1, xlen + 1)), f_same_avg, label="incorrect start")
+        plt.errorbar(xax, f_same_avg, yerr=f_same_var, capsize=2, fmt='o', markersize=1, ecolor='black',
+                     markeredgecolor="black", color='w', uplims=True)
+
+        # plt.ion()
+        plt.xticks(np.arange(1, xlen + 1, 1))
+        plt.xlim(0.5, xlen + 0.5)
+        plt.ylim(0, 1.05)
+        if tasks.index(task) == 0:
+            plt.ylabel('P (same choice)')
+            plt.legend()
+        plt.xlabel('Trial')
+        plt.title('{}'.format(task))
+    plt.show()
+    plt.savefig('fig/{}_prob_all4.png'.format(graph_ins.exportpath))
+
+tdata, mice, tasks = test1()
+
+averaged_prob_same_prev(tdata, mice, tasks)
