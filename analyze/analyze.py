@@ -3,12 +3,14 @@ import pandas as pd
 import numpy as np
 import math
 from scipy.stats import entropy
-#from graph import graph
+#from graph import rasp_graph
 import sys
 
 # debug = True
 debug = False
 
+
+# TODO graph classの内容をscratch内で実行？　
 
 class task_data:
     def __init__(self, mice: list, tasks, logpath):
@@ -35,10 +37,12 @@ class task_data:
         print('reading data...', end='')
         if debug:
             for mouse_id in self.mouse_no:
+                print('mouse_id={}'.format(mouse_id))
                 self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[
                     mouse_id], self.fig_prob[mouse_id] = self.dev_read_data(mouse_id)
         else:
             for mouse_id in self.mouse_no:
+                print('mouse_id={}'.format(mouse_id))
                 self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
                 self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[
                     mouse_id], self.fig_prob[mouse_id], self.pattern_prob[mouse_id] = self.read_data()
@@ -471,13 +475,6 @@ class task_data:
                 ["fig1", "fig2", "fig3"]]
         print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
-
-# TODO 1. モデルクラス{ログからのQ値更新, 次ステップの行動選択予測, 予測との一致度の記録, 総合一致度の算出}
-# TODO 2. 複数モデル×パラメータセット, パラメータセットの定義(GA,GP探索を見据えて), テストの実行(並列実行 joblib)
-# TODO 4. 1111(正正正正)～0000(誤誤誤誤) fig4{次の10区間の区間エントロピー}, 4bit固定ではなくn bit対応で構築
-# TODO 5. 横軸:時間（1時間単位） vs 縦軸:区間entropy(単位時間内), correct/incorrect/omission
-# TODO 6. Burst raster plot
-#
 if __name__ == "__main__":
     print("{} ; started".format(datetime.now()))
     # mice = [2, 3, 6, 7, 8, 11, 12, 13, 14, 17, 18, 19]
@@ -508,38 +505,8 @@ if __name__ == "__main__":
     print("{} ; all done".format(datetime.now()))
 
 
-def test1():
-    # mice = [2, 3, 6, 7, 8, 11, 12, 13, 14, 17, 18, 19]
-    # error: 2,3,7,11,13,17,18
-
-    mice = [6, 7, 8, 11, 12, 13, 14, 17, 18, 19, 23, 24, 90, 92]
-    tasks = ["All5_30", "Only5_50", "Not5_Other30"]
-
-    # 21,22 All5_30, Only5_70, Not5_Other30
-    # mice = [21, 22]
-    # tasks = ["All5_30", "Only5_70", "Not5_Other30"]
-
-    # 23,24 All5_30, Only5_50, Not5_Other30, Recall5_50
-    #mice = [23, 24]
-    #tasks = ["All5_30", "Only5_50", "Not5_Other30", "Recall5_50"]
-
-    # All5_50, Only5_50, Not5_Other50, Recall5_50
-    # mice = [25, 24]
-    # tasks = ["All5_30", "Only5_50", "Not5_Other30", "Recall5_50"]
-
-    # Base_51317, Test_51317
-    # mice = [28]
-    # tasks = ["Base_51317", "Test_51317"]
-
-    # tasks = ["All5_30", "Only5_50", "Not5_Other30", "Recall5_50", "All5_50", "Only5_70", "Not5_Other50"]
-    #    logpath = '../RaspSkinnerBox/log/'
-    logpath = './'
-    tdata = task_data(mice, tasks, logpath)
-
-#    graph_ins = graph(tdata, mice, tasks, logpath)
-    return tdata, mice, tasks
-
-def averaged_prob_same_prev(tdata, mice, tasks):
+# TODO 同一burst内のデータでcountして平均表示
+def view_averaged_prob_same_prev(tdata, mice, tasks):
     m = []
     t = []
     csame = []
@@ -593,6 +560,117 @@ def averaged_prob_same_prev(tdata, mice, tasks):
     plt.show()
     plt.savefig('fig/{}_prob_all4.png'.format(graph_ins.exportpath))
 
-tdata, mice, tasks = test1()
 
-averaged_prob_same_prev(tdata, mice, tasks)
+def view_summary(tdata, mice, tasks):
+    for mouse_id in mice:
+        #    entropy_scatter(mouse_id, )
+
+        labels = ["correct", "incorrect", "omission"]
+        # flags = data.loc[:, data.colums.str.match("is_[(omission|correct|incorrect)")]
+
+        mdf = tdata.mice_task[mouse_id]
+        df = mdf[mdf["event_type"].isin(["reward", "failure", "time over"])]
+
+        fig = plt.figure(figsize=(15, 8), dpi=100)
+        fig.add_subplot(3, 1, 1)
+        plt.plot(df['hole_choice_entropy'])
+        #    print(tdata.mice_task[mouse_id]['hole_choice_entropy'])
+        plt.ylabel('Entropy (bit)')
+        plt.xlim(0, len(mdf))
+
+        plt.title('{:03} summary'.format(mouse_id))
+        #    nose_poke_raster(mouse_id, fig.add_subplot(3, 1, 2))
+
+        fig.add_subplot(3, 1, 2)
+        colors = ["blue", "red", "black"]
+        datasets = [(tdata.mice_task[mouse_id][tdata.mice_task[mouse_id]
+                                               ["is_{}".format(flag)] == 1]) for flag in labels]
+        for dt, la, cl in zip(datasets, labels, colors):
+            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole1'] * 1, s=15, color=cl)
+            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole3'] * 2, s=15, color=cl)
+            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole5'] * 3, s=15, color=cl)
+            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole7'] * 4, s=15, color=cl)
+            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole9'] * 5, s=15, color=cl)
+            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_omission'] * 0, s=15,
+                        color=cl)
+        plt.ylabel("Hole")
+        plt.xlim(0, dt['session_id'].max() - dt['session_id'].min())
+        #    plt.xlim(0, len(mdf))
+
+        fig.add_subplot(3, 1, 3)
+        plt.plot(df['cumsum_correct_taskreset'])
+        plt.plot(df['cumsum_incorrect_taskreset'])
+        plt.plot(df['cumsum_omission_taskreset'])
+        plt.xlim(0, len(mdf))
+        plt.ylabel('Cumulative')
+        plt.xlabel('Trial')
+        plt.show(block=True)
+        plt.savefig('fig/no{:03d}_summary.png'.format(mouse_id))
+
+        # TODO task割表示
+        # TODO rasterと他(cumsum, entropy)がずれている？
+
+def test_base30():
+    # error: 2,3,7,11,13,17,18
+
+    mice = [6, 7, 8, 11, 12, 13, 14, 17, 18, 19, 23, 24, 90, 92]
+    tasks = ["All5_30", "Only5_50", "Not5_Other30"]
+
+    # 21,22 All5_30, Only5_70, Not5_Other30
+    # mice = [21, 22]
+    # tasks = ["All5_30", "Only5_70", "Not5_Other30"]
+
+    # Base_51317, Test_51317
+    # mice = [28]
+    # tasks = ["Base_51317", "Test_51317"]
+
+    logpath = './'
+    tdata = task_data(mice, tasks, logpath)
+
+#    graph_ins = graph(tdata, mice, tasks, logpath)
+    return tdata, mice, tasks
+tdata_30, mice_30, tasks_30 = test_base30()
+view_averaged_prob_same_prev(tdata_30, mice_30, tasks_30)
+
+def test_base50():
+
+    # All5_50, Only5_50, Not5_Other50, Recall5_50
+    mice = [27]
+    tasks = ["All5_50", "Only5_50", "Not5_Other50", "Recall5_50", "Cup_91019"]
+
+    logpath = './'
+    tdata = task_data(mice, tasks, logpath)
+
+    view_averaged_prob_same_prev(tdata, mice, tasks)
+
+    return tdata, mice, tasks
+
+tdata_50, mice_50, tasks_50 = test_base50()
+view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
+
+# TODO 下記のtest_Only5_70()から変数を返してもらう形式だとtask_dataインスタンスがlocalにならない
+def test_Only5_70():
+
+    # All5_50, Only5_50, Not5_Other50, Recall5_50
+    mice = [21, 22]
+    tasks = ["All5_30", "Only5_70", "Not5_Other30"]
+
+    logpath = './'
+    tdata = task_data(mice, tasks, logpath)
+
+    view_averaged_prob_same_prev(tdata, mice, tasks)
+    view_summary(tdata, mice, tasks)
+
+    return tdata, mice, tasks
+
+# TODO 下記のスクラッチをscientific modeで記述・実行する最も良い方法は何か？
+tdata_o5_70, mice_o5_70, tasks_o5_70 = test_Only5_70()
+view_averaged_prob_same_prev(tdata_o5_70, mice_o5_70, tasks_o5_70)
+
+# TODO python-analyze, python-analyze-ohta4以外の残骸branchを全削除
+
+# TODO 動物心理タイトル決め:「」
+# TODO 動物心理コンセプト決め（証明したい仮説）:「」
+# TODO 動物心理コンセプト決め（実験方法と実験）:「」
+# TODO 動物心理コンセプト決め（仮説の検証結果）:「」
+# TODO 動物心理Abstract

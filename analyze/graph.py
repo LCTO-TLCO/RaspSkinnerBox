@@ -218,7 +218,8 @@ class rasp_graph:
         ax.set_ylabel("Reward latency (s)")
         plt.savefig('fig/{}all_micetask_reward_latency_hist2d.png'.format(self.exportpath))
 
-        plt.show(block=True)
+#        plt.show(block=True)
+        plt.show()
 
     def prob_same_base(self):
         """ fig1 """
