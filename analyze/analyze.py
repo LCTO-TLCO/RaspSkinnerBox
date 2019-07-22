@@ -669,15 +669,27 @@ view_averaged_prob_same_prev(tdata_o5_70, mice_o5_70, tasks_o5_70)
 
 # TODO python-analyze以外の残骸branchを全削除
 
-# TODO 動物心理タイトル決め:「マウスの5本腕バンディット課題におけるwin-stay lose-shiftの法則の検証」
+# 動物心理タイトル:「マウスの5本腕バンディット課題におけるwin-stay lose-shiftの法則の検証」
 # TODO 動物心理コンセプト決め（証明したい仮説）:「」
 # TODO 動物心理コンセプト決め（実験方法と実験）:「」
 # TODO 動物心理コンセプト決め（仮説の検証結果）:「」
 # TODO 動物心理Abstract
-# TODO 動物心理グラフ Fig.1. A. Summary B. burst表示(部分)
+# 動物心理 Background 1. 動物のWSLSは2選択においてしか検討されていない（中央でholdもしくは3択で高確率ホール1つvs低確率2つはあるが)。
+# 動物心理 Background 2. 2択の場合、loseの時のshift先がwinであることがほぼ確実なので、shiftすることへのリスクを伴う探索的要素が乏しい
+# 動物心理 Background 3. そこで本研究では、loseの後のshift先が多肢・低確率であるような状況で、win-stay lose-shiftが成立しているかを検証する
+# TODO 動物心理グラフ Fig.1. A. Summary B. burst表示(部分) C. ALL5_30 時間帯別トライアル数(correct/incorrect/omissionの積み上げバーグラフ, 個体別と全平均)
 # TODO 動物心理グラフ Fig.2. Response Rate　A.タスク毎 (Prism) B. 2D-hist (ALL)
 # TODO 動物心理グラフ Fig.3. Reward Latency A.タスク毎 (Prism) B. 2D-hist (ALL)
 # TODO 動物心理グラフ Fig.4. P(same choice) {correct/incorrect start} A. タスク毎(burst考慮無) B. タスク毎(burst考慮有)
 # TODO 動物心理グラフ Fig.5. P(same choice) A. Only5_50への切り替え直後(前半50correct) vs 終了直前(後半50correct) B.Not5_Other30
-# TODO 動物心理グラフ Fig.6. 2bit比較(n>10以上で作成) (Prism)
+# TODO 動物心理グラフ Fig.6. 2bit比較(n>10以上, 全タスク（３つ）で作成) (Prism)
 # TODO 動物心理グラフ Table.1. 体重変化(base, before, after), タスク終了に要した時間{All5_30, Only5_30, Not5_Other30}
+# TODO 動物心理 Result 1. [Win-Stay Lose-Shiftはあるか?] 等確率の場合、報酬獲得選択時の3ステップ目まで報酬獲得選択時と同じ選択肢を選ぶ確率が10step先と比較して有意に高かった
+# TODO 動物心理 Result 2. [WSLSは報酬確率のばらつきによって影響を受けるか？] 報酬確率が極端に異なるOnly5_50, Not5_Other30でも同様 (ベースの変化を別途同定しておいて、正規化して比較する)
+# TODO 動物心理 Result 3. [WSLSは報酬確率のパターンの変化によって影響を受けるか？] タスクが切り替わった直後とタスクに適応した後で異なるか？ → (たぶん異ならない)
+# TODO 動物心理 Result 4. [WSLSの効果は連続報酬によって変化するか？] 00, 01, 10 vs 11 → 連続効果は有意ではなかった？
+# TODO 動物心理 Discussion 1.
+
+
+
+
