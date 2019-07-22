@@ -667,10 +667,17 @@ def test_Only5_70():
 tdata_o5_70, mice_o5_70, tasks_o5_70 = test_Only5_70()
 view_averaged_prob_same_prev(tdata_o5_70, mice_o5_70, tasks_o5_70)
 
-# TODO python-analyze, python-analyze-ohta4以外の残骸branchを全削除
+# TODO python-analyze以外の残骸branchを全削除
 
-# TODO 動物心理タイトル決め:「」
+# TODO 動物心理タイトル決め:「マウスの5本腕バンディット課題におけるwin-stay lose-shiftの法則の検証」
 # TODO 動物心理コンセプト決め（証明したい仮説）:「」
 # TODO 動物心理コンセプト決め（実験方法と実験）:「」
 # TODO 動物心理コンセプト決め（仮説の検証結果）:「」
 # TODO 動物心理Abstract
+# TODO 動物心理グラフ Fig.1. A. Summary B. burst表示(部分)
+# TODO 動物心理グラフ Fig.2. Response Rate　A.タスク毎 (Prism) B. 2D-hist (ALL)
+# TODO 動物心理グラフ Fig.3. Reward Latency A.タスク毎 (Prism) B. 2D-hist (ALL)
+# TODO 動物心理グラフ Fig.4. P(same choice) {correct/incorrect start} A. タスク毎(burst考慮無) B. タスク毎(burst考慮有)
+# TODO 動物心理グラフ Fig.5. P(same choice) A. Only5_50への切り替え直後(前半50correct) vs 終了直前(後半50correct) B.Not5_Other30
+# TODO 動物心理グラフ Fig.6. 2bit比較(n>10以上で作成) (Prism)
+# TODO 動物心理グラフ Table.1. 体重変化(base, before, after), タスク終了に要した時間{All5_30, Only5_30, Not5_Other30}
