@@ -3,8 +3,9 @@ import pandas as pd
 import numpy as np
 import math
 from scipy.stats import entropy
-#from graph import rasp_graph
+# from graph import rasp_graph
 import sys
+import matplotlib.pyplot as plt
 
 # debug = True
 debug = False
@@ -77,7 +78,7 @@ class task_data:
             data.reset_index(drop=True, inplace=True)
             data["session_id"] = list(map(rehash, data.index))
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
-            return data
+            return data[data.session_id.isin(data.session_id[data.event_type.isin(["reward", "failure", "time over"])])]
 
         # TODO どこかで盛大にエラー
         def add_timedelta():
@@ -267,13 +268,12 @@ class task_data:
                           "f_NotMax", "o_NotMax"]
             forward_trace = 10
 
-            for task in tasks:
+            for task in self.tasks:
                 after_c_starts_task[task] = dc[(dc["is_correct"] == 1) & (dc["task"] == task)]
                 after_f_starts_task[task] = dc[(dc["is_incorrect"] == 1) & (dc["task"] == task)]
                 after_c_all_task[task] = float(len(after_c_starts_task[task]))
                 after_f_all_task[task] = float(len(after_f_starts_task[task]))
 
-            for task in self.tasks:
                 prob = pd.DataFrame(columns=prob_index, index=range(1, forward_trace)).fillna(0.0)
                 # correctスタート
                 for idx, dt in after_c_starts_task[task].iterrows():
@@ -377,10 +377,8 @@ class task_data:
                     self.burst_id = 0
                     return self.burst_id
                 if data.at[data.index[data.session_id == session][0], "timestamps"] - \
-                        data.at[data.index[data.session_id == session - 1][0], "timestamps"] >= timedelta(
-                    seconds=60):
+                        data.at[data.index[data.session_id == session - 1][0], "timestamps"] >= timedelta(seconds=60):
                     self.burst_id = self.burst_id + 1
-
                 return self.burst_id
 
             data = self.data[self.data.event_type.isin(["reward", "failure", "time over"])]
@@ -429,7 +427,7 @@ class task_data:
                       "f_NotMax", "o_NotMax"]
         probability = pd.DataFrame(columns=prob_index, index=range(1, forward_trace + 1)).fillna(0.0)
 
-#        count_all()
+        #        count_all()
         count_task()
         # bit analyze
         pp = analyze_pattern(self.bit)
@@ -440,7 +438,7 @@ class task_data:
         pp = pd.concat([pp[task].loc[:, pp[task].columns.isin(["session_id", "pattern"])] for task in self.tasks])
         pp = pp.rename(columns={"pattern": "pattern_2bit"})
         self.data = pd.merge(self.data, pp, how='left')
-#        burst()
+        burst()
         return self.data, probability, task_prob, self.delta, self.fig_prob_tmp, pattern
 
     def dev_read_data(self, mouse_no):
@@ -475,6 +473,7 @@ class task_data:
                 ["fig1", "fig2", "fig3"]]
         print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
+
 if __name__ == "__main__":
     print("{} ; started".format(datetime.now()))
     # mice = [2, 3, 6, 7, 8, 11, 12, 13, 14, 17, 18, 19]
@@ -485,7 +484,7 @@ if __name__ == "__main__":
     #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
     tdata = task_data(mice, tasks, logpath)
-    graph_ins = rasp_graph(tdata, mice, tasks, logpath)
+    # graph_ins = rasp_graph(tdata, mice, tasks, logpath)
     # graph_ins.entropy_scatter()
     # graph_ins.nose_poke_raster()
     # graph_ins.same_plot()
@@ -501,7 +500,7 @@ if __name__ == "__main__":
     # graph_ins.next_10_ent()
     # graph_ins.norew_ent_10()
     # graph_ins.time_ent_10()
-    graph_ins.time_holeno_raster_burst()
+    # graph_ins.time_holeno_raster_burst()
     print("{} ; all done".format(datetime.now()))
 
 
@@ -558,7 +557,8 @@ def view_averaged_prob_same_prev(tdata, mice, tasks):
         plt.xlabel('Trial')
         plt.title('{}'.format(task))
     plt.show()
-    plt.savefig('fig/{}_prob_all4.png'.format(graph_ins.exportpath))
+    # plt.savefig('fig/{}_prob_all4.png'.format(graph_ins.exportpath))
+    plt.savefig('fig/prob_all4.png')
 
 
 def view_summary(tdata, mice, tasks):
@@ -627,13 +627,15 @@ def test_base30():
     logpath = './'
     tdata = task_data(mice, tasks, logpath)
 
-#    graph_ins = graph(tdata, mice, tasks, logpath)
+    #    graph_ins = graph(tdata, mice, tasks, logpath)
     return tdata, mice, tasks
+
+
 tdata_30, mice_30, tasks_30 = test_base30()
 view_averaged_prob_same_prev(tdata_30, mice_30, tasks_30)
 
-def test_base50():
 
+def test_base50():
     # All5_50, Only5_50, Not5_Other50, Recall5_50
     mice = [27]
     tasks = ["All5_50", "Only5_50", "Not5_Other50", "Recall5_50", "Cup_91019"]
@@ -641,16 +643,17 @@ def test_base50():
     logpath = './'
     tdata = task_data(mice, tasks, logpath)
 
-    view_averaged_prob_same_prev(tdata, mice, tasks)
+    # view_averaged_prob_same_prev(tdata, mice, tasks)
 
     return tdata, mice, tasks
+
 
 tdata_50, mice_50, tasks_50 = test_base50()
 view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
 
+
 # TODO 下記のtest_Only5_70()から変数を返してもらう形式だとtask_dataインスタンスがlocalにならない
 def test_Only5_70():
-
     # All5_50, Only5_50, Not5_Other50, Recall5_50
     mice = [21, 22]
     tasks = ["All5_30", "Only5_70", "Not5_Other30"]
@@ -662,6 +665,7 @@ def test_Only5_70():
     view_summary(tdata, mice, tasks)
 
     return tdata, mice, tasks
+
 
 # TODO 下記のスクラッチをscientific modeで記述・実行する最も良い方法は何か？
 tdata_o5_70, mice_o5_70, tasks_o5_70 = test_Only5_70()
@@ -689,7 +693,3 @@ view_averaged_prob_same_prev(tdata_o5_70, mice_o5_70, tasks_o5_70)
 # TODO 動物心理 Result 3. [WSLSは報酬確率のパターンの変化によって影響を受けるか？] タスクが切り替わった直後とタスクに適応した後で異なるか？ → (たぶん異ならない)
 # TODO 動物心理 Result 4. [WSLSの効果は連続報酬によって変化するか？] 00, 01, 10 vs 11 → 連続効果は有意ではなかった？
 # TODO 動物心理 Discussion 1.
-
-
-
-
