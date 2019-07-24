@@ -150,7 +150,7 @@ class task_data:
             data["hole_correct"] = -1
             data["hole_incorrect"] = -1
             data["is_correct"] = -1
-            data["correct"] = -1
+            data["is_incorrect"] = -1
             data["is_omission"] = -1
             data["cumsum_correct"] = -1
             data["cumsum_incorrect"] = -1
@@ -609,6 +609,80 @@ def view_summary(tdata, mice, tasks):
 
         # TODO task割表示
         # TODO rasterと他(cumsum, entropy)がずれている？
+
+
+def view_trial_per_datetime(tdata, mice, task="All5_30"):
+    """ for debug """
+    # for mouse_no in mice:
+    data = tdata.data[
+        (tdata.data.event_type.isin(["reward", "failure", "time over"]))
+        & (tdata.data.task == task)
+        # &(tdata.data.mouse_id == mouse_no)
+        ].set_index("timestamps").resample("1H").sum()
+
+    fig = plt.figure(figsize=(15, 8), dpi=100)
+    data.plot.bar(y=["is_correct", "is_incorrect", "is_omission"], stacked=True)
+    plt.show()
+
+
+def view_trial_per_time(tdata, mice, task="All5_30"):
+    """ fig1 C """
+    data = tdata.data[
+        (tdata.data.event_type.isin(["reward", "failure", "time over"])) & (tdata.data.task == task)].set_index(
+        "timestamps").resample("1H").sum()
+    data = data.set_index(data.index.time).groupby(level=0).mean()
+    fig = plt.figure(figsize=(15, 8), dpi=100)
+    data.plot.bar(y=["is_correct", "is_incorrect", "is_omission"], stacked=True)
+    plt.show()
+
+
+def view_prob_same_choice_burst(tdata, mice, task, burst=1):
+    """ fig4 """
+    m = []
+    t = []
+    csame = []
+    fsame = []
+
+    tdata_cio = tdata_50.data[tdata_50.data.event_type.isin(["reward", "failure", "time over"])]
+    data = tdata_cio[tdata_cio.burst.isin(tdata_cio.burst.unique()[tdata_cio.groupby("burst").burst.count() > burst])]
+    for mouse_id in mice:
+        for task in tasks:
+            m += [mouse_id]
+            t += [task]
+            csame += [tdata.task_prob[mouse_id][task]['c_same']]
+            fsame += [tdata.task_prob[mouse_id][task]['f_same']]
+
+    after_prob_df = pd.DataFrame(
+        data={'mouse_id': m, 'task': t, 'c_same': csame, 'f_same': fsame},
+        columns=['mouse_id', 'task', 'c_same', 'f_same']
+    )
+
+    plt.style.use('default')
+    fig = plt.figure(figsize=(8, 4), dpi=100)
+
+    #
+    plt.subplot(1, len(tasks), tasks.index(task) + 1)
+
+    c_same = np.array(after_prob_df[after_prob_df['task'].isin([task])]['c_same'].to_list())
+
+    c_same_avg = np.mean(c_same, axis=0)
+    c_same_std = np.std(c_same, axis=0)
+    c_same_var = np.var(c_same, axis=0)
+
+    f_same = np.array(after_prob_df[after_prob_df['task'].isin([task])]['f_same'].to_list())
+    f_same_avg = np.mean(f_same, axis=0)
+    f_same_var = np.var(f_same, axis=0)
+
+
+def view_only5_50(tdata, mice, task):
+    """ fig5 A """
+    pass
+
+
+def view_not5_other30(tdata, mice, task):
+    """ fig5 B """
+    pass
+
 
 def test_base30():
     # error: 2,3,7,11,13,17,18
