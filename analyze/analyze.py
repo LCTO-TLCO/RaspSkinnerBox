@@ -6,6 +6,8 @@ from scipy.stats import entropy
 # from graph import rasp_graph
 import sys
 import matplotlib.pyplot as plt
+import matplotlib.collections as collections
+import os
 
 # debug = True
 debug = False
@@ -572,7 +574,7 @@ def view_summary(tdata, mice, tasks):
         df = mdf[mdf["event_type"].isin(["reward", "failure", "time over"])]
 
         fig = plt.figure(figsize=(15, 8), dpi=100)
-        fig.add_subplot(3, 1, 1)
+        ax = fig.add_subplot(3, 1, 1)
         plt.plot(df['hole_choice_entropy'])
         #    print(tdata.mice_task[mouse_id]['hole_choice_entropy'])
         plt.ylabel('Entropy (bit)')
@@ -611,7 +613,7 @@ def view_summary(tdata, mice, tasks):
         # TODO rasterと他(cumsum, entropy)がずれている？
 
 
-def view_trial_per_datetime(tdata, mice, task="All5_30"):
+def view_trial_per_datetime(tdata, mice=[18], task="All5_30"):
     """ for debug """
     # for mouse_no in mice:
     data = tdata.data[
@@ -625,11 +627,62 @@ def view_trial_per_datetime(tdata, mice, task="All5_30"):
     plt.show()
 
 
-def view_trial_per_time(tdata, mice, task="All5_30"):
+def view_scatter_vs_times_with_burst(tdata, mice=[18], task="All5_30", burst=1):
+    """ fig1 B """
+    for mouse_id in mice:
+        #    entropy_scatter(mouse_id, )
+
+        labels = ["correct", "incorrect", "omission"]
+        # flags = data.loc[:, data.colums.str.match("is_[(omission|correct|incorrect)")]
+
+        data = tdata.data.assign(
+            timestamps=(tdata.data.timestamps - tdata.data.timestamps[0]).dt.total_seconds())  # [mouse_id]
+        data = data[data["event_type"].isin(["reward", "failure", "time over"])]
+        # data = data[data.burst.isin(data.burst.unique()[data.groupby("burst").burst.count() > burst])]
+        burst_time = list(data.burst.unique()[data.groupby("burst").burst.count() > burst])
+        fig = plt.figure(figsize=(15, 8), dpi=100)
+        fig_subplot = fig.add_subplot(1, 1, 1)
+        # plt.title('{:03} summary'.format(mouse_id))
+        #    nose_poke_raster(mouse_id, fig.add_subplot(3, 1, 2))
+
+        colors = ["blue", "red", "black"]
+        for single_burst in burst_time:
+            d = data[data.burst == single_burst]
+            datasets = [(d[d["is_{}".format(flag)] == 1]) for flag in labels]
+            for dt, la, cl in zip(datasets, labels, colors):
+                plt.scatter(dt.timestamps, dt['is_hole1'] * 1, s=15, c=cl)
+                plt.scatter(dt.timestamps, dt['is_hole3'] * 2, s=15, c=cl)
+                plt.scatter(dt.timestamps, dt['is_hole5'] * 3, s=15, c=cl)
+                plt.scatter(dt.timestamps, dt['is_hole7'] * 4, s=15, c=cl)
+                plt.scatter(dt.timestamps, dt['is_hole9'] * 5, s=15, c=cl)
+                plt.scatter(dt.timestamps, dt['is_omission'] * 0, s=15, c=cl)
+            plt.ylabel("Hole")
+            plt.xlim(d.timestamps.min()-30, d.timestamps.max()+30)
+            plt.ylim(0, 5)
+            #    plt.xlim(0, len(mdf))
+
+            collection = collections.BrokenBarHCollection.span_where(data.timestamps.to_numpy(), ymin=0, ymax=5,
+                                                                     where=(data.burst.isin(burst_time)),
+                                                                     facecolor='pink', alpha=0.3)
+            fig_subplot.add_collection(collection)
+            # save
+            # plt.show()
+            burst_len = d.timestamps.count()
+            if not os.path.isdir(os.path.join(os.getcwd(), "fig", "burst", "len" + str(burst_len))):
+                os.mkdir(os.path.join(os.getcwd(), "fig", "burst", "len" + str(burst_len)))
+            plt.savefig(os.path.join(os.getcwd(), 'fig', 'burst', "len" + str(burst_len),
+                                     'no{:03d}_burst{}_hole_pasttime_burst.png'.format(mouse_id,single_burst)))
+
+        # TODO task割表示
+        # TODO rasterと他(cumsum, entropy)がずれている？
+
+
+def view_trial_per_time(tdata, mice=[18], task="All5_30"):
     """ fig1 C """
     data = tdata.data[
-        (tdata.data.event_type.isin(["reward", "failure", "time over"])) & (tdata.data.task == task)].set_index(
-        "timestamps").resample("1H").sum()
+        (tdata.data.event_type.isin(["reward", "failure", "time over"])) &
+        (tdata.data.task == task)
+        ].set_index("timestamps").resample("1H").sum()
     data = data.set_index(data.index.time).groupby(level=0).mean()
     fig = plt.figure(figsize=(15, 8), dpi=100)
     data.plot.bar(y=["is_correct", "is_incorrect", "is_omission"], stacked=True)
