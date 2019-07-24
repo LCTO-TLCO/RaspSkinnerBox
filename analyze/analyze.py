@@ -583,23 +583,22 @@ def view_summary(tdata, mice, tasks):
         plt.title('{:03} summary'.format(mouse_id))
         #    nose_poke_raster(mouse_id, fig.add_subplot(3, 1, 2))
 
-        fig.add_subplot(3, 1, 2)
+        fig.add_subplot(3, 1, 2,sharex=ax)
         colors = ["blue", "red", "black"]
         datasets = [(tdata.mice_task[mouse_id][tdata.mice_task[mouse_id]
                                                ["is_{}".format(flag)] == 1]) for flag in labels]
         for dt, la, cl in zip(datasets, labels, colors):
-            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole1'] * 1, s=15, color=cl)
-            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole3'] * 2, s=15, color=cl)
-            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole5'] * 3, s=15, color=cl)
-            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole7'] * 4, s=15, color=cl)
-            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_hole9'] * 5, s=15, color=cl)
-            plt.scatter(dt['session_id'] - dt['session_id'].min(), dt['is_omission'] * 0, s=15,
-                        color=cl)
+            plt.scatter(dt.index, dt['is_hole1'] * 1, s=15, color=cl)
+            plt.scatter(dt.index, dt['is_hole3'] * 2, s=15, color=cl)
+            plt.scatter(dt.index, dt['is_hole5'] * 3, s=15, color=cl)
+            plt.scatter(dt.index, dt['is_hole7'] * 4, s=15, color=cl)
+            plt.scatter(dt.index, dt['is_hole9'] * 5, s=15, color=cl)
+            plt.scatter(dt.index, dt['is_omission'] * 0, s=15, color=cl)
         plt.ylabel("Hole")
-        plt.xlim(0, dt['session_id'].max() - dt['session_id'].min())
+        # plt.xlim(0, dt['session_id'].max() - dt['session_id'].min())
         #    plt.xlim(0, len(mdf))
 
-        fig.add_subplot(3, 1, 3)
+        fig.add_subplot(3, 1, 3,sharex=ax)
         plt.plot(df['cumsum_correct_taskreset'])
         plt.plot(df['cumsum_incorrect_taskreset'])
         plt.plot(df['cumsum_omission_taskreset'])
@@ -610,7 +609,6 @@ def view_summary(tdata, mice, tasks):
         plt.savefig('fig/no{:03d}_summary.png'.format(mouse_id))
 
         # TODO task割表示
-        # TODO rasterと他(cumsum, entropy)がずれている？
 
 
 def view_trial_per_datetime(tdata, mice=[18], task="All5_30"):
@@ -657,7 +655,7 @@ def view_scatter_vs_times_with_burst(tdata, mice=[18], task="All5_30", burst=1):
                 plt.scatter(dt.timestamps, dt['is_hole9'] * 5, s=15, c=cl)
                 plt.scatter(dt.timestamps, dt['is_omission'] * 0, s=15, c=cl)
             plt.ylabel("Hole")
-            plt.xlim(d.timestamps.min()-30, d.timestamps.max()+30)
+            plt.xlim(d.timestamps.min() - 30, d.timestamps.max() + 30)
             plt.ylim(0, 5)
             #    plt.xlim(0, len(mdf))
 
@@ -671,7 +669,7 @@ def view_scatter_vs_times_with_burst(tdata, mice=[18], task="All5_30", burst=1):
             if not os.path.isdir(os.path.join(os.getcwd(), "fig", "burst", "len" + str(burst_len))):
                 os.mkdir(os.path.join(os.getcwd(), "fig", "burst", "len" + str(burst_len)))
             plt.savefig(os.path.join(os.getcwd(), 'fig', 'burst', "len" + str(burst_len),
-                                     'no{:03d}_burst{}_hole_pasttime_burst.png'.format(mouse_id,single_burst)))
+                                     'no{:03d}_burst{}_hole_pasttime_burst.png'.format(mouse_id, single_burst)))
 
         # TODO task割表示
         # TODO rasterと他(cumsum, entropy)がずれている？
@@ -696,7 +694,7 @@ def view_prob_same_choice_burst(tdata, mice, task, burst=1):
     csame = []
     fsame = []
 
-    tdata_cio = tdata_50.data[tdata_50.data.event_type.isin(["reward", "failure", "time over"])]
+    tdata_cio = tdata.data[tdata.data.event_type.isin(["reward", "failure", "time over"])]
     data = tdata_cio[tdata_cio.burst.isin(tdata_cio.burst.unique()[tdata_cio.groupby("burst").burst.count() > burst])]
     for mouse_id in mice:
         for task in tasks:
