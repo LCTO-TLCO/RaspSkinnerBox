@@ -532,8 +532,9 @@ class task_data:
                  ][50:-50].to_csv(
                 '{}data/pattern_entropy/summary/no{:03d}_{}_entropy_pattern{:d}_count_{}_summary.csv'.format(
                     self.logpath, mouse_no, task, 50, int(count))) for count in
-                self.entropy_analyze["correctnum_{}bit".format( self.bit)][
-                    ~np.isnan(self.entropy_analyze["correctnum_{}bit".format(self.bit)])].unique()]
+                # self.entropy_analyze["correctnum_{}bit".format(self.bit)][
+                # ~np.isnan(self.entropy_analyze["correctnum_{}bit".format(self.bit)])].unique()]
+                range(0, self.bit)]
             [self.entropy_analyze[
                  (self.entropy_analyze["pattern"] == pattern) &
                  (self.entropy_analyze["task"] == task)  # & (
