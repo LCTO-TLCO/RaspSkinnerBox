@@ -398,9 +398,10 @@ class task_data:
                 on="session_id", how="left")
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
-        def entropy_analyzing(bit=self.bit):
+        def entropy_analyzing(section=10, bit=self.bit):
             data = self.data[(self.data.event_type.isin(["reward", "failure"])) & (self.data.task.isin(self.tasks))]
-            entropy_df = data[["session_id", "task", "entropy_10", "entropy_after_10", "pattern"]]
+            entropy_df = data[
+                ["session_id", "task", "entropy_{}".format(section), "entropy_after_{}".format(section), "pattern"]]
             count_correct = lambda pat: np.nan if np.isnan(pat) else "{:b}".format(int(pat)).zfill(bit).count("1")
             entropy_df["correctnum_{}bit".format(bit)] = list(map(count_correct, entropy_df.pattern))
             # entropy_df["mouse_no"] = self.mouse_no
@@ -422,7 +423,16 @@ class task_data:
         self.data.loc[
             self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_after_10"] = \
             self.data.loc[self.data.index[self.data.event_type.isin(
-                ['reward', 'failure'])], "entropy_10"][(ent_section + self.bit-1):].to_list() + \
+                ['reward', 'failure'])], "entropy_10"][(ent_section + self.bit - 1):].to_list() + \
+            ([np.nan] * (ent_section + self.bit - 1))
+        ent_section = 50
+        self.data.loc[
+            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_{}".format(
+                ent_section)] = calc_entropy(ent_section)
+        self.data.loc[
+            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_after_{}".format(ent_section)] = \
+            self.data.loc[self.data.index[self.data.event_type.isin(
+                ['reward', 'failure'])], "entropy_{}".format(ent_section)][(ent_section + self.bit - 1):].to_list() + \
             ([np.nan] * (ent_section + self.bit - 1))
         self.delta = add_timedelta()
         self.data_not_omission = self.data[
@@ -463,7 +473,8 @@ class task_data:
         self.data = pd.merge(self.data, pp, how='left')
         burst()
         # entropy analyzing
-        self.entropy_analyze = entropy_analyzing()
+        self.entropy_analyze = entropy_analyzing(section=50)
+        # self.entropy_analyze.concat(entropy_analyzing(section=50))
         return self.data, probability, task_prob, self.delta, self.fig_prob_tmp, pattern
 
     def dev_read_data(self, mouse_no):
@@ -497,22 +508,39 @@ class task_data:
                 '{}data/no{:03d}_{}_{}_prob_fig.csv'.format(self.logpath, mouse_no, task, fig_num)) for fig_num in
                 ["fig1", "fig2", "fig3"]]
             # pattern
+            # [self.entropy_analyze[
+            #      (self.entropy_analyze["correctnum_{}bit".format(10,self.bit)] == count) &
+            #      (self.entropy_analyze["task"] == task)  # & (
+            #      # self.entropy_analyze["mouse_no"] == mouse_no)
+            #      ][10:-10].to_csv(
+            #     '{}data/pattern_entropy/summary/no{:03d}_{}_entropy_pattern_count_{}_summary.csv'.format(
+            #         self.logpath, mouse_no, task, int(count))) for count in
+            #     self.entropy_analyze["correctnum_{}bit".format(10,self.bit)][
+            #         ~np.isnan(self.entropy_analyze["correctnum_{}bit".format(10,self.bit)])].unique()]
+            # [self.entropy_analyze[
+            #      (self.entropy_analyze["pattern"] == pattern) &
+            #      (self.entropy_analyze["task"] == task)  # & (
+            #      # self.entropy_analyze["mouse_no"] == mouse_no)
+            #      ][10:-10].to_csv(
+            #     '{}data/pattern_entropy/no{:03d}_{}_entropy_pattern_{:04b}.csv'.format(
+            #         self.logpath, mouse_no, task, int(pattern))) for
+            #     pattern in self.data.pattern[~np.isnan(self.data.pattern)].unique()]
             [self.entropy_analyze[
-                (self.entropy_analyze["correctnum_{}bit".format(self.bit)] == count) &
-                (self.entropy_analyze["task"] == task)  # & (
-                # self.entropy_analyze["mouse_no"] == mouse_no)
-                ][10:-10].to_csv(
-                '{}data/pattern_entropy/summary/no{:03d}_{}_entropy_pattern_count_{}_summary.csv'.format(
-                    self.logpath, mouse_no, task, int(count))) for count in
-                self.entropy_analyze["correctnum_{}bit".format(self.bit)][
+                 (self.entropy_analyze["correctnum_{}bit".format(self.bit)] == count) &
+                 (self.entropy_analyze["task"] == task)  # & (
+                 # self.entropy_analyze["mouse_no"] == mouse_no)
+                 ][50:-50].to_csv(
+                '{}data/pattern_entropy/summary/no{:03d}_{}_entropy_pattern{:d}_count_{}_summary.csv'.format(
+                    self.logpath, mouse_no, task, 50, int(count))) for count in
+                self.entropy_analyze["correctnum_{}bit".format( self.bit)][
                     ~np.isnan(self.entropy_analyze["correctnum_{}bit".format(self.bit)])].unique()]
             [self.entropy_analyze[
-                (self.entropy_analyze["pattern"] == pattern) &
-                (self.entropy_analyze["task"] == task)  # & (
-                # self.entropy_analyze["mouse_no"] == mouse_no)
-                ][10:-10].to_csv(
-                '{}data/pattern_entropy/no{:03d}_{}_entropy_pattern_{:04b}.csv'.format(
-                    self.logpath, mouse_no, task, int(pattern))) for
+                 (self.entropy_analyze["pattern"] == pattern) &
+                 (self.entropy_analyze["task"] == task)  # & (
+                 # self.entropy_analyze["mouse_no"] == mouse_no)
+                 ][50:-50].to_csv(
+                '{}data/pattern_entropy/no{:03d}_{}_entropy{:d}_pattern_{:04b}.csv'.format(
+                    self.logpath, mouse_no, task, 50, int(pattern))) for
                 pattern in self.data.pattern[~np.isnan(self.data.pattern)].unique()]
 
         print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
