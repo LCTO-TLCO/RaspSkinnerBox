@@ -338,7 +338,7 @@ class task_data:
                 # search pattern
 
                 f_pattern_matching = lambda x: sum([
-                    (not np.isnan(data.at[x + (bit - i), "is_correct"])) * pow(2, i)
+                    (not np.isnan(data_ci.at[x + (bit - i - 1), "is_correct"])) * pow(2, i)
                     for i in range(0, bit)])
                 pattern[task] = data_ci[:-(bit - 1)].assign(pattern=data_ci[:-(bit - 1)].index.map(f_pattern_matching))
                 # count
@@ -417,14 +417,14 @@ class task_data:
         self.data_ci = self.data
         self.data.loc[
             self.data.index[self.data.event_type.isin(['reward', 'failure'])], "hole_choice_entropy"] = calc_entropy()
-        ent_section = 10
-        self.data.loc[
-            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_10"] = calc_entropy(ent_section)
-        self.data.loc[
-            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_after_10"] = \
-            self.data.loc[self.data.index[self.data.event_type.isin(
-                ['reward', 'failure'])], "entropy_10"][(ent_section + self.bit - 1):].to_list() + \
-            ([np.nan] * (ent_section + self.bit - 1))
+        # ent_section = 10
+        # self.data.loc[
+        #     self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_10"] = calc_entropy(ent_section)
+        # self.data.loc[
+        #     self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_after_10"] = \
+        #     self.data.loc[self.data.index[self.data.event_type.isin(
+        #         ['reward', 'failure'])], "entropy_10"][(ent_section + self.bit - 1):].to_list() + \
+        #     ([np.nan] * (ent_section + self.bit - 1))
         ent_section = 50
         self.data.loc[
             self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_{}".format(
@@ -432,7 +432,7 @@ class task_data:
         self.data.loc[
             self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_after_{}".format(ent_section)] = \
             self.data.loc[self.data.index[self.data.event_type.isin(
-                ['reward', 'failure'])], "entropy_{}".format(ent_section)][(ent_section + self.bit - 1):].to_list() + \
+                ['reward', 'failure'])], "entropy_{}".format(ent_section)][(ent_section + self.bit - 1):].tolist() + \
             ([np.nan] * (ent_section + self.bit - 1))
         self.delta = add_timedelta()
         self.data_not_omission = self.data[
@@ -556,7 +556,8 @@ if __name__ == "__main__":
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
-    tdata = task_data(mice, tasks, logpath)
+    # tdata = task_data(mice, tasks, logpath)
+
     # graph_ins = rasp_graph(tdata, mice, tasks, logpath)
     # graph_ins.entropy_scatter()
     # graph_ins.nose_poke_raster()
@@ -845,7 +846,7 @@ def test_base50():
     return tdata, mice, tasks
 
 
-# tdata_50, mice_50, tasks_50 = test_base50()
+tdata_50, mice_50, tasks_50 = test_base50()
 # view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
 
 
