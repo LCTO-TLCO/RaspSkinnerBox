@@ -421,9 +421,9 @@ class task_data:
             self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_10"] = calc_entropy(ent_section)
         self.data.loc[
             self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_after_10"] = \
-            self.data.loc[self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_10"][
-            ent_section:].to_list() + ([0] * ent_section)
-
+            self.data.loc[self.data.index[self.data.event_type.isin(
+                ['reward', 'failure'])], "entropy_10"][(ent_section + self.bit-1):].to_list() + \
+            ([np.nan] * (ent_section + self.bit - 1))
         self.delta = add_timedelta()
         self.data_not_omission = self.data[
             ~self.data.session_id.isin(self.data.session_id[self.data.event_type.isin(["time over"])])]
@@ -501,7 +501,7 @@ class task_data:
                 (self.entropy_analyze["correctnum_{}bit".format(self.bit)] == count) &
                 (self.entropy_analyze["task"] == task)  # & (
                 # self.entropy_analyze["mouse_no"] == mouse_no)
-                ].to_csv(
+                ][10:-10].to_csv(
                 '{}data/pattern_entropy/summary/no{:03d}_{}_entropy_pattern_count_{}_summary.csv'.format(
                     self.logpath, mouse_no, task, int(count))) for count in
                 self.entropy_analyze["correctnum_{}bit".format(self.bit)][
@@ -510,7 +510,7 @@ class task_data:
                 (self.entropy_analyze["pattern"] == pattern) &
                 (self.entropy_analyze["task"] == task)  # & (
                 # self.entropy_analyze["mouse_no"] == mouse_no)
-                ].to_csv(
+                ][10:-10].to_csv(
                 '{}data/pattern_entropy/no{:03d}_{}_entropy_pattern_{:04b}.csv'.format(
                     self.logpath, mouse_no, task, int(pattern))) for
                 pattern in self.data.pattern[~np.isnan(self.data.pattern)].unique()]
