@@ -29,6 +29,7 @@ class task_data:
         self.mice_task = {}
         self.task_prob = {}
         self.mice_delta = {}
+        self.entropy_analyze = None
         self.logpath = logpath
         self.session_id = 0
         self.burst_id = 0
@@ -56,6 +57,7 @@ class task_data:
 
         def rehash_session_id():
             data = pd.read_csv(self.data_file, names=header, parse_dates=[0], dtype={'hole_no': 'str'})
+            self.session_id = 0
             print("max_id_col:{}".format(len(data)))
 
             def remove_terminate(index):
@@ -65,8 +67,9 @@ class task_data:
 
             def rehash(x_index):
                 if data.at[data.index[x_index], "task"] == "T0":
-                    if data.at[data.index[x_index], "event_type"] == "start" or data.shift(1).at[
-                        data.index[x_index], "event_type"] == "start":
+                    if (x_index == 0 or data.shift(1).at[data.index[x_index], "event_type"] == "start") and \
+                            len(data[:x_index][data.session_id == 0]) == 0:
+                        self.session_id = 0
                         return 0
                     self.session_id = self.session_id + 1
                     return self.session_id
@@ -79,10 +82,13 @@ class task_data:
             list(map(remove_terminate, data.index[:-1]))
             data.reset_index(drop=True, inplace=True)
             data["session_id"] = list(map(rehash, data.index))
+            data = data[data.session_id.isin(data.session_id[data.event_type.isin(["reward", "failure", "time over"])])]
+            data.reset_index(drop=True, inplace=True)
+            self.session_id = 0
+            data["session_id"] = list(map(rehash, data.index))
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
-            return data[data.session_id.isin(data.session_id[data.event_type.isin(["reward", "failure", "time over"])])]
+            return data
 
-        # TODO どこかで盛大にエラー
         def add_timedelta():
             data = self.data
             data = data[data.session_id.isin(data[data.event_type.isin(['reward', 'failure'])]["session_id"])]
@@ -228,8 +234,7 @@ class task_data:
             return data
 
         def calc_entropy(section=150):
-            # TODO 最低限のデータを使う
-            data = self.data
+            data = self.data[self.data.event_type.isin(['reward', 'failure'])]
 
             def min_max(x, axis=None):
                 np.array(x)
@@ -239,18 +244,18 @@ class task_data:
                 return result
 
             # entropy
-            ent = [0] * section
-            for i in range(0, len(data[data.event_type.isin(['reward', 'failure'])]) - section):
-                denominator = float(
-                    section)  # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
+            ent = [np.nan] * section
+            for i in range(0, len(data) - section):
+                denominator = float(section)
+                # sum([data["is_hole{}".format(str(hole_no))][i:i + 150].sum() for hole_no in range(1, 9 + 1, 2)])
                 current_entropy = min_max(
-                    [data["is_hole{}".format(str(hole_no))][i:i + section].sum() / denominator for hole_no in
-                     [1, 3, 5, 7, 9]])
+                    [data["is_hole{}".format(str(hole_no))][i:i + section].sum() /
+                     denominator for hole_no in [1, 3, 5, 7, 9]])
                 ent.append(entropy(current_entropy, base=2))
             # region Description
             # data[data.event_type.isin(['reward', 'failure'])]["hole_choice_entropy"] = ent
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
-            return ent
+            return pd.DataFrame(ent).fillna(0.0).values.tolist()
             # endregion
 
         def count_task() -> dict:
@@ -375,12 +380,18 @@ class task_data:
 
         def burst():
             def calc_burst(session):
+
                 if session == 0:
                     self.burst_id = 0
                     return self.burst_id
-                if data.at[data.index[data.session_id == session][0], "timestamps"] - \
-                        data.at[data.index[data.session_id == session - 1][0], "timestamps"] >= timedelta(seconds=60):
-                    self.burst_id = self.burst_id + 1
+                try:
+                    if data.at[data.index[data.session_id == session][0], "timestamps"] - \
+                            data.at[data.index[data.session_id == session - 1][0], "timestamps"] >= timedelta(
+                        seconds=60):
+                        self.burst_id = self.burst_id + 1
+                except:
+                    session
+                    raise
                 return self.burst_id
 
             data = self.data[self.data.event_type.isin(["reward", "failure", "time over"])]
@@ -392,6 +403,11 @@ class task_data:
                 on="session_id", how="left")
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
+        def entropy_analyzing(bit=4):
+            data = self.data[self.data.event_type.isin(["reward", "failure"])]
+            entropy_df = data[["session_id", "entropy_10", "entropy_before_10", "pattern"]]
+            entropy_df = entropy_df.append(correctnum_4bit="{:b}".format(pat_tmp).zfill(bit))
+
         # main
         header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"]
         pattern = {}
@@ -401,8 +417,14 @@ class task_data:
         self.data_ci = self.data
         self.data.loc[
             self.data.index[self.data.event_type.isin(['reward', 'failure'])], "hole_choice_entropy"] = calc_entropy()
+        ent_section = 10
         self.data.loc[
-            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_10"] = calc_entropy(10)
+            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_10"] = calc_entropy(ent_section)
+        self.data.loc[
+            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_before_10"] = \
+            self.data.loc[self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_10"][
+            ent_section:].to_list() + ([0] * ent_section)
+
         self.delta = add_timedelta()
         self.data_not_omission = self.data[
             ~self.data.session_id.isin(self.data.session_id[self.data.event_type.isin(["time over"])])]
@@ -480,8 +502,8 @@ if __name__ == "__main__":
     print("{} ; started".format(datetime.now()))
     # mice = [2, 3, 6, 7, 8, 11, 12, 13, 14, 17, 18, 19]
     # error: 2,3,7,11,13,17,18
-    mice = [18]
-    # mice = [12]
+    # mice = [18]
+    mice = [23]
     tasks = ["All5_30", "Only5_50", "Not5_Other30"]
     #    logpath = '../RaspSkinnerBox/log/'
     logpath = './'
@@ -583,7 +605,7 @@ def view_summary(tdata, mice, tasks):
         plt.title('{:03} summary'.format(mouse_id))
         #    nose_poke_raster(mouse_id, fig.add_subplot(3, 1, 2))
 
-        fig.add_subplot(3, 1, 2,sharex=ax)
+        fig.add_subplot(3, 1, 2, sharex=ax)
         colors = ["blue", "red", "black"]
         datasets = [(tdata.mice_task[mouse_id][tdata.mice_task[mouse_id]
                                                ["is_{}".format(flag)] == 1]) for flag in labels]
@@ -598,7 +620,7 @@ def view_summary(tdata, mice, tasks):
         # plt.xlim(0, dt['session_id'].max() - dt['session_id'].min())
         #    plt.xlim(0, len(mdf))
 
-        fig.add_subplot(3, 1, 3,sharex=ax)
+        fig.add_subplot(3, 1, 3, sharex=ax)
         plt.plot(df['cumsum_correct_taskreset'])
         plt.plot(df['cumsum_incorrect_taskreset'])
         plt.plot(df['cumsum_omission_taskreset'])
@@ -756,8 +778,8 @@ def test_base30():
     return tdata, mice, tasks
 
 
-tdata_30, mice_30, tasks_30 = test_base30()
-view_averaged_prob_same_prev(tdata_30, mice_30, tasks_30)
+# tdata_30, mice_30, tasks_30 = test_base30()
+# view_averaged_prob_same_prev(tdata_30, mice_30, tasks_30)
 
 
 def test_base50():
@@ -773,8 +795,8 @@ def test_base50():
     return tdata, mice, tasks
 
 
-tdata_50, mice_50, tasks_50 = test_base50()
-view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
+# tdata_50, mice_50, tasks_50 = test_base50()
+# view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
 
 
 # TODO 下記のtest_Only5_70()から変数を返してもらう形式だとtask_dataインスタンスがlocalにならない
@@ -791,10 +813,9 @@ def test_Only5_70():
 
     return tdata, mice, tasks
 
-
 # TODO 下記のスクラッチをscientific modeで記述・実行する最も良い方法は何か？
-tdata_o5_70, mice_o5_70, tasks_o5_70 = test_Only5_70()
-view_averaged_prob_same_prev(tdata_o5_70, mice_o5_70, tasks_o5_70)
+# tdata_o5_70, mice_o5_70, tasks_o5_70 = test_Only5_70()
+# view_averaged_prob_same_prev(tdata_o5_70, mice_o5_70, tasks_o5_70)
 
 # TODO python-analyze以外の残骸branchを全削除
 
