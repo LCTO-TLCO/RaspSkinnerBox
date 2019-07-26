@@ -36,7 +36,7 @@ class task_data:
         self.data_not_omission = None
         self.fig_prob_tmp = None
         self.fig_prob = {}
-        self.bit = 3
+        self.bit = 4
 
         print('reading data...', end='')
         if debug:
@@ -320,7 +320,7 @@ class task_data:
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
         # TODO 結構な確率でエラー吐く
-        def analyze_pattern(bit=4):
+        def analyze_pattern(bit=self.bit):
             fig_prob = {}
             pattern_range = range(0, pow(2, bit))
             for task in self.tasks:
@@ -380,18 +380,13 @@ class task_data:
 
         def burst():
             def calc_burst(session):
-
                 if session == 0:
                     self.burst_id = 0
                     return self.burst_id
-                try:
-                    if data.at[data.index[data.session_id == session][0], "timestamps"] - \
-                            data.at[data.index[data.session_id == session - 1][0], "timestamps"] >= timedelta(
-                        seconds=60):
-                        self.burst_id = self.burst_id + 1
-                except:
-                    session
-                    raise
+                if data.at[data.index[data.session_id == session][0], "timestamps"] - \
+                        data.at[data.index[data.session_id == session - 1][0], "timestamps"] >= timedelta(
+                    seconds=60):
+                    self.burst_id = self.burst_id + 1
                 return self.burst_id
 
             data = self.data[self.data.event_type.isin(["reward", "failure", "time over"])]
@@ -403,10 +398,14 @@ class task_data:
                 on="session_id", how="left")
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
-        def entropy_analyzing(bit=4):
-            data = self.data[self.data.event_type.isin(["reward", "failure"])]
-            entropy_df = data[["session_id", "entropy_10", "entropy_before_10", "pattern"]]
-            entropy_df = entropy_df.append(correctnum_4bit="{:b}".format(pat_tmp).zfill(bit))
+        def entropy_analyzing(bit=self.bit):
+            data = self.data[(self.data.event_type.isin(["reward", "failure"])) & (self.data.task.isin(self.tasks))]
+            entropy_df = data[["session_id", "task", "entropy_10", "entropy_after_10", "pattern"]]
+            count_correct = lambda pat: np.nan if np.isnan(pat) else "{:b}".format(int(pat)).zfill(bit).count("1")
+            entropy_df["correctnum_{}bit".format(bit)] = list(map(count_correct, entropy_df.pattern))
+            # entropy_df["mouse_no"] = self.mouse_no
+            print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
+            return entropy_df
 
         # main
         header = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"]
@@ -421,7 +420,7 @@ class task_data:
         self.data.loc[
             self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_10"] = calc_entropy(ent_section)
         self.data.loc[
-            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_before_10"] = \
+            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_after_10"] = \
             self.data.loc[self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_10"][
             ent_section:].to_list() + ([0] * ent_section)
 
@@ -463,6 +462,8 @@ class task_data:
         pp = pp.rename(columns={"pattern": "pattern_2bit"})
         self.data = pd.merge(self.data, pp, how='left')
         burst()
+        # entropy analyzing
+        self.entropy_analyze = entropy_analyzing()
         return self.data, probability, task_prob, self.delta, self.fig_prob_tmp, pattern
 
     def dev_read_data(self, mouse_no):
@@ -495,6 +496,25 @@ class task_data:
             [self.fig_prob[mouse_no][task][fig_num].to_csv(
                 '{}data/no{:03d}_{}_{}_prob_fig.csv'.format(self.logpath, mouse_no, task, fig_num)) for fig_num in
                 ["fig1", "fig2", "fig3"]]
+            # pattern
+            [self.entropy_analyze[
+                (self.entropy_analyze["correctnum_{}bit".format(self.bit)] == count) &
+                (self.entropy_analyze["task"] == task)  # & (
+                # self.entropy_analyze["mouse_no"] == mouse_no)
+                ].to_csv(
+                '{}data/pattern_entropy/summary/no{:03d}_{}_entropy_pattern_count_{}_summary.csv'.format(
+                    self.logpath, mouse_no, task, int(count))) for count in
+                self.entropy_analyze["correctnum_{}bit".format(self.bit)][
+                    ~np.isnan(self.entropy_analyze["correctnum_{}bit".format(self.bit)])].unique()]
+            [self.entropy_analyze[
+                (self.entropy_analyze["pattern"] == pattern) &
+                (self.entropy_analyze["task"] == task)  # & (
+                # self.entropy_analyze["mouse_no"] == mouse_no)
+                ].to_csv(
+                '{}data/pattern_entropy/no{:03d}_{}_entropy_pattern_{:04b}.csv'.format(
+                    self.logpath, mouse_no, task, int(pattern))) for
+                pattern in self.data.pattern[~np.isnan(self.data.pattern)].unique()]
+
         print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
 
@@ -527,8 +547,9 @@ if __name__ == "__main__":
     # graph_ins.time_holeno_raster_burst()
     print("{} ; all done".format(datetime.now()))
 
+    # TODO 同一burst内のデータでcountして平均表示
 
-# TODO 同一burst内のデータでcountして平均表示
+
 def view_averaged_prob_same_prev(tdata, mice, tasks):
     m = []
     t = []
