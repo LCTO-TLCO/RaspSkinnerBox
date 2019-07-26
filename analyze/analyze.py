@@ -525,21 +525,18 @@ class task_data:
             #     '{}data/pattern_entropy/no{:03d}_{}_entropy_pattern_{:04b}.csv'.format(
             #         self.logpath, mouse_no, task, int(pattern))) for
             #     pattern in self.data.pattern[~np.isnan(self.data.pattern)].unique()]
-            [self.entropy_analyze[
-                 (self.entropy_analyze["correctnum_{}bit".format(self.bit)] == count) &
-                 (self.entropy_analyze["task"] == task)  # & (
+            [self.entropy_analyze[(self.entropy_analyze["task"] == task)  # & (
                  # self.entropy_analyze["mouse_no"] == mouse_no)
-                 ][50:-50].to_csv(
+             ][50:-50][(self.entropy_analyze["correctnum_{}bit".format(self.bit)] == count)].to_csv(
                 '{}data/pattern_entropy/summary/no{:03d}_{}_entropy_pattern{:d}_count_{}_summary.csv'.format(
                     self.logpath, mouse_no, task, 50, int(count))) for count in
                 # self.entropy_analyze["correctnum_{}bit".format(self.bit)][
                 # ~np.isnan(self.entropy_analyze["correctnum_{}bit".format(self.bit)])].unique()]
                 range(0, self.bit)]
             [self.entropy_analyze[
-                 (self.entropy_analyze["pattern"] == pattern) &
                  (self.entropy_analyze["task"] == task)  # & (
                  # self.entropy_analyze["mouse_no"] == mouse_no)
-                 ][50:-50].to_csv(
+             ][50:-50][(self.entropy_analyze["pattern"] == pattern)].to_csv(
                 '{}data/pattern_entropy/no{:03d}_{}_entropy{:d}_pattern_{:04b}.csv'.format(
                     self.logpath, mouse_no, task, 50, int(pattern))) for
                 pattern in self.data.pattern[~np.isnan(self.data.pattern)].unique()]
@@ -847,6 +844,8 @@ def test_base50():
 
 
 tdata_50, mice_50, tasks_50 = test_base50()
+
+
 # view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
 
 
