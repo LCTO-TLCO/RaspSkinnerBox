@@ -30,6 +30,7 @@ class task_data:
         self.task_prob = {}
         self.mice_delta = {}
         self.entropy_analyze = None
+        self.mice_entropy = {}
         self.logpath = logpath
         self.session_id = 0
         self.burst_id = 0
@@ -49,7 +50,8 @@ class task_data:
                 print('mouse_id={}'.format(mouse_id))
                 self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
                 self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[
-                    mouse_id], self.fig_prob[mouse_id], self.pattern_prob[mouse_id] = self.read_data()
+                    mouse_id], self.fig_prob[mouse_id], self.pattern_prob[mouse_id], self.mice_entropy[
+                    mouse_id] = self.read_data()
                 self.export_csv(mouse_id)
         print('done')
 
@@ -475,7 +477,7 @@ class task_data:
         # entropy analyzing
         self.entropy_analyze = entropy_analyzing(section=50)
         # self.entropy_analyze.concat(entropy_analyzing(section=50))
-        return self.data, probability, task_prob, self.delta, self.fig_prob_tmp, pattern
+        return self.data, probability, task_prob, self.delta, self.fig_prob_tmp, pattern, self.entropy_analyze
 
     def dev_read_data(self, mouse_no):
         task_prob = {}
@@ -525,18 +527,18 @@ class task_data:
             #     '{}data/pattern_entropy/no{:03d}_{}_entropy_pattern_{:04b}.csv'.format(
             #         self.logpath, mouse_no, task, int(pattern))) for
             #     pattern in self.data.pattern[~np.isnan(self.data.pattern)].unique()]
-            [self.entropy_analyze[(self.entropy_analyze["task"] == task)  # & (
+            [self.mice_entropy[mouse_no][(self.mice_entropy[mouse_no]["task"] == task)  # & (
                  # self.entropy_analyze["mouse_no"] == mouse_no)
-             ][50:-50][(self.entropy_analyze["correctnum_{}bit".format(self.bit)] == count)].to_csv(
+             ][50:-50][(self.mice_entropy[mouse_no]["correctnum_{}bit".format(self.bit)] == count)].to_csv(
                 '{}data/pattern_entropy/summary/no{:03d}_{}_entropy_pattern{:d}_count_{}_summary.csv'.format(
                     self.logpath, mouse_no, task, 50, int(count))) for count in
                 # self.entropy_analyze["correctnum_{}bit".format(self.bit)][
                 # ~np.isnan(self.entropy_analyze["correctnum_{}bit".format(self.bit)])].unique()]
                 range(0, self.bit)]
-            [self.entropy_analyze[
-                 (self.entropy_analyze["task"] == task)  # & (
+            [self.mice_entropy[mouse_no][
+                 (self.mice_entropy[mouse_no]["task"] == task)  # & (
                  # self.entropy_analyze["mouse_no"] == mouse_no)
-             ][50:-50][(self.entropy_analyze["pattern"] == pattern)].to_csv(
+             ][50:-50][(self.mice_entropy[mouse_no]["pattern"] == pattern)].to_csv(
                 '{}data/pattern_entropy/no{:03d}_{}_entropy{:d}_pattern_{:04b}.csv'.format(
                     self.logpath, mouse_no, task, 50, int(pattern))) for
                 pattern in self.data.pattern[~np.isnan(self.data.pattern)].unique()]
@@ -805,6 +807,55 @@ def view_not5_other30(tdata, mice, task):
     pass
 
 
+def view_pattern_entropy_summary(tdata, mice, task=None):
+    data = tdata.mice_entropy
+    average_all = None
+    for mouse_id in mice:
+        data_tmp = data[mouse_id].groupby(
+            ["task", "correctnum_{}bit".format(tdata.bit)])
+        mean = data_tmp.mean().reset_index()
+        sd = data_tmp.std().reset_index()
+        data_tmp = pd.merge(mean, sd, on=["task", "correctnum_{}bit".format(tdata.bit)], suffixes=["_mean", "_sd"])
+        data_tmp = data_tmp.loc[:, data_tmp.columns.str.startswith(("task", "correctnum", "entropy"))].assign(
+            mouse_id=mouse_id)
+        average_all = data_tmp if isinstance(average_all, type(None)) else average_all.append(data_tmp)
+    for group_info, data_tmp in average_all.groupby(["task", "correctnum_{}bit".format(tdata.bit)]):
+        fig, ax = plt.subplots(1, 1)
+        # error bar
+        # ax.errorbar(data_tmp.loc[:, data_tmp.columns.str.endswith("mean")].columns.to_numpy().reshape(2),
+        #             data_tmp.loc[:, data_tmp.columns.str.endswith("mean")].to_numpy(),
+        #             yerr=data_tmp.loc[:, data_tmp.columns.str.endswith("sd")].to_numpy(),
+        #             ecolor="black")
+        # ax.errorbar(data_tmp.loc[:, data_tmp.columns.str.endswith("mean")].columns,
+        #             data_tmp.loc[:, data_tmp.columns.str.endswith("mean")].to_numpy().reshape(2, )[1],
+        #             yerr=data_tmp.loc[:, data_tmp.columns.str.endswith("sd")].to_numpy().reshape(2, )[1],
+        #             ecolor="black")
+        ax.errorbar(data_tmp.loc[:, data_tmp.columns.str.endswith("mean")].columns.to_numpy(),
+                    data_tmp.groupby(["task", "correctnum_{}bit".format(tdata.bit)]).mean().loc[:,
+                    data_tmp.groupby(["task", "correctnum_{}bit".format(tdata.bit)]).mean().columns.str.endswith(
+                        "mean")].to_numpy().T,
+                    yerr=np.mean(data_tmp.loc[:, data_tmp.columns.str.endswith("sd")].to_numpy(),axis=0),
+                    ecolor="blue")
+        # ax.errorbar(data_tmp.loc[:, data_tmp.columns.str.endswith("mean")].columns[1],
+        #             data_tmp.groupby(["task", "correctnum_{}bit".format(tdata.bit)]).mean().loc[:,
+        #             data_tmp.groupby(["task", "correctnum_{}bit".format(tdata.bit)]).mean().columns.str.endswith(
+        #                 "mean")].to_numpy().reshape(2, )[1],
+        #             yerr=data_tmp.loc[:, data_tmp.columns.str.endswith("sd")].to_numpy().reshape(2, )[1],
+        #             ecolor="black")
+        # mean
+        ax.plot(data_tmp.loc[:, data_tmp.columns.str.endswith("mean")].columns,
+                data_tmp.loc[:, data_tmp.columns.str.endswith("mean")].to_numpy().T,
+                marker="o", color="black")
+        # all average
+        ax.plot(data_tmp.loc[:, data_tmp.columns.str.endswith("mean")].columns,
+                data_tmp.groupby(["task", "correctnum_{}bit".format(tdata.bit)]).mean().loc[:,
+                data_tmp.groupby(["task", "correctnum_{}bit".format(tdata.bit)]).mean().columns.str.endswith(
+                    "mean")].to_numpy().T,
+                marker="x",color="blue")
+        # plt.show(block=True)
+        plt.savefig(os.path.join(os.getcwd(), 'fig', 'pattern_ent',
+                                 'pattern_ent_average_{}_correct{}.png'.format(group_info[0], group_info[1])))
+
 def test_base30():
     # error: 2,3,7,11,13,17,18
 
@@ -880,7 +931,7 @@ def test_Only5_70():
 # TODO 動物心理グラフ Fig.1. A. Summary B. burst表示(部分) C. ALL5_30 時間帯別トライアル数(correct/incorrect/omissionの積み上げバーグラフ, 個体別と全平均)
 # TODO 動物心理グラフ Fig.2. Response Rate　A.タスク毎 (Prism) B. 2D-hist (ALL)
 # TODO 動物心理グラフ Fig.3. Reward Latency A.タスク毎 (Prism) B. 2D-hist (ALL)
-# TODO 動物心理グラフ Fig.4. P(same choice) {correct/incorrect start} A. タスク毎(burst考慮無) B. タスク毎(burst考慮有)
+# TODO 動物心理グラフ Fig.4. P(same choice) {correct/incorrect start} A. タスク毎(burst考慮無) B. タスク毎(burst考慮有) burst_len を可変に
 # TODO 動物心理グラフ Fig.5. P(same choice) A. Only5_50への切り替え直後(前半50correct) vs 終了直前(後半50correct) B.Not5_Other30
 # TODO 動物心理グラフ Fig.6. 2bit比較(n>10以上, 全タスク（３つ）で作成) (Prism)
 # TODO 動物心理グラフ Table.1. 体重変化(base, before, after), タスク終了に要した時間{All5_30, Only5_30, Not5_Other30}
