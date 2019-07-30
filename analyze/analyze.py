@@ -49,7 +49,7 @@ class task_data:
 
                 # 二回目の場合Fig確定
                 if not isinstance(task, type(None)):
-                    print(add)
+                    # print(add)
                     [to.update(append_dataframe(to, add[fig], mouse_id, task=task, fig_num=fig)) for fig in
                      ["fig1", "fig2", "fig3"]]
                     return to
@@ -642,8 +642,8 @@ def view_averaged_prob_same_prev(tdata, mice, tasks):
         for task in tasks:
             m += [mouse_id]
             t += [task]
-            csame += [tdata.task_prob[mouse_id][task]['c_same']]
-            fsame += [tdata.task_prob[mouse_id][task]['f_same']]
+            csame += [tdata.task_prob[task][tdata.task_prob[task].mouse_id == mouse_id]['c_same']]
+            fsame += [tdata.task_prob[task][tdata.task_prob[task].mouse_id == mouse_id]['f_same']]
 
     after_prob_df = pd.DataFrame(
         data={'mouse_id': m, 'task': t, 'c_same': csame, 'f_same': fsame},
@@ -943,13 +943,12 @@ def test_base50():
     logpath = './'
     tdata = task_data(mice, tasks, logpath)
 
-    # view_averaged_prob_same_prev(tdata, mice, tasks)
 
     return tdata, mice, tasks
 
 
-# tdata_50, mice_50, tasks_50 = test_base50()
-
+tdata_50, mice_50, tasks_50 = test_base50()
+view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
 
 # view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
 
