@@ -50,9 +50,10 @@ class task_data:
                 # 二回目の場合Fig確定
                 if not isinstance(task, type(None)):
                     # print(add)
-                    [to.update(append_dataframe(to, add[fig], mouse_id, task=task, fig_num=fig)) for fig in
+                    ret_val = {}
+                    [ret_val.update(append_dataframe(to, add[fig], mouse_id, task=task, fig_num=fig)) for fig in
                      ["fig1", "fig2", "fig3"]]
-                    return to
+                    return {task: ret_val}
                 # taskごと
                 # to;dict, add:dict[task]
                 for task, add_dict in add.items():
@@ -61,8 +62,7 @@ class task_data:
             if isinstance(to, dict):
                 # Fig二回目入力
                 if not isinstance(fig_num, type(None)):
-                    to[fig_num] = add.assign(mouse_id=mouse_id)
-                    return to
+                    return {fig_num: add.assign(mouse_id=mouse_id)}
                 to[task] = add.assign(mouse_id=mouse_id)
                 return to
             if isinstance(to, type(None)):
@@ -559,9 +559,9 @@ class task_data:
             reward_latency_data.to_csv(os.path.join(self.logpath, 'data/{}_rewardlatency.csv'.format(task)))
             self.task_prob[task].to_csv(os.path.join(self.logpath, 'data/{}_prob.csv'.format(task)))
             self.pattern_prob[task].to_csv(os.path.join(self.logpath, 'data/{}_pattern.csv'.format(task)))
-            # [self.fig_prob[task][fig_num].to_csv(
-            #     os.path.join(self.logpath, 'data/prob_fig{}_{}.csv'.format(fig_num, task))) for
-            #     fig_num in ["fig1", "fig2", "fig3"]]
+            [self.fig_prob[task][fig_num].to_csv(
+                os.path.join(self.logpath, 'data/prob_fig{}_{}.csv'.format(fig_num, task))) for
+                fig_num in ["fig1", "fig2", "fig3"]]
             # pattern
             # [self.entropy_analyze[
             #      (self.entropy_analyze["correctnum_{}bit".format(10,self.bit)] == count) &
@@ -593,7 +593,7 @@ class task_data:
                  # self.entropy_analyze["mouse_no"] == mouse_no)
              ][50:-50][(self.mice_entropy["pattern"] == pattern)].to_csv(
                 '{}/data/pattern_entropy/{}_entropy{:d}_pattern_{:04b}.csv'.format(
-                    self.logpath,  task, 50, int(pattern))) for
+                    self.logpath, task, 50, int(pattern))) for
                 pattern in self.data.pattern[~np.isnan(self.data.pattern)].unique()]
 
         print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
@@ -931,7 +931,7 @@ def test_base30():
     return tdata, mice, tasks
 
 
-tdata_30, mice_30, tasks_30 = test_base30()
+# tdata_30, mice_30, tasks_30 = test_base30()
 # view_averaged_prob_same_prev(tdata_30, mice_30, tasks_30)
 
 
@@ -943,12 +943,12 @@ def test_base50():
     logpath = './'
     tdata = task_data(mice, tasks, logpath)
 
-
     return tdata, mice, tasks
 
 
 tdata_50, mice_50, tasks_50 = test_base50()
 view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
+
 
 # view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
 
