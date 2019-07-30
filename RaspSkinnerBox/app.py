@@ -6,10 +6,10 @@ import pandas as pd
 from datetime import *
 from random import seed, choice
 import random
+
 DEBUG = False
 from file_io import *
 from box_interface import *
-
 
 # define
 
@@ -32,7 +32,7 @@ def run(terminate="", remained=-1):
     setup()
     file_setup(mouse_no)
     schedule.every().day.at("07:00").do(unpayed_feeds_calculate)
-    #unpayed_feeds_calculate()
+    # unpayed_feeds_calculate()
     if terminate in list(ex_flow.keys()):
         i = list(ex_flow.keys()).index(terminate)
         print("i=" + str(i))
@@ -70,7 +70,7 @@ def task(task_no: str, remained: int):
                 continue
             elif not bool(sum(list(map(is_execution_time, current_task["time"])))):
                 print("pending ... not in {}".format(current_task["time"]))
-                sleep(60*5)
+                sleep(60 * 5)
                 continue
         schedule.run_pending()
         export(task_no, session_no, correct_times, "start")
@@ -201,7 +201,7 @@ def ITI(secs: list):
 
 def unpayed_feeds_calculate():
     """ 直前の精算時間までに吐き出した餌の数を計上し足りなければdispense_all """
-    global current_task_name, remained,exist_reserved_payoff
+    global current_task_name, reward, exist_reserved_payoff
     if is_time_limit_task:
         # リスケ
         if sum(list(map(is_execution_time, ex_flow[current_task_name]["time"]))):
@@ -213,17 +213,18 @@ def unpayed_feeds_calculate():
     # feeds = feed_num()
     feeds = feeds[(feeds.date > datetime.combine(datetime.today() - timedelta(days=1), time(6, 0, 0))) &
                   (feeds.date > datetime.combine(datetime.today(), time(6, 0, 0)))]
-    print("remained = {}, feeds.feed_num.sum() = {}".format(remained, feeds.feed_num.sum()))
-    remained = remained - feeds.feed_num.sum()
+    print("reward = {}, feeds.feed_num.sum() = {}".format(reward, feeds.feed_num.sum()))
+    reward = reward - feeds.feed_num.sum()
     # TODO remained no keisan okasii 877
     # dispense
-#    sleep(5 * 60)
-    while remained > 0:
-        print("remained = {}", remained)
-        #dispense_all(min(1, remained))
-        remained -= 1
-        #sleep(1 * 60)
-    remained = 20
+    #    sleep(5 * 60)
+    while reward > 0:
+        print("reward = {}", reward)
+        dispense_all(min(1, reward))
+        reward -= 1
+        sleep(1 * 60)
+    reward = 20
+
 
 if __name__ == "__main__":
     try:
