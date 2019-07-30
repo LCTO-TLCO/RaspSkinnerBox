@@ -2,20 +2,22 @@
 # coding:utf-8
 import sys
 import schedule
-from box_interface import *
+import pandas as pd
 from datetime import *
 from random import seed, choice
 import random
+DEBUG = False
 from file_io import *
-import pandas as pd
+from box_interface import *
+
 
 # define
-DEBUG = False
+
 reward = 70
 # reset_time = datetime(today.year, today.month, today.day, 6, 0, 0) + timedelta(days=1)
 # ex_limit = {True: [1, 3], False: [50, 100]}
 ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
-mouse_no = "10"
+mouse_no = "29"
 limit = {True: 25, False: 1}
 is_time_limit_task = False
 current_task_name = ""
@@ -29,7 +31,8 @@ def run(terminate="", remained=-1):
     global mouse_no
     setup()
     file_setup(mouse_no)
-    schedule.every().day.at("06:00").do(unpayed_feeds_calculate)
+    schedule.every().day.at("07:00").do(unpayed_feeds_calculate)
+    #unpayed_feeds_calculate()
     if terminate in list(ex_flow.keys()):
         i = list(ex_flow.keys()).index(terminate)
         print("i=" + str(i))
@@ -64,6 +67,10 @@ def task(task_no: str, remained: int):
         if "time" in current_task:
             if (not sum(list(map(is_execution_time, current_task["time"])))) and exist_reserved_payoff:
                 unpayed_feeds_calculate()
+                continue
+            elif not bool(sum(list(map(is_execution_time, current_task["time"])))):
+                print("pending ... not in {}".format(current_task["time"]))
+                sleep(60*5)
                 continue
         schedule.run_pending()
         export(task_no, session_no, correct_times, "start")
@@ -203,16 +210,20 @@ def unpayed_feeds_calculate():
     exist_reserved_payoff = False
     # calc remain
     feeds = pd.read_csv(dispence_logfile_path, names=["date", "feed_num", "reason"], parse_dates=[0])
+    # feeds = feed_num()
     feeds = feeds[(feeds.date > datetime.combine(datetime.today() - timedelta(days=1), time(6, 0, 0))) &
                   (feeds.date > datetime.combine(datetime.today(), time(6, 0, 0)))]
+    print("remained = {}, feeds.feed_num.sum() = {}".format(remained, feeds.feed_num.sum()))
     remained = remained - feeds.feed_num.sum()
+    # TODO remained no keisan okasii 877
     # dispense
-    sleep(5 * 60)
+#    sleep(5 * 60)
     while remained > 0:
-        dispense_all(min(10, remained))
-        remained -= 10
-        sleep(5 * 60)
-    remained = 70
+        print("remained = {}", remained)
+        #dispense_all(min(1, remained))
+        remained -= 1
+        #sleep(1 * 60)
+    remained = 20
 
 if __name__ == "__main__":
     try:
