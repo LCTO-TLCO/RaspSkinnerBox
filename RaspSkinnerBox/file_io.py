@@ -7,6 +7,7 @@ import csv
 import os
 from collections import OrderedDict
 import json
+from defines import setting_file
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -18,7 +19,6 @@ logfile_path = 'no{}_action.csv'
 dispence_logfile_path = 'no{}_dispencer.csv'
 nosepoke_logfile_path = 'no{}_nosepoke.csv'
 settings_logfile_path = 'no{}_task_settings.json'
-setting_file = "task_settings/20190505_5hole.json"
 ex_flow = OrderedDict({"T0": {}})
 ex_flow.update(json.load(open(setting_file, "r"), object_pairs_hook=OrderedDict))
 

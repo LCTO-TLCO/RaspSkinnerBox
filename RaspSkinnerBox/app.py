@@ -6,6 +6,7 @@ import pandas as pd
 from datetime import *
 from random import seed, choice
 import random
+from defines import mouse_no
 
 DEBUG = False
 from file_io import *
@@ -17,7 +18,6 @@ reward = 70
 # reset_time = datetime(today.year, today.month, today.day, 6, 0, 0) + timedelta(days=1)
 # ex_limit = {True: [1, 3], False: [50, 100]}
 ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
-mouse_no = "29"
 limit = {True: 25, False: 1}
 is_time_limit_task = False
 current_task_name = ""
@@ -211,23 +211,27 @@ def unpayed_feeds_calculate():
     # calc remain
     feeds = pd.read_csv(dispence_logfile_path, names=["date", "feed_num", "reason"], parse_dates=[0])
     # feeds = feed_num()
-    feeds = feeds[(feeds.date > datetime.combine(datetime.today() - timedelta(days=1), time(6, 0, 0))) &
-                  (feeds.date > datetime.combine(datetime.today(), time(6, 0, 0)))]
+    feeds = feeds[(feeds.date > datetime.combine(datetime.today() - timedelta(days=1), time(7, 0, 0))) &
+                  (feeds.date > datetime.combine(datetime.today(), time(7, 0, 0)))]
     print("reward = {}, feeds.feed_num.sum() = {}".format(reward, feeds.feed_num.sum()))
     reward = reward - feeds.feed_num.sum()
     # TODO remained no keisan okasii 877
     # dispense
     #    sleep(5 * 60)
-    while reward > 0:
-        print("reward = {}", reward)
-        dispense_all(min(1, reward))
-        reward -= 1
-        sleep(1 * 60)
+    if reward > 100:
+        overpayed_feeds_calculate(reward)
+    else:
+        while reward > 0:
+            print("reward = {}", reward)
+            dispense_all(min(1, reward))
+            reward -= 1
+            sleep(1 * 60)
     reward = 20
 
 
-def overpayed_feeds_calculate():
+def overpayed_feeds_calculate(over_reward: int):
     pass
+
 
 if __name__ == "__main__":
     try:
