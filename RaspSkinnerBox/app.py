@@ -22,6 +22,7 @@ limit = {True: 25, False: 1}
 is_time_limit_task = False
 current_task_name = ""
 exist_reserved_payoff = False
+feeds_today = 0
 # while pelet > 0 and not datetime.now().time().hour == 10:
 
 seed(32)
@@ -31,7 +32,6 @@ def run(terminate="", remained=-1):
     global mouse_no
     setup()
     file_setup(mouse_no)
-    schedule.every().day.at("07:00").do(unpayed_feeds_calculate)
     # unpayed_feeds_calculate()
     if terminate in list(ex_flow.keys()):
         i = list(ex_flow.keys()).index(terminate)
@@ -47,12 +47,19 @@ def run(terminate="", remained=-1):
 
 
 def task(task_no: str, remained: int):
-    global reward, is_time_limit_task, current_task_name
+    # initialize
+    global reward, is_time_limit_task, current_task_name, feeds_today
     current_task = ex_flow[task_no]
     print("{} start".format(task_no))
     hole_lamps_turn("off")
     session_no = last_session_id()
     current_task_name = task_no
+    if "reset_time" in ex_flow[current_task_name]:
+        schedule.every().day.at("{:02b}:00".format(ex_flow[current_task_name]["reset_time"])).do(
+            unpayed_feeds_calculate)
+    else:
+        schedule.every().day.at("07:00").do(unpayed_feeds_calculate)
+    feeds_today = int(calc_todays_feed(select_basetime()))
     begin = 0
     is_time_limit_task = "time" in current_task
     if remained == -1:
@@ -62,16 +69,22 @@ def task(task_no: str, remained: int):
     if begin < 0:
         begin = 0
     correct_times = begin
+
+    # main
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
+        if overpayed_feeds_calculate():
+            sleep(5*60)
+            continue
         if "time" in current_task:
-            if (not sum(list(map(is_execution_time, current_task["time"])))) and exist_reserved_payoff:
+            if (not any(list(map(is_execution_time, current_task["time"])))) and exist_reserved_payoff:
                 unpayed_feeds_calculate()
                 continue
-            elif not bool(sum(list(map(is_execution_time, current_task["time"])))):
+            elif not any(list(map(is_execution_time, current_task["time"]))):
                 print("pending ... not in {}".format(current_task["time"]))
                 sleep(60 * 5)
                 continue
+
         schedule.run_pending()
         export(task_no, session_no, correct_times, "start")
 
@@ -129,7 +142,7 @@ def task(task_no: str, remained: int):
         if is_correct:
             hole_lamp_turn("dispenser_lamp", "on")
             dispense_pelet()
-
+            feeds_today += 1
             # perseverative response measurement after reward & magazine nose poke detection
             while not is_hole_poked("dispenser_sensor"):
                 h = is_holes_poked(target_holes)
@@ -148,7 +161,10 @@ def task(task_no: str, remained: int):
             actualITI = ITI(current_task["ITI_failure"])
             export(task_no, session_no, correct_times, "ITI", actualITI)
         session_no += 1
+
+    # task end
     reward = reward - correct_times
+
     print("{} end".format(task_no))
 
 
@@ -177,18 +193,18 @@ def T0():
     print("T0 end")
 
 
+# time
 def is_execution_time(start_end: list):
     """ 実行時刻の開始終了リストを引数にして今実行時間かどうかを判定する """
     start, end = [datetime.combine(datetime.today(), datetime.strptime(time, "%H:%M").time()) for time in start_end]
     # 日付繰り上がりの処理
     end = end + timedelta(days=int(start > end))
-    return start <= datetime.now() and end >= datetime.now()
+    return start <= datetime.now() <= end
 
 
-def dispense_all(feed):
-    for f in range(feed):
-        dispense_pelet("payoff")
-        sleep(5)
+def select_basetime(hours=7):
+    today = datetime.today() if datetime.now().time() >= time(hours, 0, 0) else datetime.today() - timedelta(days=1)
+    return datetime.combine(today, time(hours, 0, 0))
 
 
 def ITI(secs: list):
@@ -199,10 +215,16 @@ def ITI(secs: list):
     return selected
 
 
+def dispense_all(feed):
+    for f in range(feed):
+        dispense_pelet("payoff")
+        sleep(5)
+
+
 def unpayed_feeds_calculate():
     """ 直前の精算時間までに吐き出した餌の数を計上し足りなければdispense_all """
-    global current_task_name, reward, exist_reserved_payoff
-    if is_time_limit_task:
+    global current_task_name, reward, exist_reserved_payoff, feeds_today
+    if "payoff" in ex_flow[current_task_name]:
         # リスケ
         if sum(list(map(is_execution_time, ex_flow[current_task_name]["time"]))):
             exist_reserved_payoff = True
@@ -211,26 +233,28 @@ def unpayed_feeds_calculate():
     # calc remain
     feeds = pd.read_csv(dispence_logfile_path, names=["date", "feed_num", "reason"], parse_dates=[0])
     # feeds = feed_num()
-    feeds = feeds[(feeds.date > datetime.combine(datetime.today() - timedelta(days=1), time(7, 0, 0))) &
-                  (feeds.date > datetime.combine(datetime.today(), time(7, 0, 0)))]
+    feeds = feeds[(select_basetime() < feeds.date)&(feeds.date < select_basetime() + timedelta(days=1))]
     print("reward = {}, feeds.feed_num.sum() = {}".format(reward, feeds.feed_num.sum()))
     reward = reward - feeds.feed_num.sum()
-    # TODO remained no keisan okasii 877
     # dispense
     #    sleep(5 * 60)
-    if reward > 100:
-        overpayed_feeds_calculate(reward)
-    else:
-        while reward > 0:
-            print("reward = {}", reward)
-            dispense_all(min(1, reward))
-            reward -= 1
-            sleep(1 * 60)
+
+    while reward > 0:
+        print("reward = {}", reward)
+        dispense_all(min(1, reward))
+        reward -= 1
+        sleep(1 * 60)
     reward = 20
+    feeds_today = 0
+    daily_log(feeds)
 
 
-def overpayed_feeds_calculate(over_reward: int):
-    pass
+def overpayed_feeds_calculate():
+    global feeds_today, current_task_name
+    default_upper = 100
+    if "feed_upper" in ex_flow[current_task_name]:
+        default_upper = ex_flow[current_task_name]["feed_upper"]
+    return feeds_today >= default_upper
 
 
 if __name__ == "__main__":
