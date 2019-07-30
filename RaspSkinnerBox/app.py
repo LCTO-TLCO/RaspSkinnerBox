@@ -74,7 +74,7 @@ def task(task_no: str, remained: int):
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
         if overpayed_feeds_calculate():
-            sleep(5*60)
+            sleep(5 * 60)
             continue
         if "time" in current_task:
             if (not any(list(map(is_execution_time, current_task["time"])))) and exist_reserved_payoff:
@@ -146,7 +146,7 @@ def task(task_no: str, remained: int):
             # perseverative response measurement after reward & magazine nose poke detection
             while not is_hole_poked("dispenser_sensor"):
                 h = is_holes_poked(target_holes)
-                if not h == False:
+                if not h:
                     export(task_no, session_no, correct_times, "nose poke after rew", h)
                     sleep(0.5)
                 sleep(0.01)
@@ -164,7 +164,7 @@ def task(task_no: str, remained: int):
 
     # task end
     reward = reward - correct_times
-
+    schedule.clear()
     print("{} end".format(task_no))
 
 
@@ -233,7 +233,7 @@ def unpayed_feeds_calculate():
     # calc remain
     feeds = pd.read_csv(dispence_logfile_path, names=["date", "feed_num", "reason"], parse_dates=[0])
     # feeds = feed_num()
-    feeds = feeds[(select_basetime() < feeds.date)&(feeds.date < select_basetime() + timedelta(days=1))]
+    feeds = feeds[(select_basetime() < feeds.date) & (feeds.date < select_basetime() + timedelta(days=1))]
     print("reward = {}, feeds.feed_num.sum() = {}".format(reward, feeds.feed_num.sum()))
     reward = reward - feeds.feed_num.sum()
     # dispense
