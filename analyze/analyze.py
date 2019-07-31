@@ -688,7 +688,10 @@ def view_averaged_prob_same_prev(tdata, mice, tasks):
     # plt.savefig('fig/{}_prob_all4.png'.format(graph_ins.exportpath))
     plt.savefig('fig/prob_all4.png')
 
-
+# TODO task範囲の背景描画
+# TODO 100ステップ移動平均を追加
+# TODO failureより前にrewardをかく（描画を後に）
+# TODO マーカーを縦長にしてみる？
 def view_summary(tdata, mice, tasks):
     for mouse_id in mice:
         #    entropy_scatter(mouse_id, )
