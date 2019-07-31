@@ -632,6 +632,7 @@ if __name__ == "__main__":
 
 
 # TODO 改修
+# TODO correct -> rewarded, incorrect -> no-rewarded
 def view_averaged_prob_same_prev(tdata, mice, tasks):
     m = []
     t = []
