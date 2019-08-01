@@ -692,31 +692,31 @@ def view_averaged_prob_same_prev(tdata, mice, tasks):
 # TODO 100ステップ移動平均を追加
 def view_summary(tdata, mice, tasks):
     for mouse_id in mice:
-        def plot(mdf, task="all", ):
+        def plot(mdf, task="all"):
+
+            # task color
+
             labels = ["incorrect", "correct", "omission"]
             df = mdf[mdf["event_type"].isin(["reward", "failure", "time over"])]
 
-            # collection = collections.BrokenBarHCollection.span_where(df.session_id.to_numpy(), ymin=0, ymax=5,
-            #                                                          where=(df.burst.isin(burst_time)),
-            #                                                          facecolor='pink', alpha=0.3)
-            # fig_subplot.add_collection(collection)
-
             # entropy
             fig = plt.figure(figsize=(15, 8), dpi=100)
-            ax = fig.add_subplot(3, 1, 1)
+            ax = [fig.add_subplot(3, 1, 1)]
             plt.plot(df.session_id, df['hole_choice_entropy'])
             plt.ylabel('Entropy (bit)')
-            plt.xlim(0, df.session_id.max())
+            plt.xlim(df.session_id.min(), df.session_id.max())
+            if task == "all":
+                collection = collections.BrokenBarHCollection.span_where(df.session_id.to_numpy(), ymin=-100, ymax=100,
+                                                                     where=(df.task.isin(tasks[0::2])),
+                                                                     facecolor='pink', alpha=0.3)
+                ax[0].add_collection(collection)
 
             # scatter
-            fig.add_subplot(3, 1, 2, sharex=ax)
+            ax.append(fig.add_subplot(3, 1, 2, sharex=ax[0]))
             colors = ["red", "blue", "black"]
             size = dict(zip(labels, [25, 50, 25]))
             pos = dict(zip(labels, ["bottom", "full", "bottom"]))
-            datasets = [
-                (tdata.mice_task[tdata.mice_task.mouse_id == mouse_id][
-                    tdata.mice_task[tdata.mice_task.mouse_id == mouse_id]
-                    ["is_{}".format(flag)] == 1]) for flag in labels]
+            datasets = ([mdf[mdf["is_{}".format(flag)] == 1] for flag in labels])
             for dt, la, cl in zip(datasets, labels, colors):
                 marker = markers.MarkerStyle("|", pos[la])
                 plt.scatter(dt.session_id, dt['is_hole1'] * 1, s=size[la], color=cl, marker=marker)
@@ -726,22 +726,32 @@ def view_summary(tdata, mice, tasks):
                 plt.scatter(dt.session_id, dt['is_hole9'] * 5, s=size[la], color=cl, marker=marker)
                 plt.scatter(dt.session_id, dt['is_omission'] * 0, s=size[la], color=cl, marker=marker)
             plt.ylabel("Hole")
+            if task == "all":
+                collection = collections.BrokenBarHCollection.span_where(df.session_id.to_numpy(), ymin=-2, ymax=6,
+                                                                     where=(df.task.isin(tasks[0::2])),
+                                                                     facecolor='pink', alpha=0.3)
+                ax[1].add_collection(collection)
 
             # cumsum
-            fig.add_subplot(3, 1, 3, sharex=ax)
+            ax.append(fig.add_subplot(3, 1, 3, sharex=ax[0]))
             plt.plot(df.session_id, df['cumsum_correct_taskreset'])
             plt.plot(df.session_id, df['cumsum_incorrect_taskreset'])
             plt.plot(df.session_id, df['cumsum_omission_taskreset'])
-            plt.xlim(0, df.session_id.max())
+            # plt.xlim(0, df.session_id.max())
             plt.ylabel('Cumulative')
             plt.xlabel('Trial')
+            if task == "all":
+                collection = collections.BrokenBarHCollection.span_where(df.session_id.to_numpy(), ymin=-20, ymax=1000,
+                                                                     where=(df.task.isin(tasks[0::2])),
+                                                                     facecolor='pink', alpha=0.3)
+                ax[2].add_collection(collection)
 
             plt.savefig('fig/no{:03d}_{}_summary.png'.format(mouse_id, task))
             plt.show()
 
         mdf = tdata.mice_task[tdata.mice_task.mouse_id == mouse_id]
-        plot(mdf, mouse_id)
-        list(map(plot, [mdf[mdf.task == task] for task in tdata.tasks], tdata.tasks))
+        plot(mdf)
+        # list(map(plot, [mdf[mdf.task == task] for task in tdata.tasks], tdata.tasks))
 
 
 def view_trial_per_datetime(tdata, mice=[18], task="All5_30"):
