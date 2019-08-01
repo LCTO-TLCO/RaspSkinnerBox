@@ -9,6 +9,7 @@ from collections import OrderedDict
 import json
 from defines import setting_file
 import pandas as pd
+from app import select_basetime
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -20,7 +21,7 @@ logfile_path = 'no{}_action.csv'
 dispence_logfile_path = 'no{}_dispencer.csv'
 nosepoke_logfile_path = 'no{}_nosepoke.csv'
 settings_logfile_path = 'no{}_task_settings.json'
-daily_logfile_path = 'no{}_daily_feed.json'
+daily_logfile_path = 'no{}_daily_feed.csv'
 ex_flow = OrderedDict({"T0": {}})
 ex_flow.update(json.load(open(setting_file, "r"), object_pairs_hook=OrderedDict))
 
@@ -87,14 +88,17 @@ def magagine_log(reason, amount=1):
         dispence_log_file.flush()
 
 
-def daily_log(feed_dataframe: pd.DataFrame):
+def daily_log(basetime):
     """ 餌やりの日計ログ 記入事項：「日付, 量(粒)/報酬として,量(粒)/精算として」 """
+    feeds = pd.DataFrame(columns=["date", "feed_num", "reason"])
+    if os.path.exists(dispence_logfile_path):
+        feeds = pd.read_csv(dispence_logfile_path, names=["date", "feed_num", "reason"], parse_dates=[0])
+    feed_dataframe = feeds[(basetime < feeds.date) & (feeds.date < basetime + timedelta(days=1))]
     string = ','.join([str(datetime.now()),
-                       "reward", feed_dataframe.groupby("reason").sum().loc["reward", "amount"],
-                       "payoff", feed_dataframe.groupby("reason").sum().loc["payoff", "amount"]]) if any(
-        feed_dataframe.reason.isin(["payoff"])) else ','.join([str(datetime.now()),
-                                                               feed_dataframe.groupby("reason").sum().loc[
-                                                                   "reward", "amount"], 0])
+                       "reward", str(feed_dataframe.groupby("reason").sum().loc["reward", "amount"] if any(
+            feed_dataframe.reason.isin(["reward"])) else 0),
+                       "payoff", str(feed_dataframe.groupby("reason").sum().loc["payoff", "amount"] if any(
+            feed_dataframe.reason.isin(["payoff"])) else 0)])
     with open(os.path.join('log', daily_logfile_path), 'a+') as daily_dispence_log_file:
         daily_dispence_log_file.write(string + "\n")
         daily_dispence_log_file.flush()
@@ -156,9 +160,10 @@ def all_nosepoke_log(channel: int, event_type: str):
 def calc_todays_feed(basetime):
     # TODO file exist or not
     if not os.path.exists(dispence_logfile_path):
-       return 0
-    feeds_today = pd.read_csv(os.path.join("log",dispence_logfile_path), names=["date", "feed_num", "reason"], parse_dates=[0])
-    feeds_today = feeds_today[((basetime < feeds_today.date)&(feeds_today.date < basetime - timedelta(days=1)))]
+        return 0
+    feeds_today = pd.read_csv(os.path.join("log", dispence_logfile_path), names=["date", "feed_num", "reason"],
+                              parse_dates=[0])
+    feeds_today = feeds_today[((basetime < feeds_today.date) & (feeds_today.date < basetime - timedelta(days=1)))]
     return feeds_today.feed_num.sum()
 
 
