@@ -155,8 +155,8 @@ def all_nosepoke_log(channel: int, event_type: str):
 
 def calc_todays_feed(basetime):
     # TODO file exist or not
-    #if not os.exist(dispence_logfile_path):
-    #    return 0
+    if not os.path.exists(dispence_logfile_path):
+       return 0
     feeds_today = pd.read_csv(os.path.join("log",dispence_logfile_path), names=["date", "feed_num", "reason"], parse_dates=[0])
     feeds_today = feeds_today[((basetime < feeds_today.date)&(feeds_today.date < basetime - timedelta(days=1)))]
     return feeds_today.feed_num.sum()

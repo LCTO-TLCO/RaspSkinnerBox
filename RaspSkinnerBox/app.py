@@ -7,10 +7,10 @@ from datetime import *
 from random import seed, choice
 import random
 from defines import mouse_no
+DEBUG = True
 
-DEBUG = False
-from file_io import *
 from box_interface import *
+from file_io import *
 
 # define
 
@@ -55,7 +55,7 @@ def task(task_no: str, remained: int):
     session_no = last_session_id()
     current_task_name = task_no
     if "reset_time" in ex_flow[current_task_name]:
-        schedule.every().day.at("{:02b}:00".format(ex_flow[current_task_name]["reset_time"])).do(
+        schedule.every().day.at("{}".format(ex_flow[current_task_name]["reset_time"])).do(
             unpayed_feeds_calculate)
     else:
         schedule.every().day.at("07:00").do(unpayed_feeds_calculate)
@@ -91,8 +91,12 @@ def task(task_no: str, remained: int):
         # task call
         if current_task["task_call"]:
             hole_lamp_turn("dispenser_lamp", "on")
-            while not is_hole_poked("dispenser_sensor"):
-                sleep(0.01)
+            if not DEBUG:
+                while not is_hole_poked("dispenser_sensor"):
+                    sleep(0.01)
+            elif DEBUG:
+                print("debug mode: type any key")
+                input()
             hole_lamp_turn("dispenser_lamp", "off")
             export(task_no, session_no, correct_times, "task called")
             hole_lamp_turn("house_lamp", "on")
