@@ -9,6 +9,7 @@ from scipy.stats import entropy
 import sys
 import matplotlib.pyplot as plt
 import matplotlib.collections as collections
+import matplotlib.markers as markers
 import os
 
 # debug = True
@@ -689,54 +690,58 @@ def view_averaged_prob_same_prev(tdata, mice, tasks):
 
 # TODO task範囲の背景描画
 # TODO 100ステップ移動平均を追加
-# TODO failureより前にrewardをかく（描画を後に）
-# TODO マーカーを縦長にしてみる？
 def view_summary(tdata, mice, tasks):
     for mouse_id in mice:
-        #    entropy_scatter(mouse_id, )
+        def plot(mdf, task="all", ):
+            labels = ["incorrect", "correct", "omission"]
+            df = mdf[mdf["event_type"].isin(["reward", "failure", "time over"])]
 
-        labels = ["incorrect", "correct", "omission"]
-        # flags = data.loc[:, data.colums.str.match("is_[(omission|correct|incorrect)")]
+            # collection = collections.BrokenBarHCollection.span_where(df.session_id.to_numpy(), ymin=0, ymax=5,
+            #                                                          where=(df.burst.isin(burst_time)),
+            #                                                          facecolor='pink', alpha=0.3)
+            # fig_subplot.add_collection(collection)
+
+            # entropy
+            fig = plt.figure(figsize=(15, 8), dpi=100)
+            ax = fig.add_subplot(3, 1, 1)
+            plt.plot(df.session_id, df['hole_choice_entropy'])
+            plt.ylabel('Entropy (bit)')
+            plt.xlim(0, df.session_id.max())
+
+            # scatter
+            fig.add_subplot(3, 1, 2, sharex=ax)
+            colors = ["red", "blue", "black"]
+            size = dict(zip(labels, [25, 50, 25]))
+            pos = dict(zip(labels, ["bottom", "full", "bottom"]))
+            datasets = [
+                (tdata.mice_task[tdata.mice_task.mouse_id == mouse_id][
+                    tdata.mice_task[tdata.mice_task.mouse_id == mouse_id]
+                    ["is_{}".format(flag)] == 1]) for flag in labels]
+            for dt, la, cl in zip(datasets, labels, colors):
+                marker = markers.MarkerStyle("|", pos[la])
+                plt.scatter(dt.session_id, dt['is_hole1'] * 1, s=size[la], color=cl, marker=marker)
+                plt.scatter(dt.session_id, dt['is_hole3'] * 2, s=size[la], color=cl, marker=marker)
+                plt.scatter(dt.session_id, dt['is_hole5'] * 3, s=size[la], color=cl, marker=marker)
+                plt.scatter(dt.session_id, dt['is_hole7'] * 4, s=size[la], color=cl, marker=marker)
+                plt.scatter(dt.session_id, dt['is_hole9'] * 5, s=size[la], color=cl, marker=marker)
+                plt.scatter(dt.session_id, dt['is_omission'] * 0, s=size[la], color=cl, marker=marker)
+            plt.ylabel("Hole")
+
+            # cumsum
+            fig.add_subplot(3, 1, 3, sharex=ax)
+            plt.plot(df.session_id, df['cumsum_correct_taskreset'])
+            plt.plot(df.session_id, df['cumsum_incorrect_taskreset'])
+            plt.plot(df.session_id, df['cumsum_omission_taskreset'])
+            plt.xlim(0, df.session_id.max())
+            plt.ylabel('Cumulative')
+            plt.xlabel('Trial')
+
+            plt.savefig('fig/no{:03d}_{}_summary.png'.format(mouse_id, task))
+            plt.show()
 
         mdf = tdata.mice_task[tdata.mice_task.mouse_id == mouse_id]
-        df = mdf[mdf["event_type"].isin(["reward", "failure", "time over"])]
-
-        fig = plt.figure(figsize=(15, 8), dpi=100)
-        ax = fig.add_subplot(3, 1, 1)
-        plt.plot(x=df.session_id, y=df['hole_choice_entropy'])
-        #    print(tdata.mice_task[mouse_id]['hole_choice_entropy'])
-        plt.ylabel('Entropy (bit)')
-        plt.xlim(0, len(mdf))
-
-        plt.title('{:03} summary'.format(mouse_id))
-        #    nose_poke_raster(mouse_id, fig.add_subplot(3, 1, 2))
-
-        fig.add_subplot(3, 1, 2, sharex=ax)
-        colors = ["red", "blue", "black"]
-        datasets = [(tdata.mice_task[mouse_id][tdata.mice_task[mouse_id]
-                                               ["is_{}".format(flag)] == 1]) for flag in labels]
-        for dt, la, cl in zip(datasets, labels, colors):
-            plt.scatter(dt.session_id, dt['is_hole1'] * 1, s=15, color=cl)
-            plt.scatter(dt.session_id, dt['is_hole3'] * 2, s=15, color=cl)
-            plt.scatter(dt.session_id, dt['is_hole5'] * 3, s=15, color=cl)
-            plt.scatter(dt.session_id, dt['is_hole7'] * 4, s=15, color=cl)
-            plt.scatter(dt.session_id, dt['is_hole9'] * 5, s=15, color=cl)
-            plt.scatter(dt.session_id, dt['is_omission'] * 0, s=15, color=cl)
-        plt.ylabel("Hole")
-        # plt.xlim(0, dt['session_id'].max() - dt['session_id'].min())
-        #    plt.xlim(0, len(mdf))
-
-        fig.add_subplot(3, 1, 3, sharex=ax)
-        plt.plot(x=df.session_id, y=df['cumsum_correct_taskreset'])
-        plt.plot(x=df.session_id, y=df['cumsum_incorrect_taskreset'])
-        plt.plot(x=df.session_id, y=df['cumsum_omission_taskreset'])
-        plt.xlim(0, len(mdf))
-        plt.ylabel('Cumulative')
-        plt.xlabel('Trial')
-        plt.show(block=True)
-        plt.savefig('fig/no{:03d}_summary.png'.format(mouse_id))
-
-        # TODO task割表示
+        plot(mdf, mouse_id)
+        list(map(plot, [mdf[mdf.task == task] for task in tdata.tasks], tdata.tasks))
 
 
 def view_trial_per_datetime(tdata, mice=[18], task="All5_30"):
@@ -756,10 +761,8 @@ def view_trial_per_datetime(tdata, mice=[18], task="All5_30"):
 def view_scatter_vs_times_with_burst(tdata, mice=[18], task="All5_30", burst=1):
     """ fig1 B """
     for mouse_id in mice:
-        #    entropy_scatter(mouse_id, )
 
         labels = ["correct", "incorrect", "omission"]
-        # flags = data.loc[:, data.colums.str.match("is_[(omission|correct|incorrect)")]
 
         data = tdata.data.assign(
             timestamps=(tdata.data.timestamps - tdata.data.timestamps[0]).dt.total_seconds())  # [mouse_id]
