@@ -695,7 +695,7 @@ def view_summary(tdata, mice, tasks):
 
             # entropy
             fig = plt.figure(figsize=(15, 8), dpi=100)
-            ax = [fig.add_subplot(3, 1, 1)]
+            ax = [fig.add_subplot(4, 1, 1)]
             plt.plot(df.session_id, df['hole_choice_entropy'])
             plt.ylabel('Entropy (bit)')
             plt.xlim(df.session_id.min(), df.session_id.max())
@@ -706,7 +706,7 @@ def view_summary(tdata, mice, tasks):
                 ax[0].add_collection(collection)
 
             # scatter
-            ax.append(fig.add_subplot(3, 1, 2, sharex=ax[0]))
+            ax.append(fig.add_subplot(4, 1, 2, sharex=ax[0]))
             colors = ["red", "blue", "black"]
             size = dict(zip(labels, [25, 50, 25]))
             pos = dict(zip(labels, ["bottom", "full", "bottom"]))
@@ -727,7 +727,7 @@ def view_summary(tdata, mice, tasks):
                 ax[1].add_collection(collection)
 
             # cumsum
-            ax.append(fig.add_subplot(3, 1, 3, sharex=ax[0]))
+            ax.append(fig.add_subplot(4, 1, 3, sharex=ax[0]))
             plt.plot(df.session_id, df['cumsum_correct_taskreset'], label="correct")
             plt.plot(df.session_id, df['cumsum_incorrect_taskreset'], label="incorrect")
             plt.plot(df.session_id, df['cumsum_omission_taskreset'], label="omission")
@@ -741,10 +741,23 @@ def view_summary(tdata, mice, tasks):
                                                                          facecolor='pink', alpha=0.3)
                 ax[2].add_collection(collection)
 
-
-
+            #
+            ax.append(fig.add_subplot(4, 1, 4))
+            # calc 100 step move average
+            # make dataframe
+            data = pd.DataFrame(columns=["is_hole{}".format(i) for i in range(1, 10, 2)])
+            # slow
+            for index in range(0, len(df)):
+                data = data.append([df.iloc[max(0, index - 100):index, :]["is_hole{}".format(i)].sum() /
+                                           df.iloc[max(0, index - 100):index, :]["is_hole{}".format(i)].size for i in
+                                           range(1, 10, 2)])
+            print(data)
+            # plot
+            ax = data.plot()
+            # legend
+            ax.legend()
             # savefig
-            plt.savefig('fig/no{:03d}_{}_summary.png'.format(mouse_id, task))
+            # plt.savefig('fig/no{:03d}_{}_summary.png'.format(mouse_id, task))
             plt.show()
 
         mdf = tdata.mice_task[tdata.mice_task.mouse_id == mouse_id]
