@@ -631,8 +631,6 @@ if __name__ == "__main__":
     # TODO 同一burst内のデータでcountして平均表示
 
 
-# TODO 改修
-# TODO correct -> rewarded, incorrect -> no-rewarded
 def view_averaged_prob_same_prev(tdata, mice, tasks):
     m = []
     t = []
@@ -667,11 +665,11 @@ def view_averaged_prob_same_prev(tdata, mice, tasks):
 
         xlen = len(c_same_avg)
         xax = np.array(range(1, xlen + 1))
-        plt.plot(xax, c_same_avg, label="correct start")
+        plt.plot(xax, c_same_avg, label="rewarded start")
         plt.errorbar(xax, c_same_avg, yerr=c_same_var, capsize=2, fmt='o', markersize=1, ecolor='black',
                      markeredgecolor="black", color='w', lolims=True)
 
-        plt.plot(np.array(range(1, xlen + 1)), f_same_avg, label="incorrect start")
+        plt.plot(np.array(range(1, xlen + 1)), f_same_avg, label="no-rewarded start")
         plt.errorbar(xax, f_same_avg, yerr=f_same_var, capsize=2, fmt='o', markersize=1, ecolor='black',
                      markeredgecolor="black", color='w', uplims=True)
 
@@ -684,9 +682,10 @@ def view_averaged_prob_same_prev(tdata, mice, tasks):
             plt.legend()
         plt.xlabel('Trial')
         plt.title('{}'.format(task))
-    plt.show()
     # plt.savefig('fig/{}_prob_all4.png'.format(graph_ins.exportpath))
     plt.savefig('fig/prob_all4.png')
+    plt.show()
+
 
 # TODO task範囲の背景描画
 # TODO 100ステップ移動平均を追加
@@ -696,15 +695,15 @@ def view_summary(tdata, mice, tasks):
     for mouse_id in mice:
         #    entropy_scatter(mouse_id, )
 
-        labels = ["correct", "incorrect", "omission"]
+        labels = ["incorrect", "correct", "omission"]
         # flags = data.loc[:, data.colums.str.match("is_[(omission|correct|incorrect)")]
 
-        mdf = tdata.mice_task[mouse_id]
+        mdf = tdata.mice_task[tdata.mice_task.mouse_id == mouse_id]
         df = mdf[mdf["event_type"].isin(["reward", "failure", "time over"])]
 
         fig = plt.figure(figsize=(15, 8), dpi=100)
         ax = fig.add_subplot(3, 1, 1)
-        plt.plot(df['hole_choice_entropy'])
+        plt.plot(x=df.session_id, y=df['hole_choice_entropy'])
         #    print(tdata.mice_task[mouse_id]['hole_choice_entropy'])
         plt.ylabel('Entropy (bit)')
         plt.xlim(0, len(mdf))
@@ -713,24 +712,24 @@ def view_summary(tdata, mice, tasks):
         #    nose_poke_raster(mouse_id, fig.add_subplot(3, 1, 2))
 
         fig.add_subplot(3, 1, 2, sharex=ax)
-        colors = ["blue", "red", "black"]
+        colors = ["red", "blue", "black"]
         datasets = [(tdata.mice_task[mouse_id][tdata.mice_task[mouse_id]
                                                ["is_{}".format(flag)] == 1]) for flag in labels]
         for dt, la, cl in zip(datasets, labels, colors):
-            plt.scatter(dt.index, dt['is_hole1'] * 1, s=15, color=cl)
-            plt.scatter(dt.index, dt['is_hole3'] * 2, s=15, color=cl)
-            plt.scatter(dt.index, dt['is_hole5'] * 3, s=15, color=cl)
-            plt.scatter(dt.index, dt['is_hole7'] * 4, s=15, color=cl)
-            plt.scatter(dt.index, dt['is_hole9'] * 5, s=15, color=cl)
-            plt.scatter(dt.index, dt['is_omission'] * 0, s=15, color=cl)
+            plt.scatter(dt.session_id, dt['is_hole1'] * 1, s=15, color=cl)
+            plt.scatter(dt.session_id, dt['is_hole3'] * 2, s=15, color=cl)
+            plt.scatter(dt.session_id, dt['is_hole5'] * 3, s=15, color=cl)
+            plt.scatter(dt.session_id, dt['is_hole7'] * 4, s=15, color=cl)
+            plt.scatter(dt.session_id, dt['is_hole9'] * 5, s=15, color=cl)
+            plt.scatter(dt.session_id, dt['is_omission'] * 0, s=15, color=cl)
         plt.ylabel("Hole")
         # plt.xlim(0, dt['session_id'].max() - dt['session_id'].min())
         #    plt.xlim(0, len(mdf))
 
         fig.add_subplot(3, 1, 3, sharex=ax)
-        plt.plot(df['cumsum_correct_taskreset'])
-        plt.plot(df['cumsum_incorrect_taskreset'])
-        plt.plot(df['cumsum_omission_taskreset'])
+        plt.plot(x=df.session_id, y=df['cumsum_correct_taskreset'])
+        plt.plot(x=df.session_id, y=df['cumsum_incorrect_taskreset'])
+        plt.plot(x=df.session_id, y=df['cumsum_omission_taskreset'])
         plt.xlim(0, len(mdf))
         plt.ylabel('Cumulative')
         plt.xlabel('Trial')
