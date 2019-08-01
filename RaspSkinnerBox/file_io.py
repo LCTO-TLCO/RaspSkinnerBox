@@ -59,7 +59,7 @@ def set_dir():
 
 
 def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0):
-    logstring = ','.join([str(datetime.now()), task_no, str(session_no), str(times), event_type, ""])
+    logstring = ','.join([str(datetime.now()), task_no, str(session_no), str(times), event_type])
     with open(os.path.join("log", logfile_path), 'a+') as logfile:
         logfile.write(",".join([logstring, str(hole_no)]) + "\n")
         logfile.flush()
@@ -82,7 +82,7 @@ def add_color(string: str, integer: str):
 
 def magagine_log(reason, amount=1):
     """ 餌やりのログ 記入事項：「日付, 量(粒),報酬・精算」 """
-    string = ','.join([str(datetime.now()), str(amount), reason, ""])
+    string = ','.join([str(datetime.now()), str(amount), reason])
     with open(os.path.join('log', dispence_logfile_path), 'a+') as dispence_log_file:
         dispence_log_file.write(string + "\n")
         dispence_log_file.flush()
@@ -151,7 +151,7 @@ def callback_falling(channel):
 
 
 def all_nosepoke_log(channel: int, event_type: str):
-    string = ','.join([str(datetime.now()), event_type, str(channel), ""])
+    string = ','.join([str(datetime.now()), event_type, str(channel)])
     with open(os.path.join("log", nosepoke_logfile_path), 'a+') as poke_log:
         poke_log.write(string + "\n")
         poke_log.flush()
