@@ -16,8 +16,6 @@ import os
 debug = False
 
 
-# TODO graph classの内容をscratch内で実行？　
-
 class task_data:
     def __init__(self, mice: list, tasks, logpath):
         global debug
@@ -688,14 +686,10 @@ def view_averaged_prob_same_prev(tdata, mice, tasks):
     plt.show()
 
 
-# TODO task範囲の背景描画
 # TODO 100ステップ移動平均を追加
 def view_summary(tdata, mice, tasks):
     for mouse_id in mice:
         def plot(mdf, task="all"):
-
-            # task color
-
             labels = ["incorrect", "correct", "omission"]
             df = mdf[mdf["event_type"].isin(["reward", "failure", "time over"])]
 
@@ -707,8 +701,8 @@ def view_summary(tdata, mice, tasks):
             plt.xlim(df.session_id.min(), df.session_id.max())
             if task == "all":
                 collection = collections.BrokenBarHCollection.span_where(df.session_id.to_numpy(), ymin=-100, ymax=100,
-                                                                     where=(df.task.isin(tasks[0::2])),
-                                                                     facecolor='pink', alpha=0.3)
+                                                                         where=(df.task.isin(tasks[0::2])),
+                                                                         facecolor='pink', alpha=0.3)
                 ax[0].add_collection(collection)
 
             # scatter
@@ -728,24 +722,28 @@ def view_summary(tdata, mice, tasks):
             plt.ylabel("Hole")
             if task == "all":
                 collection = collections.BrokenBarHCollection.span_where(df.session_id.to_numpy(), ymin=-2, ymax=6,
-                                                                     where=(df.task.isin(tasks[0::2])),
-                                                                     facecolor='pink', alpha=0.3)
+                                                                         where=(df.task.isin(tasks[0::2])),
+                                                                         facecolor='pink', alpha=0.3)
                 ax[1].add_collection(collection)
 
             # cumsum
             ax.append(fig.add_subplot(3, 1, 3, sharex=ax[0]))
-            plt.plot(df.session_id, df['cumsum_correct_taskreset'])
-            plt.plot(df.session_id, df['cumsum_incorrect_taskreset'])
-            plt.plot(df.session_id, df['cumsum_omission_taskreset'])
+            plt.plot(df.session_id, df['cumsum_correct_taskreset'], label="correct")
+            plt.plot(df.session_id, df['cumsum_incorrect_taskreset'], label="incorrect")
+            plt.plot(df.session_id, df['cumsum_omission_taskreset'], label="omission")
             # plt.xlim(0, df.session_id.max())
             plt.ylabel('Cumulative')
             plt.xlabel('Trial')
+            plt.legend()
             if task == "all":
                 collection = collections.BrokenBarHCollection.span_where(df.session_id.to_numpy(), ymin=-20, ymax=1000,
-                                                                     where=(df.task.isin(tasks[0::2])),
-                                                                     facecolor='pink', alpha=0.3)
+                                                                         where=(df.task.isin(tasks[0::2])),
+                                                                         facecolor='pink', alpha=0.3)
                 ax[2].add_collection(collection)
 
+
+
+            # savefig
             plt.savefig('fig/no{:03d}_{}_summary.png'.format(mouse_id, task))
             plt.show()
 
