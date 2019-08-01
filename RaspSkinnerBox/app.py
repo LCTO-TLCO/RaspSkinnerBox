@@ -7,6 +7,7 @@ from datetime import *
 from random import seed, choice
 import random
 from defines import mouse_no
+
 DEBUG = True
 
 from box_interface import *
@@ -73,19 +74,20 @@ def task(task_no: str, remained: int):
     # main
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
+        schedule.run_pending()
         if overpayed_feeds_calculate():
-            sleep(5 * 60)
+            sleep(5)
             continue
         if "time" in current_task:
             if (not any(list(map(is_execution_time, current_task["time"])))) and exist_reserved_payoff:
                 unpayed_feeds_calculate()
                 continue
             elif not any(list(map(is_execution_time, current_task["time"]))):
-                print("pending ... not in {}".format(current_task["time"]))
-                sleep(60 * 5)
+                if not datetime.now().minute % 5:
+                    print("pending ... not in {}".format(current_task["time"]))
+                sleep(5)
                 continue
 
-        schedule.run_pending()
         export(task_no, session_no, correct_times, "start")
 
         # task call
@@ -225,6 +227,7 @@ def dispense_all(feed):
         sleep(5)
 
 
+# TODO 中断処理
 def unpayed_feeds_calculate():
     """ 直前の精算時間までに吐き出した餌の数を計上し足りなければdispense_all """
     global current_task_name, reward, exist_reserved_payoff, feeds_today
@@ -242,7 +245,8 @@ def unpayed_feeds_calculate():
     reward = reward - feeds.feed_num.sum()
     # dispense
     #    sleep(5 * 60)
-
+    if DEBUG:
+        reward = 3
     while reward > 0:
         print("reward = {}", reward)
         dispense_all(min(1, reward))
