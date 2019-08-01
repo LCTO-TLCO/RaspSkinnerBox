@@ -8,7 +8,7 @@ from random import seed, choice
 import random
 from defines import mouse_no
 
-DEBUG = True
+DEBUG = False
 
 from box_interface import *
 from file_io import *
@@ -229,7 +229,6 @@ def dispense_all(feed):
         sleep(5)
 
 
-# TODO 中断処理
 def unpayed_feeds_calculate():
     """ 直前の精算時間までに吐き出した餌の数を計上し足りなければdispense_all """
     global current_task_name, reward, exist_reserved_payoff, feeds_today, current_reset_time
