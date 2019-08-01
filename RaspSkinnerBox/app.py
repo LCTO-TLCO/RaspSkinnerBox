@@ -84,7 +84,7 @@ def task(task_no: str, remained: int):
                 unpayed_feeds_calculate()
                 continue
             elif not any(list(map(is_execution_time, current_task["time"]))):
-                if not all([datetime.now().minute % 5, datetime.now().second == 0]):
+                if all([datetime.now().minute % 5, datetime.now().second == 0]):
                     print("pending ... not in {}".format(current_task["time"]))
                 sleep(5)
                 continue
@@ -209,10 +209,14 @@ def is_execution_time(start_end: list):
     return start <= datetime.now() <= end
 
 
-def select_basetime(hours="07:00"):
-    today = datetime.today() if datetime.now().time() >= time.fromisoformat(hours) else datetime.today() - timedelta(
+def select_basetime(times="07:00"):
+    hours = int(times.split(":")[0])
+    minutes = int(times.split(":")[1])
+
+    today = datetime.today() if datetime.now().time() >= time(hours,
+                                                              minutes) else datetime.today() - timedelta(
         days=1)
-    return datetime.combine(today, time.fromisoformat(hours))
+    return datetime.combine(today, time(hours, minutes))
 
 
 def ITI(secs: list):
@@ -245,10 +249,14 @@ def unpayed_feeds_calculate():
         if DEBUG:
             reward = 3
         while reward > 0:
-            # TODO task time duplicated
-            print("reward = {}".format(reward))
+            # if any(list(map(is_execution_time, ex_flow[current_task_name]["time"]))):
+            #     daily_log(select_basetime(current_reset_time))
+            #     exist_reserved_payoff = True
+            #     return
+            print("reward = {}".format(reward)) if DEBUG else None
             dispense_all(min(1, reward))
             reward -= 1
+
             sleep(1 * 60)
         reward = 20
         feeds_today = 0
