@@ -762,7 +762,7 @@ def view_summary(tdata, mice, tasks):
                                                                          facecolor='lightblue', alpha=0.3)
                 ax[3].add_collection(collection)
             # savefig
-            # plt.savefig('fig/no{:03d}_{}_summary.png'.format(mouse_id, task))
+            plt.savefig('fig/no{:03d}_{}_summary.png'.format(mouse_id, task))
             plt.show()
 
         mdf = tdata.mice_task[tdata.mice_task.mouse_id == mouse_id]
