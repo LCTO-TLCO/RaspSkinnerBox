@@ -56,10 +56,7 @@ def task(task_no: str, remained: int):
     hole_lamps_turn("off")
     session_no = last_session_id()
     current_task_name = task_no
-    if "reset_time" in current_task:
-        current_reset_time = current_task["reset_time"]
-    else:
-        current_reset_time = "07:00"
+    current_reset_time = current_task.get("reset_time", "07:00")
     schedule.every().day.at("{}".format(current_reset_time)).do(unpayed_feeds_calculate)
     feeds_today = int(calc_todays_feed(select_basetime(current_reset_time)))
     begin = 0
@@ -79,7 +76,7 @@ def task(task_no: str, remained: int):
         if overpayed_feeds_calculate():
             sleep(5)
             continue
-        if "time" in current_task:
+        if is_time_limit_task:
             if (not any(list(map(is_execution_time, current_task["time"])))) and exist_reserved_payoff:
                 unpayed_feeds_calculate()
                 continue
@@ -236,9 +233,9 @@ def dispense_all(feed):
 def unpayed_feeds_calculate():
     """ 直前の精算時間までに吐き出した餌の数を計上し足りなければdispense_all """
     global current_task_name, reward, exist_reserved_payoff, feeds_today, current_reset_time
-    if "payoff" in ex_flow[current_task_name]:
+    if not ex_flow[current_task_name].get("payoff", True):
         # リスケ
-        if sum(list(map(is_execution_time, ex_flow[current_task_name]["time"]))):
+        if sum(list(map(is_execution_time, ex_flow[current_task_name].get("time", [["00:00", "23:59"]])))):
             exist_reserved_payoff = True
             return
         exist_reserved_payoff = False
@@ -265,10 +262,7 @@ def unpayed_feeds_calculate():
 
 def overpayed_feeds_calculate():
     global feeds_today, current_task_name
-    default_upper = 100
-    if "feed_upper" in ex_flow[current_task_name]:
-        default_upper = ex_flow[current_task_name]["feed_upper"]
-    return feeds_today >= default_upper
+    return feeds_today >= ex_flow[current_task_name].get("feed_upper", 100)
 
 
 if __name__ == "__main__":
