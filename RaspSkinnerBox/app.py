@@ -258,9 +258,9 @@ def unpayed_feeds_calculate():
             reward -= 1
 
             sleep(1 * 60)
-        reward = 20
+        reward = 70
         feeds_today = 0
-        daily_log(select_basetime(current_reset_time))
+    daily_log(select_basetime(current_reset_time))
 
 
 def overpayed_feeds_calculate():

@@ -91,14 +91,17 @@ def magagine_log(reason, amount=1):
 def daily_log(basetime):
     """ 餌やりの日計ログ 記入事項：「日付, 量(粒)/報酬として,量(粒)/精算として」 """
     feeds = pd.DataFrame(columns=["date", "feed_num", "reason"])
-    if os.path.exists(dispence_logfile_path):
-        feeds = pd.read_csv(dispence_logfile_path, names=["date", "feed_num", "reason"], parse_dates=[0])
-    feed_dataframe = feeds[(basetime < feeds.date) & (feeds.date < basetime + timedelta(days=1))]
+    if os.path.exists(os.path.join("log", dispence_logfile_path)):
+        feeds = pd.read_csv(os.path.join("log", dispence_logfile_path), names=["date", "feed_num", "reason"],
+                            parse_dates=[0])
+    feed_dataframe = feeds[(basetime > feeds.date) & (feeds.date > basetime - timedelta(days=1))]
     string = ','.join([str(datetime.now()),
-                       "reward", str(feed_dataframe.groupby("reason").sum().loc["reward", "amount"] if any(
-            feed_dataframe.reason.isin(["reward"])) else 0),
-                       "payoff", str(feed_dataframe.groupby("reason").sum().loc["payoff", "amount"] if any(
-            feed_dataframe.reason.isin(["payoff"])) else 0)])
+                       "reward",
+                       str(feed_dataframe.groupby("reason").sum().loc["reward", "feed_num"] if any(
+                           feed_dataframe.reason.isin(["reward"])) else 0),
+                       "payoff",
+                       str(feed_dataframe.groupby("reason").sum().loc["payoff", "feed_num"] if any(
+                           feed_dataframe.reason.isin(["payoff"])) else 0)])
     with open(os.path.join('log', daily_logfile_path), 'a+') as daily_dispence_log_file:
         daily_dispence_log_file.write(string + "\n")
         daily_dispence_log_file.flush()
