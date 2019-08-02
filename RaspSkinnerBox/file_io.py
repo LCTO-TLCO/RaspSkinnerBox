@@ -9,7 +9,6 @@ from collections import OrderedDict
 import json
 from defines import setting_file
 import pandas as pd
-from app import select_basetime
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -23,6 +22,7 @@ nosepoke_logfile_path = 'no{}_nosepoke.csv'
 settings_logfile_path = 'no{}_task_settings.json'
 daily_logfile_path = 'no{}_daily_feed.csv'
 ex_flow = OrderedDict({"T0": {}})
+# ex_flow = OrderedDict()
 ex_flow.update(json.load(open(setting_file, "r"), object_pairs_hook=OrderedDict))
 
 

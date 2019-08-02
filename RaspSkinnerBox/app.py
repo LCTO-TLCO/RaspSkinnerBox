@@ -233,9 +233,9 @@ def dispense_all(feed):
 def unpayed_feeds_calculate():
     """ 直前の精算時間までに吐き出した餌の数を計上し足りなければdispense_all """
     global current_task_name, reward, exist_reserved_payoff, feeds_today, current_reset_time
-    if not ex_flow[current_task_name].get("payoff", True):
+    if ex_flow[current_task_name].get("payoff", False):
         # リスケ
-        if sum(list(map(is_execution_time, ex_flow[current_task_name].get("time", [["00:00", "23:59"]])))):
+        if any(list(map(is_execution_time, ex_flow[current_task_name].get("time", [["00:00", "00:00"]])))):
             exist_reserved_payoff = True
             return
         exist_reserved_payoff = False
