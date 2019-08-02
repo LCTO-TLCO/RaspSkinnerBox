@@ -42,6 +42,10 @@ class task_data:
 
         print('reading data...', end='')
 
+        # TODO debug
+        # 1.self.data, 2.probability, 3.task_prob, 4.self.delta, 5.self.fig_prob_tmp, 6.pattern, 7.self.entropy_analyze
+        # to:dict, add:dict[task]
+        # to:dict, add:dict(fig) or DF
         def append_dataframe(to: Union[pd.DataFrame, dict, None], add: Union[pd.DataFrame, dict, None], mouse_id: int,
                              task=None, fig_num=None):
             if isinstance(add, dict):
@@ -55,15 +59,15 @@ class task_data:
                     return {task: ret_val}
                 # taskごと
                 # to;dict, add:dict[task]
-                for task, add_dict in add.items():
-                    to.update(append_dataframe(to, add_dict, mouse_id, task=task))
+                for add_task, add_dict in add.items():
+                    to.update(append_dataframe(to, add_dict, mouse_id, task=add_task))
                 return to
             if isinstance(to, dict):
                 # Fig二回目入力
                 if not isinstance(fig_num, type(None)):
-                    return {fig_num: add.assign(mouse_id=mouse_id)}
-                to[task] = add.assign(mouse_id=mouse_id)
-                return to
+                    return {fig_num: append_dataframe(to.get(fig_num, None), add, mouse_id)}
+                return {
+                    task: append_dataframe(to.get(task, None), add, mouse_id)}
             if isinstance(to, type(None)):
                 return add.assign(mouse_id=mouse_id)
             else:
@@ -84,6 +88,8 @@ class task_data:
                 # self.pattern_prob = append_dataframe(self.pattern_prob, tmp[5], mouse_id)
                 # TODO entropy_analyze
         else:
+            # all 0: 2.probability
+            # 3.task_prob, 4.self.delta, 5.self.fig_prob_tmp, 6.pattern
             for mouse_id in self.mouse_no:
                 print('mouse_id={}'.format(mouse_id))
                 # self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
@@ -92,14 +98,15 @@ class task_data:
                 self.data_file = os.path.join(self.logpath, "no{:03d}_action.csv".format(mouse_id))
                 tmp = self.read_data()
                 self.mice_task = append_dataframe(self.mice_task, tmp[0], mouse_id)
+                # 0
                 self.probability = append_dataframe(self.probability, tmp[1], mouse_id)
                 self.task_prob = append_dataframe(self.task_prob, tmp[2], mouse_id)
                 self.mice_delta = append_dataframe(self.mice_delta, tmp[3], mouse_id)
-                # append_dataframe(self.fig_prob, tmp[4], mouse_id)
+                # 単体
                 self.fig_prob = append_dataframe(self.fig_prob, tmp[4], mouse_id)
                 self.pattern_prob = append_dataframe(self.pattern_prob, tmp[5], mouse_id)
                 self.mice_entropy = append_dataframe(self.mice_entropy, tmp[6], mouse_id)
-                self.export_csv(mouse_id)
+            self.export_csv()
         print('done')
 
     def read_data(self):
@@ -547,7 +554,7 @@ class task_data:
                 os.path.join(self.logpath, 'data/no{:03d}_{}_pattern.csv'.format(mouse_no, task)))
         return data, probability, task_prob, delta, fig_prob, pattern_prob
 
-    def export_csv(self, mouse_no):
+    def export_csv(self, mouse_no=None):
         self.mice_task.to_csv(os.path.join(self.logpath, 'data/{}_data.csv'.format("all")))
         self.probability.to_csv(
             os.path.join(self.logpath, 'data/{}_prob.csv'.format("all")))
@@ -686,7 +693,6 @@ def view_averaged_prob_same_prev(tdata, mice, tasks):
     plt.show()
 
 
-# TODO 100ステップ移動平均を追加
 def view_summary(tdata, mice, tasks):
     for mouse_id in mice:
         def plot(mdf, task="all"):
@@ -698,7 +704,8 @@ def view_summary(tdata, mice, tasks):
             fig.suptitle('no{:03} summary {}'.format(mouse_id, task), y=1.0)
             plt.subplots_adjust(hspace=0, bottom=0)
 
-            ax[0].plot(df[df.event_type.isin(["reward", "failure"])].session_id, df[df.event_type.isin(["reward", "failure"])]['hole_choice_entropy'])
+            ax[0].plot(df[df.event_type.isin(["reward", "failure"])].session_id,
+                       df[df.event_type.isin(["reward", "failure"])]['hole_choice_entropy'])
             ax[0].set_ylabel('Entropy (bit)')
             ax[0].set_xlim(df.session_id.min(), df.session_id.max())
             if task == "all":
@@ -846,24 +853,25 @@ def view_trial_per_time(tdata, mice=[18], task="All5_30"):
 
 def view_prob_same_choice_burst(tdata, mice, task, burst=1):
     """ fig4 """
-    m = []
-    t = []
-    csame = []
-    fsame = []
 
-    tdata_cio = tdata.data[tdata.data.event_type.isin(["reward", "failure", "time over"])]
+    tdata_cio = tdata.mice_task[tdata.mice_task.event_type.isin(["reward", "failure", "time over"])]
     data = tdata_cio[tdata_cio.burst.isin(tdata_cio.burst.unique()[tdata_cio.groupby("burst").burst.count() > burst])]
-    for mouse_id in mice:
-        for task in tasks:
-            m += [mouse_id]
-            t += [task]
-            csame += [tdata.task_prob[mouse_id][task]['c_same']]
-            fsame += [tdata.task_prob[mouse_id][task]['f_same']]
-
+    # m = []
+    # t = []
+    # csame = []
+    # fsame = []
+    # for mouse_id in mice:
+    #     for task in tasks:
+    #         m += [mouse_id]
+    #         t += [task]
+    #         csame += [tdata.task_prob[task][tdata.task_prob[task].mouse_id == mouse_id]['c_same']]
+    #         fsame += [tdata.task_prob[task][tdata.task_prob[task].mouse_id == mouse_id]['f_same']]
+    #
     after_prob_df = pd.DataFrame(
-        data={'mouse_id': m, 'task': t, 'c_same': csame, 'f_same': fsame},
-        columns=['mouse_id', 'task', 'c_same', 'f_same']
+        #     data={'mouse_id': m, 'task': t, 'c_same': csame, 'f_same': fsame},
+        #     columns=['mouse_id', 'task', 'c_same', 'f_same']
     )
+    [after_prob_df.append()]
 
     plt.style.use('default')
     fig = plt.figure(figsize=(8, 4), dpi=100)
@@ -940,6 +948,30 @@ def view_pattern_entropy_summary(tdata, mice, task=None):
         # plt.show(block=True)
         plt.savefig(os.path.join(os.getcwd(), 'fig', 'pattern_ent',
                                  'pattern_ent_average_{}_correct{}.png'.format(group_info[0], group_info[1])))
+
+
+def test_base30_debug():
+    # error: 2,3,7,11,13,17,18
+
+    mice = [6, 7, 8]
+    tasks = ["All5_30", "Only5_50", "Not5_Other30"]
+
+    # 21,22 All5_30, Only5_70, Not5_Other30
+    # mice = [21, 22]
+    # tasks = ["All5_30", "Only5_70", "Not5_Other30"]
+
+    # Base_51317, Test_51317
+    # mice = [28]
+    # tasks = ["Base_51317", "Test_51317"]
+
+    logpath = './'
+    tdata = task_data(mice, tasks, logpath)
+
+    #    graph_ins = graph(tdata, mice, tasks, logpath)
+    return tdata, mice, tasks
+
+
+tdata_db, mice_db, tasks_db = test_base30_debug()
 
 
 def test_base30():
