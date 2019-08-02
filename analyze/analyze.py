@@ -694,75 +694,80 @@ def view_summary(tdata, mice, tasks):
             df = mdf[mdf["event_type"].isin(["reward", "failure", "time over"])]
 
             # entropy
-            fig = plt.figure(figsize=(15, 8), dpi=100)
-            ax = [fig.add_subplot(4, 1, 1)]
-            plt.plot(df.session_id, df['hole_choice_entropy'])
-            plt.ylabel('Entropy (bit)')
-            plt.xlim(df.session_id.min(), df.session_id.max())
+            fig, ax = plt.subplots(4, 1, sharex="all", figsize=(15, 8), dpi=100)
+            fig.suptitle('no{:03} summary {}'.format(mouse_id, task), y=1.0)
+            plt.subplots_adjust(hspace=0, bottom=0)
+
+            ax[0].plot(df[df.event_type.isin(["reward", "failure"])].session_id, df[df.event_type.isin(["reward", "failure"])]['hole_choice_entropy'])
+            ax[0].set_ylabel('Entropy (bit)')
+            ax[0].set_xlim(df.session_id.min(), df.session_id.max())
             if task == "all":
                 collection = collections.BrokenBarHCollection.span_where(df.session_id.to_numpy(), ymin=-100, ymax=100,
                                                                          where=(df.task.isin(tasks[0::2])),
-                                                                         facecolor='pink', alpha=0.3)
+                                                                         facecolor='lightblue', alpha=0.3)
                 ax[0].add_collection(collection)
 
             # scatter
-            ax.append(fig.add_subplot(4, 1, 2, sharex=ax[0]))
             colors = ["red", "blue", "black"]
             size = dict(zip(labels, [25, 50, 25]))
             pos = dict(zip(labels, ["bottom", "full", "bottom"]))
             datasets = ([mdf[mdf["is_{}".format(flag)] == 1] for flag in labels])
             for dt, la, cl in zip(datasets, labels, colors):
                 marker = markers.MarkerStyle("|", pos[la])
-                plt.scatter(dt.session_id, dt['is_hole1'] * 1, s=size[la], color=cl, marker=marker)
-                plt.scatter(dt.session_id, dt['is_hole3'] * 2, s=size[la], color=cl, marker=marker)
-                plt.scatter(dt.session_id, dt['is_hole5'] * 3, s=size[la], color=cl, marker=marker)
-                plt.scatter(dt.session_id, dt['is_hole7'] * 4, s=size[la], color=cl, marker=marker)
-                plt.scatter(dt.session_id, dt['is_hole9'] * 5, s=size[la], color=cl, marker=marker)
-                plt.scatter(dt.session_id, dt['is_omission'] * 0, s=size[la], color=cl, marker=marker)
-            plt.ylabel("Hole")
+                ax[1].scatter(dt.session_id, dt['is_hole1'] * 1, s=size[la], color=cl, marker=marker)
+                ax[1].scatter(dt.session_id, dt['is_hole3'] * 2, s=size[la], color=cl, marker=marker)
+                ax[1].scatter(dt.session_id, dt['is_hole5'] * 3, s=size[la], color=cl, marker=marker)
+                ax[1].scatter(dt.session_id, dt['is_hole7'] * 4, s=size[la], color=cl, marker=marker)
+                ax[1].scatter(dt.session_id, dt['is_hole9'] * 5, s=size[la], color=cl, marker=marker)
+                ax[1].scatter(dt.session_id, dt['is_omission'] * 0, s=size[la], color=cl, marker=marker)
+            ax[1].set_ylabel("Hole")
+            ax[1].set_yticks([1, 2, 3, 4, 5])
             if task == "all":
                 collection = collections.BrokenBarHCollection.span_where(df.session_id.to_numpy(), ymin=-2, ymax=6,
                                                                          where=(df.task.isin(tasks[0::2])),
-                                                                         facecolor='pink', alpha=0.3)
+                                                                         facecolor='lightblue', alpha=0.3)
                 ax[1].add_collection(collection)
 
             # cumsum
-            ax.append(fig.add_subplot(4, 1, 3, sharex=ax[0]))
-            plt.plot(df.session_id, df['cumsum_correct_taskreset'], label="correct")
-            plt.plot(df.session_id, df['cumsum_incorrect_taskreset'], label="incorrect")
-            plt.plot(df.session_id, df['cumsum_omission_taskreset'], label="omission")
-            # plt.xlim(0, df.session_id.max())
-            plt.ylabel('Cumulative')
-            plt.xlabel('Trial')
-            plt.legend()
+            ax[2].plot(df.session_id, df['cumsum_correct_taskreset'])
+            ax[2].plot(df.session_id, df['cumsum_incorrect_taskreset'])
+            ax[2].plot(df.session_id, df['cumsum_omission_taskreset'])
+            ax[2].set_ylabel('Cumulative')
+            # ax[2].set_xlabel('Trial')
+            ax[2].legend(["correct", "incorrect", "omission"])
             if task == "all":
                 collection = collections.BrokenBarHCollection.span_where(df.session_id.to_numpy(), ymin=-20, ymax=1000,
                                                                          where=(df.task.isin(tasks[0::2])),
-                                                                         facecolor='pink', alpha=0.3)
+                                                                         facecolor='lightblue', alpha=0.3)
                 ax[2].add_collection(collection)
 
-            #
-            ax.append(fig.add_subplot(4, 1, 4))
-            # calc 100 step move average
+            # 100 step move average
             # make dataframe
-            data = pd.DataFrame(columns=["is_hole{}".format(i) for i in range(1, 10, 2)])
-            # slow
-            for index in range(0, len(df)):
-                data = data.append([df.iloc[max(0, index - 100):index, :]["is_hole{}".format(i)].sum() /
-                                           df.iloc[max(0, index - 100):index, :]["is_hole{}".format(i)].size for i in
-                                           range(1, 10, 2)])
-            print(data)
+            df_o = mdf[mdf["event_type"].isin(["reward", "failure"])]
+            # data = pd.DataFrame(columns=["is_hole{}".format(i) for i in range(1, 10, 2)])
+            data = pd.DataFrame()
+            add_average = lambda idx: [df_o[max(0, idx - 100):idx]["is_hole{}".format(i)].sum() /
+                                       max(df_o[max(0, idx - 100):idx]["is_hole{}".format(i)].size, 1) for i in
+                                       range(1, 10, 2)]
+            data = data.append(list(map(add_average, list(range(0, len(df_o))))), ignore_index=True)
             # plot
-            ax = data.plot()
+            ax[3].plot(df_o.session_id, data)
+            ax[3].set_ylabel("moving average action rate")
             # legend
-            ax.legend()
+            ax[3].legend(["hole{}".format(i) for i in range(1, 10, 2)])
+            if task == "all":
+                collection = collections.BrokenBarHCollection.span_where(df_o.session_id.to_numpy(), ymin=-20,
+                                                                         ymax=1000,
+                                                                         where=(df_o.task.isin(tasks[0::2])),
+                                                                         facecolor='lightblue', alpha=0.3)
+                ax[3].add_collection(collection)
             # savefig
             # plt.savefig('fig/no{:03d}_{}_summary.png'.format(mouse_id, task))
             plt.show()
 
         mdf = tdata.mice_task[tdata.mice_task.mouse_id == mouse_id]
         plot(mdf)
-        # list(map(plot, [mdf[mdf.task == task] for task in tdata.tasks], tdata.tasks))
+        list(map(plot, [mdf[mdf.task == task] for task in tdata.tasks], tdata.tasks))
 
 
 def view_trial_per_datetime(tdata, mice=[18], task="All5_30"):
