@@ -3,9 +3,7 @@ from typing import Union
 
 import pandas as pd
 import numpy as np
-import math
 from scipy.stats import entropy
-# from graph import rasp_graph
 import sys
 import matplotlib.pyplot as plt
 import matplotlib.collections as collections
@@ -835,9 +833,6 @@ def view_scatter_vs_times_with_burst(tdata, mice=[18], task="All5_30", burst=1):
             plt.savefig(os.path.join(os.getcwd(), 'fig', 'burst', "len" + str(burst_len),
                                      'no{:03d}_burst{}_hole_pasttime_burst.png'.format(mouse_id, single_burst)))
 
-        # TODO task割表示
-        # TODO rasterと他(cumsum, entropy)がずれている？
-
 
 def view_trial_per_time(tdata, mice=[18], task="All5_30"):
     """ fig1 C """
@@ -971,7 +966,7 @@ def test_base30_debug():
     return tdata, mice, tasks
 
 
-tdata_db, mice_db, tasks_db = test_base30_debug()
+#tdata_db, mice_db, tasks_db = test_base30_debug()
 
 
 def test_base30():
@@ -1010,14 +1005,13 @@ def test_base50():
     return tdata, mice, tasks
 
 
-tdata_50, mice_50, tasks_50 = test_base50()
-view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
+#tdata_50, mice_50, tasks_50 = test_base50()
+#view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
 
 
 # view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
 
 
-# TODO 下記のtest_Only5_70()から変数を返してもらう形式だとtask_dataインスタンスがlocalにならない
 def test_Only5_70():
     # All5_50, Only5_50, Not5_Other50, Recall5_50
     mice = [21, 22]
@@ -1031,11 +1025,24 @@ def test_Only5_70():
 
     return tdata, mice, tasks
 
-# TODO 下記のスクラッチをscientific modeで記述・実行する最も良い方法は何か？
 # tdata_o5_70, mice_o5_70, tasks_o5_70 = test_Only5_70()
 # view_averaged_prob_same_prev(tdata_o5_70, mice_o5_70, tasks_o5_70)
 
-# TODO python-analyze以外の残骸branchを全削除
+def test_51317():
+    # All5_50, Only5_50, Not5_Other50, Recall5_50
+    mice = [28, 29]
+    tasks = ["Base_51317", "Test_51317", "Test_31313"]
+
+    logpath = './'
+    tdata = task_data(mice, tasks, logpath)
+
+
+    return tdata, mice, tasks
+
+
+tdata, mice, tasks = test_51317()
+view_averaged_prob_same_prev(tdata, mice, tasks)
+view_summary(tdata, mice, tasks)
 
 # 動物心理タイトル:「マウスの5本腕バンディット課題におけるwin-stay lose-shiftの法則の検証」
 # TODO 動物心理コンセプト決め（証明したい仮説）:「」
@@ -1057,3 +1064,6 @@ def test_Only5_70():
 # TODO 動物心理 Result 3. [WSLSは報酬確率のパターンの変化によって影響を受けるか？] タスクが切り替わった直後とタスクに適応した後で異なるか？ → (たぶん異ならない)
 # TODO 動物心理 Result 4. [WSLSの効果は連続報酬によって変化するか？] 00, 01, 10 vs 11 → 連続効果は有意ではなかった？
 # TODO 動物心理 Discussion 1.
+
+# aspiration levelを同定することとQ-Learning model fittingの関係 = RS的要素の追加
+
