@@ -54,12 +54,13 @@ class task_data:
                 if not isinstance(task, type(None)):
                     # print(add)
                     ret_val = {}
-                    [ret_val.update(append_dataframe(to, add[fig], mouse_id, task=task, fig_num=fig)) for fig in
-                     ["fig1", "fig2", "fig3"]]
+                    [ret_val.update(append_dataframe(to.get(task, {}), add[fig], mouse_id, task=task, fig_num=fig)) for
+                     fig in ["fig1", "fig2", "fig3"]]
                     return {task: ret_val}
                 # taskごと
                 # to;dict, add:dict[task]
                 for add_task, add_dict in add.items():
+                    # append_dataframe(to, append_dataframe(to, add_dict, mouse_id, task=add_task), mouse_id)
                     to.update(append_dataframe(to, add_dict, mouse_id, task=add_task))
                 return to
             if isinstance(to, dict):
