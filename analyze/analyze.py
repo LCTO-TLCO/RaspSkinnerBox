@@ -847,48 +847,102 @@ def view_trial_per_time(tdata, mice=[18], task="All5_30"):
     plt.show()
 
 
-def view_prob_same_choice_burst(tdata, mice, task, burst=1):
+def view_prob_same_choice_burst(tdata, mice, tasks, burst=1):
     """ fig4 """
+    tdata_ci = tdata.mice_task[tdata.mice_task.event_type.isin(["reward", "failure"])]
+    tdata_ci = tdata_ci[
+        tdata_ci.burst.isin(tdata_ci.burst.unique()[tdata_ci.groupby("burst").burst.count() > burst])].reset_index()
 
-    tdata_cio = tdata.mice_task[tdata.mice_task.event_type.isin(["reward", "failure", "time over"])]
-    data = tdata_cio[tdata_cio.burst.isin(tdata_cio.burst.unique()[tdata_cio.groupby("burst").burst.count() > burst])]
-    # m = []
-    # t = []
-    # csame = []
-    # fsame = []
-    # for mouse_id in mice:
-    #     for task in tasks:
-    #         m += [mouse_id]
-    #         t += [task]
-    #         csame += [tdata.task_prob[task][tdata.task_prob[task].mouse_id == mouse_id]['c_same']]
-    #         fsame += [tdata.task_prob[task][tdata.task_prob[task].mouse_id == mouse_id]['f_same']]
-    #
-    after_prob_df = pd.DataFrame(
-        #     data={'mouse_id': m, 'task': t, 'c_same': csame, 'f_same': fsame},
-        #     columns=['mouse_id', 'task', 'c_same', 'f_same']
-    )
-    [after_prob_df.append()]
+    # burst_len limit なし
+    # after_prob_df = pd.concat([tdata.task_prob[task].assign(task=task) for task in tasks])
 
     plt.style.use('default')
-    fig = plt.figure(figsize=(8, 4), dpi=100)
+    fig, ax = plt.subplots(1, len(tasks), sharey="all", sharex="all", figsize=(8, 4), dpi=100)
+    forward_trace = 7
 
-    #
-    plt.subplot(1, len(tasks), tasks.index(task) + 1)
+    def calc(mouse_id):
+        prob_index = ["c_same", "f_same", "task", "mouse_id"]
+        after_prob_df = pd.DataFrame(columns=prob_index)
+        for task in tasks:
+            data_tmp = tdata_ci[(tdata_ci.task.isin([task])) & (tdata_ci.mouse_id == mouse_id)]  # .groupby("burst")
+            "burst ごと確率を出す"
+            for bst in data_tmp.burst.unique():
+                data = data_tmp[data_tmp.burst.isin([bst])].reset_index(drop=True)
+                after_correct_all = data.burst[:-forward_trace][data.is_correct == 1].count()
+                after_incorrect_all = data.burst[:-forward_trace][data.is_incorrect == 1].count()
+                correct_index = data[:-forward_trace][data.is_correct == 1].index
+                incorrect_index = data[:-forward_trace][data.is_incorrect == 1].index
+                df = pd.DataFrame(columns=range(forward_trace))
+                same_correct = \
+                    df.append([data[idx:idx + min(forward_trace, len(data))].hole_no == data.hole_no[idx] for idx in
+                               correct_index]).sum() if len(correct_index) else df.sum()
+                same_incorrect = \
+                    df.append([data[idx:idx + min(forward_trace, len(data))].hole_no == data.hole_no[idx] for idx in
+                               incorrect_index]).sum() if len(incorrect_index) else df.sum()
+                after_prob_df = after_prob_df.append(pd.DataFrame({"c_same": same_correct / after_correct_all,
+                                                                   "f_same": same_incorrect / after_incorrect_all,
+                                                                   "task": task, "mouse_id": mouse_id,
+                                                                   "burst": bst}).fillna(0.0))
 
-    c_same = np.array(after_prob_df[after_prob_df['task'].isin([task])]['c_same'].to_list())
+                # after_prob_df = after_prob_df.append(pd.DataFrame({"c_same": (same_correct / after_correct_all).mean(),
+                #                                                    "f_same": (same_incorrect / after_incorrect_all).mean(),
+                #                                                    "task": task, "mouse_id": mouse_id,
+                #                                                    "burst": bst}).fillna(0.0), ignore_index=True)
+            """ burstごと確率 を平均する"""
+            c_same = after_prob_df[
+                (after_prob_df['task'].isin([task])) &
+                (after_prob_df["mouse_id"] == mouse_id)
+                ]['c_same'].groupby(level=0)
+            c_same_avg = c_same.mean()[:forward_trace + 1]
+            c_same_var = c_same.var()[:forward_trace + 1]
 
-    c_same_avg = np.mean(c_same, axis=0)
-    c_same_std = np.std(c_same, axis=0)
-    c_same_var = np.var(c_same, axis=0)
+            f_same = after_prob_df[
+                (after_prob_df['task'].isin([task])) &
+                (after_prob_df["mouse_id"] == mouse_id)
+                ]['f_same'].groupby(level=0)
+            f_same_avg = f_same.mean()[:forward_trace + 1]
+            f_same_var = f_same.var()[:forward_trace + 1]
 
-    f_same = np.array(after_prob_df[after_prob_df['task'].isin([task])]['f_same'].to_list())
-    f_same_avg = np.mean(f_same, axis=0)
-    f_same_var = np.var(f_same, axis=0)
+            # ここから描画
+            xlen = c_same_avg.size
+            # xax = np.array(range(1, xlen + 1))
+            xax = np.array(range(forward_trace + 1))
+            ax[tasks.index(task)].plot(xax, c_same_avg, color="orange", label="rewarded start")
+            ax[tasks.index(task)].errorbar(xax, c_same_avg, yerr=c_same_var, capsize=2, fmt='o', markersize=1,
+                                           ecolor='black',
+                                           markeredgecolor="black", color='w', lolims=True)
+
+            ax[tasks.index(task)].plot(xax, f_same_avg, color="blue", label="no-rewarded start")
+            ax[tasks.index(task)].errorbar(xax, f_same_avg, yerr=f_same_var, capsize=2, fmt='o', markersize=1,
+                                           ecolor='black',
+                                           markeredgecolor="black", color='w', uplims=True)
+
+            # plt.ion()
+            ax[tasks.index(task)].set_xticks(xax)
+            ax[tasks.index(task)].set_xlim(-0.5, xlen + 0.5)
+            ax[tasks.index(task)].set_ylim(0, 1.05)
+            if tasks.index(task) == 0:
+                ax[tasks.index(task)].set_ylabel('P (same choice)')
+            if tasks.index(task) == int(len(tasks) / 2):
+                ax[tasks.index(task)].legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=2, mode="expand")
+            if tasks.index(task) in [0, len(tasks)-1]:
+                ax[tasks.index(task)].set_xlabel('Trial')
+            ax[tasks.index(task)].set_title('{}'.format(task))
+        # label
+        # plt.legend()
+
+        plt.savefig("no{:03d}_prob4.png".format(mouse_id))
+        plt.show()
+
+    list(map(calc, mice))
 
 
 def view_only5_50(tdata, mice, task):
     """ fig5 A """
     pass
+
+
+"""  """
 
 
 def view_not5_other30(tdata, mice, task):
@@ -967,7 +1021,7 @@ def test_base30_debug():
     return tdata, mice, tasks
 
 
-#tdata_db, mice_db, tasks_db = test_base30_debug()
+# tdata_db, mice_db, tasks_db = test_base30_debug()
 
 
 def test_base30():
@@ -1006,8 +1060,8 @@ def test_base50():
     return tdata, mice, tasks
 
 
-#tdata_50, mice_50, tasks_50 = test_base50()
-#view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
+# tdata_50, mice_50, tasks_50 = test_base50()
+# view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
 
 
 # view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
@@ -1026,8 +1080,10 @@ def test_Only5_70():
 
     return tdata, mice, tasks
 
+
 # tdata_o5_70, mice_o5_70, tasks_o5_70 = test_Only5_70()
 # view_averaged_prob_same_prev(tdata_o5_70, mice_o5_70, tasks_o5_70)
+
 
 def test_51317():
     # All5_50, Only5_50, Not5_Other50, Recall5_50
@@ -1037,13 +1093,11 @@ def test_51317():
     logpath = './'
     tdata = task_data(mice, tasks, logpath)
 
-
     return tdata, mice, tasks
 
-
-tdata, mice, tasks = test_51317()
-view_averaged_prob_same_prev(tdata, mice, tasks)
-view_summary(tdata, mice, tasks)
+# tdata, mice, tasks = test_51317()
+# view_averaged_prob_same_prev(tdata, mice, tasks)
+# view_summary(tdata, mice, tasks)
 
 # 動物心理タイトル:「マウスの5本腕バンディット課題におけるwin-stay lose-shiftの法則の検証」
 # TODO 動物心理コンセプト決め（証明したい仮説）:「」
@@ -1067,4 +1121,3 @@ view_summary(tdata, mice, tasks)
 # TODO 動物心理 Discussion 1.
 
 # aspiration levelを同定することとQ-Learning model fittingの関係 = RS的要素の追加
-
