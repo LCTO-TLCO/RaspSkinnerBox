@@ -863,6 +863,7 @@ def view_prob_same_choice_burst(tdata, mice, tasks, burst=1):
     def calc(mouse_id):
         prob_index = ["c_same", "f_same", "task", "mouse_id"]
         after_prob_df = pd.DataFrame(columns=prob_index)
+        lgnd = None
         for task in tasks:
             data_tmp = tdata_ci[(tdata_ci.task.isin([task])) & (tdata_ci.mouse_id == mouse_id)]  # .groupby("burst")
             "burst ごと確率を出す"
@@ -924,13 +925,14 @@ def view_prob_same_choice_burst(tdata, mice, tasks, burst=1):
             if tasks.index(task) == 0:
                 ax[tasks.index(task)].set_ylabel('P (same choice)')
             if tasks.index(task) == int(len(tasks) / 2):
-                ax[tasks.index(task)].legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=2, mode="expand")
-            if tasks.index(task) in [0, len(tasks)-1]:
+                lgnd = ax[tasks.index(task)].legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=2,
+                                                    mode="expand")
+            if tasks.index(task) in [0, len(tasks) - 1]:
                 ax[tasks.index(task)].set_xlabel('Trial')
             ax[tasks.index(task)].set_title('{}'.format(task))
         # label
         # plt.legend()
-
+        lgnd.get_frame().set_linewidth(0.0)
         plt.savefig("no{:03d}_prob4.png".format(mouse_id))
         plt.show()
 
@@ -940,9 +942,6 @@ def view_prob_same_choice_burst(tdata, mice, tasks, burst=1):
 def view_only5_50(tdata, mice, task):
     """ fig5 A """
     pass
-
-
-"""  """
 
 
 def view_not5_other30(tdata, mice, task):
