@@ -1011,7 +1011,7 @@ def view_sigletask_prob(tdata, mice, task):
 
         # plt.ion()
         ax.set_xticks(xax)
-        ax.set_xlim(-0.5, xlen + 0.5)
+        ax.set_xlim(0.5, xlen + 0.5)
         ax.set_ylim(0, 1.05)
         ax.set_ylabel('P (same choice)')
         # lgnd = ax.legend()
