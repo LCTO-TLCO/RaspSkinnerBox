@@ -947,76 +947,66 @@ def view_prob_same_choice_burst(tdata, mice, tasks, burst=1):
 def view_sigletask_prob(tdata, mice, task):
     """ fig5 A """
     tdata_ci = tdata.mice_task[tdata.mice_task.event_type.isin(["reward", "failure"])]
-    tdata_ci = tdata_ci[tdata_ci.task.isin([task])].reset_index()[50:-50]  # .assign(task=task)
-    tasks = [task]
+    tdata_ci = tdata_ci[tdata_ci.task.isin([task])].reset_index(drop=True)
 
     plt.style.use('default')
-    fig, ax = plt.subplots(1, 1, sharey="all", sharex="all", figsize=(8, 4), dpi=100)
+    fig, ax = plt.subplots(1, 2, sharey="all", sharex="all", figsize=(8, 4), dpi=100)
     forward_trace = 7
     range_lim = 50
 
     def calc(mouse_id):
         prob_index = ["c_same", "f_same", "task", "mouse_id"]
-        after_prob_df = pd.DataFrame(columns=prob_index)
-        data = tdata_ci[
-            (tdata_ci.task.isin([task])) & (tdata_ci.mouse_id == mouse_id)].reset_index()  # .groupby("burst")
-        "確率を出す"
-        after_correct_all = data.is_correct[range_lim:-range_lim][data.is_correct == 1].count()
-        after_incorrect_all = data.is_incorrect[range_lim:-range_lim][data.is_incorrect == 1].count()
-        correct_index = data[range_lim:-range_lim][data.is_correct == 1].index
-        incorrect_index = data[range_lim:-range_lim][data.is_incorrect == 1].index
-        df = pd.DataFrame(columns=range(forward_trace))
-        same_correct = df.append(
-            [(data[idx + 1:idx + min(forward_trace + 1, len(data[idx + 1:]))].hole_no == data.hole_no[idx]).reset_index(
-                drop=True).T for idx in correct_index]) * 1 if len(correct_index) else df.sum()
-        same_incorrect = df.append(
-            [(data[idx + 1:idx + min(forward_trace + 1, len(data[idx + 1:]))].hole_no == data.hole_no[idx]).reset_index(
-                drop=True).T for idx in incorrect_index]) * 1 if len(incorrect_index) else df.sum()
-        same_correct.columns = same_correct.columns + 1
-        same_incorrect.columns = same_incorrect.columns + 1
-        after_prob_df = after_prob_df.append(pd.DataFrame({"c_same": same_correct.sum() / after_correct_all,
-                                                           "f_same": same_incorrect.sum() / after_incorrect_all,
-                                                           "task": task, "mouse_id": mouse_id}).fillna(0.0))
+        data_tmp = tdata_ci[(tdata_ci.mouse_id == mouse_id)].reset_index(drop=True)
 
-        c_same = after_prob_df[
-            (after_prob_df['task'].isin([task])) &
-            (after_prob_df["mouse_id"] == mouse_id)
-            ]['c_same']
-        c_same_avg = c_same
-        # c_same_var = same_correct.std()
+        for data, index in zip([data_tmp[:range_lim], data_tmp[-range_lim:]], [0, 1]):
+            "確率を出す"
+            after_prob_df = pd.DataFrame(columns=prob_index)
+            data = data.reset_index(drop=True)
+            after_correct_all = data.is_correct[data.is_correct == 1].count()
+            after_incorrect_all = data.is_incorrect[data.is_incorrect == 1].count()
+            correct_index = data[data.is_correct == 1].index
+            incorrect_index = data[data.is_incorrect == 1].index
+            df = pd.DataFrame(columns=range(forward_trace))
+            same_correct = df.append(
+                [(data[idx + 1:idx + min(forward_trace + 1, len(data[idx + 1:]))].hole_no == data.hole_no[
+                    idx]).reset_index(drop=True).T for idx in correct_index]) * 1 if len(correct_index) else df
+            same_incorrect = df.append(
+                [(data[idx + 1:idx + min(forward_trace + 1, len(data[idx + 1:]))].hole_no == data.hole_no[
+                    idx]).reset_index(drop=True).T for idx in incorrect_index]) * 1 if len(incorrect_index) else df
+            same_correct.columns = same_correct.columns + 1
+            same_incorrect.columns = same_incorrect.columns + 1
+            after_prob_df = after_prob_df.append(pd.DataFrame({"c_same": same_correct.sum() / after_correct_all,
+                                                               "f_same": same_incorrect.sum() / after_incorrect_all,
+                                                               "task": task, "mouse_id": mouse_id}).fillna(0.0))
 
-        f_same = after_prob_df[
-            (after_prob_df['task'].isin([task])) &
-            (after_prob_df["mouse_id"] == mouse_id)
-            ]['f_same'].groupby(level=0)
-        f_same_avg = f_same.sum()[:forward_trace + 1]
-        # f_same_var = f_same.var()[:forward_trace + 1]
+            c_same = after_prob_df[
+                (after_prob_df['task'].isin([task])) &
+                (after_prob_df["mouse_id"] == mouse_id)
+                ]['c_same']
 
-        # ここから描画
-        xlen = c_same_avg.size
-        # xax = np.array(range(1, xlen + 1))
-        xax = np.array(range(1, forward_trace + 1))
-        ax.plot(xax, c_same_avg, color="orange", label="rewarded start")
-        # ax.errorbar(xax, c_same_avg, yerr=c_same_var, capsize=2, fmt='o', markersize=1,
-        #             ecolor='black',
-        #             markeredgecolor="black", color='w', lolims=True)
+            f_same = after_prob_df[
+                (after_prob_df['task'].isin([task])) &
+                (after_prob_df["mouse_id"] == mouse_id)
+                ]['f_same']
 
-        ax.plot(xax, f_same_avg, color="skyblue", label="no-rewarded start")
-        # ax.errorbar(xax, f_same_avg, yerr=f_same_var, capsize=2, fmt='o', markersize=1,
-        #             ecolor='black',
-        #             markeredgecolor="black", color='w', uplims=True)
-
-        # plt.ion()
-        ax.set_xticks(xax)
-        ax.set_xlim(0.5, xlen + 0.5)
-        ax.set_ylim(0, 1.05)
-        ax.set_ylabel('P (same choice)')
-        ax.set_xlabel('Trial')
-        ax.set_title('no{:03d}_{}'.format(mouse_id, task))
+            # ここから描画
+            xlen = c_same.size
+            xax = np.array(range(1, forward_trace + 1))
+            ax[index].plot(c_same, color="orange", label="rewarded start")
+            ax[index].plot(f_same, color="skyblue", label="no-rewarded start")
+            ax[index].set_xticks(xax)
+            ax[index].set_xlim(0.5, xlen + 0.5)
+            ax[index].set_ylim(0, 1.05)
+            ax[index].set_xlabel('Trial')
         # label
+        ax[0].set_ylabel('P (same choice)')
+        ax[0].set_title('no{:03d}_{}_first{}step'.format(mouse_id, task, range_lim))
+        ax[1].set_title('no{:03d}_{}_last{}step'.format(mouse_id, task, range_lim))
+        plt.subplots_adjust(top=0.8)
         plt.legend()
         plt.savefig("no{:03d}_prob5_{}.png".format(mouse_id, task))
         plt.show()
+        plt.close()
 
     list(map(calc, mice))
 
@@ -1131,8 +1121,8 @@ def test_base50():
     return tdata, mice, tasks
 
 
-# tdata_50, mice_50, tasks_50 = test_base50()
-# view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
+tdata_50, mice_50, tasks_50 = test_base50()
+view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
 
 
 # view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
@@ -1166,6 +1156,7 @@ def test_51317():
 
     return tdata, mice, tasks
 
+
 # tdata, mice, tasks = test_51317()
 # view_averaged_prob_same_prev(tdata, mice, tasks)
 # view_summary(tdata, mice, tasks)
@@ -1182,7 +1173,9 @@ def test_51317():
 # TODO 動物心理グラフ Fig.2. Response Rate　A.タスク毎 (Prism) B. 2D-hist (ALL)
 # TODO 動物心理グラフ Fig.3. Reward Latency A.タスク毎 (Prism) B. 2D-hist (ALL)
 # TODO 動物心理グラフ Fig.4. P(same choice) {correct/incorrect start} A. タスク毎(burst考慮無) B. タスク毎(burst考慮有) burst_len を可変に
+view_prob_same_choice_burst(tdata_50, mice_50, tasks_50, burst=7)
 # TODO 動物心理グラフ Fig.5. P(same choice) A. Only5_50への切り替え直後(前半50correct) vs 終了直前(後半50correct) B.Not5_Other30
+view_sigletask_prob(tdata_50, mice_50, tasks_50[0])
 # TODO 動物心理グラフ Fig.6. 2bit比較(n>10以上, 全タスク（３つ）で作成) (Prism)
 # TODO 動物心理グラフ Table.1. 体重変化(base, before, after), タスク終了に要した時間{All5_30, Only5_30, Not5_Other30}
 # TODO 動物心理 Result 1. [Win-Stay Lose-Shiftはあるか?] 等確率の場合、報酬獲得選択時の3ステップ目まで報酬獲得選択時と同じ選択肢を選ぶ確率が10step先と比較して有意に高かった
