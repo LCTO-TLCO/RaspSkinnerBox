@@ -939,14 +939,91 @@ def view_prob_same_choice_burst(tdata, mice, tasks, burst=1):
     list(map(calc, mice))
 
 
-def view_only5_50(tdata, mice, task):
+def view_sigletask_prob(tdata, mice, task):
     """ fig5 A """
-    pass
+    tdata_ci = tdata.mice_task[tdata.mice_task.event_type.isin(["reward", "failure"])]
+    tdata_ci = tdata_ci[tdata_ci.task.isin([task])].reset_index()[50:-50]  # .assign(task=task)
+    tasks = [task]
+    # burst_len limit なし
+    # after_prob_df = pd.concat([tdata.task_prob[task].assign(task=task)])
 
+    plt.style.use('default')
+    fig, ax = plt.subplots(1, 1, sharey="all", sharex="all", figsize=(8, 4), dpi=100)
+    forward_trace = 7
+    range_lim = 50
 
-def view_not5_other30(tdata, mice, task):
-    """ fig5 B """
-    pass
+    def calc(mouse_id):
+        prob_index = ["c_same", "f_same", "task", "mouse_id"]
+        after_prob_df = pd.DataFrame(columns=prob_index)
+        lgnd = None
+        data = tdata_ci[
+            (tdata_ci.task.isin([task])) & (tdata_ci.mouse_id == mouse_id)].reset_index()  # .groupby("burst")
+        "確率を出す"
+        # data = tdata_ci
+        after_correct_all = data.is_correct[range_lim:-range_lim][data.is_correct == 1].count()
+        after_incorrect_all = data.is_incorrect[range_lim:-range_lim][data.is_incorrect == 1].count()
+        correct_index = data[range_lim:-range_lim][data.is_correct == 1].index
+        incorrect_index = data[range_lim:-range_lim][data.is_incorrect == 1].index
+        df = pd.DataFrame(columns=range(forward_trace))
+        same_correct = df.append(
+            [(data[idx + 1:idx + min(forward_trace + 1, len(data[idx + 1:]))].hole_no == data.hole_no[idx]).reset_index(
+                drop=True).T for idx in correct_index]) * 1 if len(correct_index) else df.sum()
+        same_incorrect = df.append(
+            [(data[idx + 1:idx + min(forward_trace + 1, len(data[idx + 1:]))].hole_no == data.hole_no[idx]).reset_index(
+                drop=True).T for idx in incorrect_index]) * 1 if len(incorrect_index) else df.sum()
+        same_correct.columns = same_correct.columns + 1
+        same_incorrect.columns = same_incorrect.columns + 1
+        after_prob_df = after_prob_df.append(pd.DataFrame({"c_same": same_correct.sum() / after_correct_all,
+                                                           "f_same": same_incorrect.sum() / after_incorrect_all,
+                                                           "task": task, "mouse_id": mouse_id}).fillna(0.0))
+
+        # after_prob_df = after_prob_df.append(pd.DataFrame({"c_same": (same_correct / after_correct_all).mean(),
+        #                                                    "f_same": (same_incorrect / after_incorrect_all).mean(),
+        #                                                    "task": task, "mouse_id": mouse_id,
+        #                                                    "burst": bst}).fillna(0.0), ignore_index=True)
+        c_same = after_prob_df[
+            (after_prob_df['task'].isin([task])) &
+            (after_prob_df["mouse_id"] == mouse_id)
+            ]['c_same']
+        c_same_avg = c_same
+        # c_same_var = same_correct.std()
+
+        f_same = after_prob_df[
+            (after_prob_df['task'].isin([task])) &
+            (after_prob_df["mouse_id"] == mouse_id)
+            ]['f_same'].groupby(level=0)
+        f_same_avg = f_same.sum()[:forward_trace + 1]
+        # f_same_var = f_same.var()[:forward_trace + 1]
+
+        # ここから描画
+        xlen = c_same_avg.size
+        # xax = np.array(range(1, xlen + 1))
+        xax = np.array(range(1, forward_trace + 1))
+        ax.plot(xax, c_same_avg, color="orange", label="rewarded start")
+        # ax.errorbar(xax, c_same_avg, yerr=c_same_var, capsize=2, fmt='o', markersize=1,
+        #             ecolor='black',
+        #             markeredgecolor="black", color='w', lolims=True)
+
+        ax.plot(xax, f_same_avg, color="skyblue", label="no-rewarded start")
+        # ax.errorbar(xax, f_same_avg, yerr=f_same_var, capsize=2, fmt='o', markersize=1,
+        #             ecolor='black',
+        #             markeredgecolor="black", color='w', uplims=True)
+
+        # plt.ion()
+        ax.set_xticks(xax)
+        ax.set_xlim(-0.5, xlen + 0.5)
+        ax.set_ylim(0, 1.05)
+        ax.set_ylabel('P (same choice)')
+        # lgnd = ax.legend()
+        ax.set_xlabel('Trial')
+        ax.set_title('no{:03d}_{}'.format(mouse_id, task))
+        # label
+        # lgnd.get_frame().set_linewidth(0.0)
+        plt.legend()
+        plt.savefig("no{:03d}_prob5_{}.png".format(mouse_id, task))
+        plt.show()
+
+    list(map(calc, mice))
 
 
 def view_pattern_entropy_summary(tdata, mice, task=None):
