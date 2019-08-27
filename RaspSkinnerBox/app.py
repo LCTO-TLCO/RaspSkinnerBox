@@ -15,7 +15,6 @@ from file_io import *
 
 # define
 
-reward = 70
 # reset_time = datetime(today.year, today.month, today.day, 6, 0, 0) + timedelta(days=1)
 # ex_limit = {True: [1, 3], False: [50, 100]}
 ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
@@ -25,6 +24,7 @@ current_task_name = ""
 exist_reserved_payoff = False
 feeds_today = 0
 current_reset_time = None
+reward = 70
 # while pelet > 0 and not datetime.now().time().hour == 10:
 
 seed(32)
@@ -68,6 +68,7 @@ def task(task_no: str, remained: int):
     if begin < 0:
         begin = 0
     correct_times = begin
+    reward = ex_flow[current_task_name].get("feed_upper", 70)
 
     # main
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
@@ -167,7 +168,7 @@ def task(task_no: str, remained: int):
         session_no += 1
 
     # task end
-    reward = reward - correct_times
+    # reward = reward - correct_times
     schedule.clear()
     print("{} end".format(task_no))
 
@@ -255,7 +256,7 @@ def unpayed_feeds_calculate():
             reward -= 1
 
             sleep(1 * 60)
-        reward = 70
+        reward = ex_flow[current_task_name].get("feed_upper", 70)
         feeds_today = 0
     daily_log(select_basetime(current_reset_time))
 

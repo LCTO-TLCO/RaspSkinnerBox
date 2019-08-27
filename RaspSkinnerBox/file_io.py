@@ -21,7 +21,7 @@ dispence_logfile_path = 'no{}_dispencer.csv'
 nosepoke_logfile_path = 'no{}_nosepoke.csv'
 settings_logfile_path = 'no{}_task_settings.json'
 daily_logfile_path = 'no{}_daily_feed.csv'
-ex_flow = OrderedDict({"T0": {}})
+ex_flow = OrderedDict({})
 # ex_flow = OrderedDict()
 ex_flow.update(json.load(open(setting_file, "r"), object_pairs_hook=OrderedDict))
 
@@ -52,7 +52,7 @@ integers = {'1': pycolor.CYAN,
 
 
 def set_dir():
-    None
+    pass
     # if (os.path.basename(os.getcwd()) == "log"):
     #     return
     # os.chdir("./log")
@@ -161,7 +161,6 @@ def all_nosepoke_log(channel: int, event_type: str):
 
 
 def calc_todays_feed(basetime):
-    # TODO file exist or not
     if not os.path.exists(dispence_logfile_path):
         return 0
     feeds_today = pd.read_csv(os.path.join("log", dispence_logfile_path), names=["date", "feed_num", "reason"],
