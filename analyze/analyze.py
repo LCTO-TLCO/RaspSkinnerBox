@@ -1060,53 +1060,45 @@ def view_pattern_entropy_summary(tdata, mice, task=None):
 
 
 def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
-    """ burst ごと task ごとにパターンの確率を算出して csv 出力 """
+    """ task ごとにパターンの確率を算出して csv 出力 """
     for mouse_no in mice:
         data = tdata.mice_task[tdata.mice_task.mouse_id == mouse_no]
         data_ci = data[data.event_type.isin(["reward", "failure"])].reset_index(drop=True)
-        f_same_prev = lambda x: data_ci.at[data_ci[data_ci.session_id == x].index[0], "hole_no"] == \
-                                data_ci.at[data_ci[data_ci.session_id == x].index[0] + 1, "hole_no"]
+        f_same_prev = lambda x: data_ci.at[data_ci[data_ci.session_id == x].index[0] - 1, "hole_no"] == \
+                                data_ci.at[data_ci[data_ci.session_id == x].index[0], "hole_no"]
         functions = lambda x: f_same_prev(x)
         pattern_range = range(pow(bit, 2))
-        bursts = data_ci.burst[data_ci.burst.isin(
-            data_ci.burst.unique()[data_ci.groupby("burst").burst.count() > burst_len])].unique()
+        data_bursts = data_ci[data_ci.burst.isin(
+            data_ci.burst.unique()[data_ci.groupby("burst").burst.count() > burst_len])]
         tmp = pd.DataFrame(columns=["{:02b}".format(i) for i in pattern_range]).fillna(0.0)
         bit_prob = dict(zip(tasks, [dict(zip(["f_same_prev"], [tmp.copy()])) for _ in range(len(tasks))]))
-        bit_weight = dict(zip(tasks, [tmp.copy() for _ in range(len(tasks))]))
-        for task, burst in itertools.product(tasks, bursts):
-            data_tmp = data_ci[(data_ci.burst.isin([burst])) & (data_ci.task.isin([task]))]
+        for task in tasks:
+            data_tmp = data_bursts[(data_ci.task.isin([task]))]
             tmp_df = []
-            tmp_w = []
             for pat_tmp in pattern_range:
                 # pattern count -> probability
-                f_p = pd.DataFrame(list(data_tmp[data_tmp.pattern_2bit == pat_tmp].session_id[:-1].map(functions)),
+                f_p = pd.DataFrame(list(data_tmp[data_tmp.pattern_2bit == pat_tmp].session_id[1:].map(functions)),
                                    columns=["f_same_prev"]).fillna(0.0)
                 if len(f_p):
                     """ 一例以上あった場合確率として計算 """
                     # Series
                     tmp_df.append((pd.DataFrame(list(f_p.f_same_prev)).sum().fillna(0.0) / len(
                         data_tmp[data_tmp.pattern_2bit == pat_tmp])).values[0])
-                    tmp_w.append(pd.DataFrame(list(f_p.f_same_prev)).sum().fillna(0.0).values[0])
                 else:
                     """ 一回もパターンが出ていない場合 """
                     tmp_df.append(np.nan)
-                    tmp_w.append(0)
             bit_prob[task]["f_same_prev"] = bit_prob[task]["f_same_prev"].append(
                 pd.Series(tmp_df, index=bit_prob[task]["f_same_prev"].columns), ignore_index=True)
-            bit_weight[task] = bit_weight[task].append(pd.Series(tmp_w, index=bit_weight[task].columns),
-                                                       ignore_index=True)
-        # export
-        for task in tasks:
-            # if (bit_weight[task].sum() == 0).iat[0]:
-            #     bit_weight[task] = bit_weight[task] + 1
-            # pd.DataFrame(
-            #     np.average(bit_prob[task]["f_same_prev"].to_numpy(), axis=1,
-            #                weights=np.ma.masked_array(bit_weight[task].to_numpy())),
-            #     columns=bit_weight[task].columns).to_csv(
-            #     os.path.join("data", "2bit_weighted_prob_task-{}_no{}.csv".format(task, mouse_no)), index=False,
-            #     header=False)
+            # export
             bit_prob[task]["f_same_prev"].to_csv(
                 os.path.join("data", "2bit_prob_task-{}_no{}.csv".format(task, mouse_no)), index=False, header=False)
+            # graph
+            fig = bit_prob[task]["f_same_prev"].T.plot.line(title="2bit no{:03d} task:{}".format(mouse_no, task),
+                                                            style="o-", ylim=(0.0, 1.0), ms=10)
+            plt.savefig(os.path.join("fig","2bit", "no{:03d}_{}_2bit.png".format(mouse_no,task)))
+            plt.show()
+            plt.close()
+        # return bit_prob
 
 
 def test_base30_debug():
