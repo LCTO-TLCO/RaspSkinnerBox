@@ -98,6 +98,8 @@ def task(task_no: str, remained: int):
             elif DEBUG:
                 print("debug mode: type any key")
                 input()
+            if not any(list(map(is_execution_time, current_task["time"]))):
+                continue
             hole_lamp_turn("dispenser_lamp", "off")
             export(task_no, session_no, correct_times, "task called")
             hole_lamp_turn("house_lamp", "on")
