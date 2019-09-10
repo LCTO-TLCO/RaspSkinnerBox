@@ -1067,7 +1067,7 @@ def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
     for mouse_no in mice:
         data = tdata.mice_task[tdata.mice_task.mouse_id == mouse_no]
         data_ci = data[data.event_type.isin(["reward", "failure"])].reset_index(drop=True)
-        f_same_prev = lambda x: data_ci.at[data_ci[data_ci.session_id == x].index[0] - 1, "hole_no"] == \
+        f_same_prev = lambda x: data_ci.at[data_ci[data_ci.session_id == x].index[0] + 1, "hole_no"] == \
                                 data_ci.at[data_ci[data_ci.session_id == x].index[0], "hole_no"]
         functions = lambda x: f_same_prev(x)
         data_bursts = data_ci[data_ci.burst.isin(
@@ -1098,7 +1098,7 @@ def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
             fig = bit_prob[task]["f_same_prev"].T.plot.line(title="2bit no{:03d} task:{}".format(mouse_no, task),
                                                             style="bo-", ylim=(0.0, 1.0), ms=10)
             plt.savefig(os.path.join("fig", "2bit", "no{:03d}_{}_2bit.png".format(mouse_no, task)))
-            plt.show()
+            # plt.show()
             plt.close()
     for task in tasks:
         fig = prob_all[task].mean().T.plot.line(title="2bit {} task:{}".format("all", task),
