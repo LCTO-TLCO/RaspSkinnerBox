@@ -203,8 +203,8 @@ def is_execution_time(start_end: list):
     """ 実行時刻の開始終了リストを引数にして今実行時間かどうかを判定する """
     start, end = [datetime.combine(datetime.today(), datetime.strptime(time, "%H:%M").time()) for time in start_end]
     # 日付繰り上がりの処理
-    start -= timedelta(days=int(start > end)) if datetime.now().hour < end.hour else timedelta(days=0)
-    end += timedelta(days=int(start > end)) if datetime.now().hour > end.hour else timedelta(days=0)
+    start -= timedelta(days=int(start.hour > end.hour)) if datetime.now().hour < end.hour else timedelta(days=0)
+    end += timedelta(days=int(start.hour > end.hour)) if datetime.now().hour >= end.hour else timedelta(days=0)
     return start <= datetime.now() <= end
 
 
