@@ -1061,19 +1061,18 @@ def view_pattern_entropy_summary(tdata, mice, task=None):
 
 def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
     """ task ごとにパターンの確率を算出して csv 出力 """
-    prob_all = None
+    pattern_range = range(pow(bit, 2))
+    tmp = pd.DataFrame(columns=["{:02b}".format(i) for i in pattern_range]).fillna(0.0)
+    prob_all = dict(zip(tasks, [tmp.copy(), tmp.copy(), tmp.copy()]))
     for mouse_no in mice:
         data = tdata.mice_task[tdata.mice_task.mouse_id == mouse_no]
         data_ci = data[data.event_type.isin(["reward", "failure"])].reset_index(drop=True)
         f_same_prev = lambda x: data_ci.at[data_ci[data_ci.session_id == x].index[0] - 1, "hole_no"] == \
                                 data_ci.at[data_ci[data_ci.session_id == x].index[0], "hole_no"]
         functions = lambda x: f_same_prev(x)
-        pattern_range = range(pow(bit, 2))
         data_bursts = data_ci[data_ci.burst.isin(
             data_ci.burst.unique()[data_ci.groupby("burst").burst.count() > burst_len])]
-        tmp = pd.DataFrame(columns=["{:02b}".format(i) for i in pattern_range]).fillna(0.0)
         bit_prob = dict(zip(tasks, [dict(zip(["f_same_prev"], [tmp.copy()])) for _ in range(len(tasks))]))
-        prob_all = dict(zip(tasks, [tmp.copy(), tmp.copy(), tmp.copy()]))
         for task in tasks:
             data_tmp = data_bursts[(data_ci.task.isin([task]))]
             tmp_df = []
@@ -1102,7 +1101,7 @@ def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
             plt.show()
             plt.close()
     for task in tasks:
-        prob_all[task].mean().T.plot.line(title="2bit {} task:{}".format("all", task),
+        fig = prob_all[task].mean().T.plot.line(title="2bit {} task:{}".format("all", task),
                                                             style="ro-", ylim=(0.0, 1.0), ms=10)
         plt.savefig(os.path.join("fig", "2bit", "{}_{}_2bit.png".format("all", task)))
         plt.show()
