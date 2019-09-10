@@ -57,7 +57,7 @@ def task(task_no: str, remained: int):
     session_no = last_session_id()
     current_task_name = task_no
     current_reset_time = current_task.get("reset_time", "07:00")
-    schedule.every().day.at("{}".format(current_reset_time)).do(unpayed_feeds_calculate)
+    schedule.every().day.at(current_reset_time).do(unpayed_feeds_calculate)
     feeds_today = int(calc_todays_feed(select_basetime(current_reset_time)))
     begin = 0
     is_time_limit_task = "time" in current_task
@@ -74,7 +74,7 @@ def task(task_no: str, remained: int):
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
         schedule.run_pending()
-        if overpayed_feeds_calculate():
+        if overpayed_feeds_calculate() and ex_flow[current_task_name].get("feed_upper", False):
             sleep(5)
             continue
         if is_time_limit_task:
@@ -213,8 +213,7 @@ def select_basetime(times="07:00"):
     minutes = int(times.split(":")[1])
 
     today = datetime.today() if datetime.now().time() >= time(hours,
-                                                              minutes) else datetime.today() - timedelta(
-        days=1)
+                                                              minutes) else datetime.today() - timedelta(days=1)
     return datetime.combine(today, time(hours, minutes))
 
 

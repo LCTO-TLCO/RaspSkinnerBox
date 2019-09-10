@@ -94,7 +94,7 @@ def daily_log(basetime):
     if os.path.exists(os.path.join("log", dispence_logfile_path)):
         feeds = pd.read_csv(os.path.join("log", dispence_logfile_path), names=["date", "feed_num", "reason"],
                             parse_dates=[0])
-    feed_dataframe = feeds[(basetime > feeds.date) & (feeds.date > basetime - timedelta(days=1))]
+    feed_dataframe = feeds[(basetime > feeds.date) & (feeds.date > basetime + timedelta(days=1))]
     string = ','.join([str(datetime.now()),
                        "reward",
                        str(feed_dataframe.groupby("reason").sum().loc["reward", "feed_num"] if any(
@@ -165,7 +165,7 @@ def calc_todays_feed(basetime):
         return 0
     feeds_today = pd.read_csv(os.path.join("log", dispence_logfile_path), names=["date", "feed_num", "reason"],
                               parse_dates=[0])
-    feeds_today = feeds_today[((basetime < feeds_today.date) & (feeds_today.date < basetime - timedelta(days=1)))]
+    feeds_today = feeds_today[((basetime < feeds_today.date) & (feeds_today.date < basetime + timedelta(days=1)))]
     return feeds_today.feed_num.sum()
 
 
