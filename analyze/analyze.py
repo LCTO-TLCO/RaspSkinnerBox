@@ -1089,12 +1089,13 @@ def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
                 # row_data[task]["{:02b}".format(pat_tmp)] = row_data[task]["{:02b}".format(pat_tmp)].append((f_p * 1))
                 # f_p.count().to_csv(os.path.join("data", "2bit",
                 #                                 "no{:03d}_{}_pat{:02b}_burst_2bit.csv".format(mouse_no, task, pat_tmp)))
-                tmp_count.append(f_p.count().values.max())
+                tmp_count.append(len(data_tmp[data_tmp.pattern_2bit == pat_tmp]))
                 if len(f_p):
                     """ 一例以上あった場合確率として計算 """
                     # Series
-                    tmp_df.append((pd.DataFrame(list(f_p.f_same_prev)).sum().fillna(0.0) / len(
-                        data_tmp[data_tmp.pattern_2bit == pat_tmp])).values[0])
+                    tmp_df.append((pd.DataFrame(list(f_p.f_same_prev)).sum().fillna(0.0) /
+                                   len(data_tmp[data_tmp.pattern_2bit == pat_tmp])).values[0])
+
                 else:
                     """ 一回もパターンが出ていない場合 """
                     tmp_df.append(np.nan)
