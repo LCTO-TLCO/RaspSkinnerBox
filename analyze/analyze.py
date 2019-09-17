@@ -1129,8 +1129,9 @@ def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
 
 def export_all_entropy(tdata, mice, tasks=None):
     target_task = ["All5_30", "All5_90"]
-    ret_val = pd.DataFrame(columns=["mouse_id", "task", "entropy"])
+    ret_val = pd.DataFrame()
     datas = tdata if isinstance(tdata, list) else [tdata]
+
     def min_max(x, axis=None):
         np.array(x)
         min = np.array(x).min(axis=axis)
@@ -1140,6 +1141,7 @@ def export_all_entropy(tdata, mice, tasks=None):
 
     for d in datas:
         for mouse_id in mice:
+            tmp = [mouse_id]
             for task in target_task:
                 data = d.mice_task[
                     (d.mice_task.event_type.isin(["reward", "failure"]))
@@ -1149,11 +1151,13 @@ def export_all_entropy(tdata, mice, tasks=None):
                     continue
                 current_entropy = min_max([data["is_hole{}".format(str(hole_no))].sum() /
                                            len(data) for hole_no in [1, 3, 5, 7, 9]])
-                ret_val = ret_val.append(
-                    pd.Series([mouse_id, task, entropy(current_entropy, base=2)], index=ret_val.columns),
-                    ignore_index=True)
+                tmp += [task, entropy(current_entropy, base=2)]
+            ret_val = ret_val.append([tmp])
+
     ret_val.to_csv(os.path.join("data", "entropy", "entropy_tasks_{}.csv".format("_".join(target_task))), index=False,
                    header=False)
+    # [ret_val[ret_val.task.isin([task])].to_csv(os.path.join("data", "entropy", "entropy_task_{}.csv".format(task)),
+    #                                            index=False, header=False) for task in target_task]
 
 
 def test_base30_debug():
@@ -1245,6 +1249,17 @@ def test_51317():
     logpath = './'
     tdata = task_data(mice, tasks, logpath)
 
+    return tdata, mice, tasks
+
+
+def test_base90():
+    mice = [36, 37]
+    tasks = ["All5_90", "All5_30"]
+
+    logpath = './'
+    tdata = task_data(mice, tasks, logpath)
+
+    #    graph_ins = graph(tdata, mice, tasks, logpath)
     return tdata, mice, tasks
 
 
