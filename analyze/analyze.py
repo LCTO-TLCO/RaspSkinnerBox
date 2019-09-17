@@ -1063,7 +1063,12 @@ def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
     """ task ごとにパターンの確率を算出して csv 出力 """
     pattern_range = range(pow(bit, 2))
     tmp = pd.DataFrame(columns=["{:02b}".format(i) for i in pattern_range]).fillna(0.0)
-    prob_all = dict(zip(tasks, [tmp.copy(), tmp.copy(), tmp.copy()]))
+    prob_all = dict(zip(tasks, [tmp.copy() for _ in range(len(tasks))]))
+    count_all = dict(zip(tasks,
+                         [pd.DataFrame(columns=["{:02b}".format(pattern) for pattern in pattern_range]).copy() for _ in
+                          range(len(tasks))]))
+    # row_data = dict(
+    #     zip(tasks, [pd.DataFrame(columns=["{:02b}".format(pattern) for pattern in pattern_range]) for _ in tasks]))
     for mouse_no in mice:
         data = tdata.mice_task[tdata.mice_task.mouse_id == mouse_no]
         data_ci = data[data.event_type.isin(["reward", "failure"])].reset_index(drop=True)
@@ -1076,10 +1081,15 @@ def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
         for task in tasks:
             data_tmp = data_bursts[(data_ci.task.isin([task]))]
             tmp_df = []
+            tmp_count = []
             for pat_tmp in pattern_range:
                 # pattern count -> probability
                 f_p = pd.DataFrame(list(data_tmp[data_tmp.pattern_2bit == pat_tmp].session_id[1:].map(functions)),
                                    columns=["f_same_prev"]).fillna(0.0)
+                # row_data[task]["{:02b}".format(pat_tmp)] = row_data[task]["{:02b}".format(pat_tmp)].append((f_p * 1))
+                # f_p.count().to_csv(os.path.join("data", "2bit",
+                #                                 "no{:03d}_{}_pat{:02b}_burst_2bit.csv".format(mouse_no, task, pat_tmp)))
+                tmp_count.append(f_p.count().values.max())
                 if len(f_p):
                     """ 一例以上あった場合確率として計算 """
                     # Series
@@ -1090,10 +1100,12 @@ def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
                     tmp_df.append(np.nan)
             bit_prob[task]["f_same_prev"] = bit_prob[task]["f_same_prev"].append(
                 pd.Series(tmp_df, index=bit_prob[task]["f_same_prev"].columns), ignore_index=True)
+            prob_all[task] = prob_all[task].append(pd.Series(tmp_df, index=bit_prob[task]["f_same_prev"].columns),
+                                                   ignore_index=True)
+            count_all[task].loc["no{}".format(mouse_no)] = tmp_count
             # export
             bit_prob[task]["f_same_prev"].to_csv(
                 os.path.join("data", "2bit_prob_task-{}_no{}.csv".format(task, mouse_no)), index=False, header=False)
-            prob_all[task] = prob_all[task].append(pd.Series(tmp_df, index=bit_prob[task]["f_same_prev"].columns), ignore_index=True)
             # graph
             fig = bit_prob[task]["f_same_prev"].T.plot.line(title="2bit no{:03d} task:{}".format(mouse_no, task),
                                                             style="bo-", ylim=(0.0, 1.0), ms=10)
@@ -1102,10 +1114,16 @@ def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
             plt.close()
     for task in tasks:
         fig = prob_all[task].mean().T.plot.line(title="2bit {} task:{}".format("all", task),
-                                                            style="ro-", ylim=(0.0, 1.0), ms=10)
+                                                style="ro-", ylim=(0.0, 1.0), ms=10)
         plt.savefig(os.path.join("fig", "2bit", "{}_{}_2bit.png".format("all", task)))
         plt.show()
         plt.close()
+        prob_all[task].to_csv(os.path.join("data", "2bit", "allmice_{}_burst_2bit_prob.csv".format(task)), index=False)
+        count_all[task].to_csv(os.path.join("data", "2bit", "n_{}_burst_2bit_count.csv".format(task)))
+        count_all[task].count()
+        # [row_data[task]["{:02b}".format(pat)].to_csv(
+        #     os.path.join("data", "2bit", "{}_{}_pat{:02b}_burst_2bit.csv".format("allmice", task, pat))) for pat in
+        #     pattern_range]
         # return bit_prob
 
 
