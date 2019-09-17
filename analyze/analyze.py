@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import matplotlib.collections as collections
 import matplotlib.markers as markers
 import os
-import itertools
 
 # debug = True
 debug = False
@@ -1131,7 +1130,7 @@ def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
 def export_all_entropy(tdata, mice, tasks=None):
     target_task = ["All5_30", "All5_90"]
     ret_val = pd.DataFrame(columns=["mouse_id", "task", "entropy"])
-
+    datas = tdata if isinstance(tdata, list) else [tdata]
     def min_max(x, axis=None):
         np.array(x)
         min = np.array(x).min(axis=axis)
@@ -1139,18 +1138,22 @@ def export_all_entropy(tdata, mice, tasks=None):
         result = (x - min) / (max - min)
         return result
 
-    for mouse_id in mice:
-        for task in target_task:
-            data = tdata.mice_task[
-                (tdata.mice_task.event_type.isin(["reward", "failure"]))
-                & (tdata.mice_task.task.isin([task]))
-                & (tdata.mice_task.mouse_id.isin([str(mouse_id)]))]
-            if not len(data):
-                continue
-            current_entropy = min_max([data["is_hole{}".format(str(hole_no))].sum() /
-                                       len(data) for hole_no in [1, 3, 5, 7, 9]])
-            ret_val = ret_val.append(pd.Series([mouse_id, task, entropy(current_entropy, base=2)],index=ret_val.columns), ignore_index=True)
-    ret_val.to_csv(os.path.join("data", "entropy", "entropy_tasks_{}.csv".format("_".join(target_task))), index=False)
+    for d in datas:
+        for mouse_id in mice:
+            for task in target_task:
+                data = d.mice_task[
+                    (d.mice_task.event_type.isin(["reward", "failure"]))
+                    & (d.mice_task.task.isin([task]))
+                    & (d.mice_task.mouse_id.isin([str(mouse_id)]))]
+                if not len(data):
+                    continue
+                current_entropy = min_max([data["is_hole{}".format(str(hole_no))].sum() /
+                                           len(data) for hole_no in [1, 3, 5, 7, 9]])
+                ret_val = ret_val.append(
+                    pd.Series([mouse_id, task, entropy(current_entropy, base=2)], index=ret_val.columns),
+                    ignore_index=True)
+    ret_val.to_csv(os.path.join("data", "entropy", "entropy_tasks_{}.csv".format("_".join(target_task))), index=False,
+                   header=False)
 
 
 def test_base30_debug():
