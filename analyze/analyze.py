@@ -121,7 +121,8 @@ class task_data:
                     data.drop(index, inplace=True)
 
             def rehash(x_index):
-                if data.at[data.index[x_index], "task"] == "T0":
+                start_task = data.head(1).task.values[0]
+                if data.at[data.index[x_index], "task"] == start_task:
                     if (x_index == 0 or data.shift(1).at[data.index[x_index], "event_type"] == "start") and \
                             len(data[:x_index][data.session_id == 0]) == 0:
                         self.session_id = 0
@@ -442,8 +443,6 @@ class task_data:
                 return self.burst_id
 
             data = self.data[self.data.event_type.isin(["reward", "failure", "time over"])]
-            # self.data["burst"] = np.nan
-            # self.data.loc[self.data.index[self.data.session_id == 0], "burst"] = 0
             self.data = self.data.merge(
                 pd.DataFrame({"session_id": self.data.session_id.unique(),
                               "burst": list(map(calc_burst, self.data.session_id.unique()))}),
@@ -599,38 +598,6 @@ class task_data:
                 pattern in self.data.pattern[~np.isnan(self.data.pattern)].unique()]
 
         print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
-
-
-if __name__ == "__main__":
-    print("{} ; started".format(datetime.now()))
-    # mice = [2, 3, 6, 7, 8, 11, 12, 13, 14, 17, 18, 19]
-    # error: 2,3,7,11,13,17,18
-    # mice = [18]
-    mice = [23]
-    tasks = ["All5_30", "Only5_50", "Not5_Other30"]
-    #    logpath = '../RaspSkinnerBox/log/'
-    logpath = os.getcwd()
-    # tdata = task_data(mice, tasks, logpath)
-    # graph_ins = rasp_graph(tdata, mice, tasks, logpath)
-    # graph_ins.entropy_scatter()
-    # graph_ins.nose_poke_raster()
-    # graph_ins.same_plot()
-    # graph_ins.omission_plot()
-    # graph_ins.ent_raster_cumsum()
-    # graph_ins.reaction_scatter()
-    # graph_ins.reaction_hist2d()
-    # graph_ins.norew_reward_latency_scatter()
-    # graph_ins.norew_reward_latency_hist2d()
-    # graph_ins.prob_same_base()
-    # graph_ins.prob_same_prev()
-    # graph_ins.prob_omit()
-    # graph_ins.next_10_ent()
-    # graph_ins.norew_ent_10()
-    # graph_ins.time_ent_10()
-    # graph_ins.time_holeno_raster_burst()
-    print("{} ; all done".format(datetime.now()))
-
-    # TODO 同一burst内のデータでcountして平均表示
 
 
 def view_averaged_prob_same_prev(tdata, mice, tasks):
@@ -1127,8 +1094,8 @@ def export_2bit_analyze(tdata, mice, tasks, bit=2, burst_len=10):
         # return bit_prob
 
 
-def export_all_entropy(tdata, mice, tasks=None):
-    target_task = ["All5_30", "All5_90"]
+def export_all_entropy(tdata, mice, tasks=["All5_90", "All5_30", "All5_30_drug"]):
+    target_task = tasks
     ret_val = pd.DataFrame()
     datas = tdata if isinstance(tdata, list) else [tdata]
 
@@ -1152,6 +1119,8 @@ def export_all_entropy(tdata, mice, tasks=None):
                 current_entropy = min_max([data["is_hole{}".format(str(hole_no))].sum() /
                                            len(data) for hole_no in [1, 3, 5, 7, 9]])
                 tmp += [task, entropy(current_entropy, base=2)]
+            if len(tmp)==1:
+                continue
             ret_val = ret_val.append([tmp])
 
     ret_val.to_csv(os.path.join("data", "entropy", "entropy_tasks_{}.csv".format("_".join(target_task))), index=False,
@@ -1218,11 +1187,9 @@ def test_base50():
     return tdata, mice, tasks
 
 
-tdata_50, mice_50, tasks_50 = test_base50()
-view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
-
-
+# tdata_50, mice_50, tasks_50 = test_base50()
 # view_averaged_prob_same_prev(tdata_50, mice_50, tasks_50)
+
 
 def test_Only5_70():
     # All5_50, Only5_50, Not5_Other50, Recall5_50
@@ -1241,6 +1208,7 @@ def test_Only5_70():
 # tdata_o5_70, mice_o5_70, tasks_o5_70 = test_Only5_70()
 # view_averaged_prob_same_prev(tdata_o5_70, mice_o5_70, tasks_o5_70)
 
+
 def test_51317():
     # All5_50, Only5_50, Not5_Other50, Recall5_50
     mice = [28, 29]
@@ -1253,8 +1221,8 @@ def test_51317():
 
 
 def test_base90():
-    mice = [36, 37]
-    tasks = ["All5_90", "All5_30"]
+    mice = [34, 36, 37]
+    tasks = ["All5_90", "All5_30", "All5_30_drug"]
 
     logpath = './'
     tdata = task_data(mice, tasks, logpath)
@@ -1262,6 +1230,11 @@ def test_base90():
     #    graph_ins = graph(tdata, mice, tasks, logpath)
     return tdata, mice, tasks
 
+
+if __name__ == "__main__":
+    print("{} ; started".format(datetime.now()))
+    tdata_38, _, _ = task_data([38], ["All5_90", "All5_30"], "./")
+    print("{} ; all done".format(datetime.now()))
 
 # tdata, mice, tasks = test_51317()
 # view_averaged_prob_same_prev(tdata, mice, tasks)
@@ -1279,9 +1252,7 @@ def test_base90():
 # TODO 動物心理グラフ Fig.2. Response Rate　A.タスク毎 (Prism) B. 2D-hist (ALL)
 # TODO 動物心理グラフ Fig.3. Reward Latency A.タスク毎 (Prism) B. 2D-hist (ALL)
 # TODO 動物心理グラフ Fig.4. P(same choice) {correct/incorrect start} A. タスク毎(burst考慮無) B. タスク毎(burst考慮有) burst_len を可変に
-view_prob_same_choice_burst(tdata_50, mice_50, tasks_50, burst=7)
 # TODO 動物心理グラフ Fig.5. P(same choice) A. Only5_50への切り替え直後(前半50correct) vs 終了直前(後半50correct) B.Not5_Other30
-view_sigletask_prob(tdata_50, mice_50, tasks_50[0])
 # TODO 動物心理グラフ Fig.6. 2bit比較(n>10以上, 全タスク（３つ）で作成) (Prism)
 # TODO 動物心理グラフ Table.1. 体重変化(base, before, after), タスク終了に要した時間{All5_30, Only5_30, Not5_Other30}
 # TODO 動物心理 Result 1. [Win-Stay Lose-Shiftはあるか?] 等確率の場合、報酬獲得選択時の3ステップ目まで報酬獲得選択時と同じ選択肢を選ぶ確率が10step先と比較して有意に高かった
