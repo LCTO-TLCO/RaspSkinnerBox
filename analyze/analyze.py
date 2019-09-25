@@ -1119,7 +1119,7 @@ def export_all_entropy(tdata, mice, tasks=["All5_90", "All5_30", "All5_30_drug"]
                 current_entropy = min_max([data["is_hole{}".format(str(hole_no))].sum() /
                                            len(data) for hole_no in [1, 3, 5, 7, 9]])
                 tmp += [task, entropy(current_entropy, base=2)]
-            if len(tmp)==1:
+            if len(tmp) == 1:
                 continue
             ret_val = ret_val.append([tmp])
 
@@ -1127,6 +1127,70 @@ def export_all_entropy(tdata, mice, tasks=["All5_90", "All5_30", "All5_30_drug"]
                    header=False)
     # [ret_val[ret_val.task.isin([task])].to_csv(os.path.join("data", "entropy", "entropy_task_{}.csv".format(task)),
     #                                            index=False, header=False) for task in target_task]
+
+
+def view_converse_reaction_time(tdata, mice, tasks):
+    tasks = tasks if isinstance(tasks, list) else [tasks]
+    for task in tasks:
+        data = tdata.mice_delta[task][
+            (tdata.mice_delta[task].type.isin(["reaction_time"]))  # &
+            # (tdata.mice_delta.mouse_id == mice)
+        ].reaction_time_sec
+        fig = plt.figure(figsize=(15, 8), dpi=100)
+        data.plot.hist(bins=100)
+        plt.title("reaction time task:{}".format(task))
+        plt.xlabel("reaction time(s)")
+        plt.savefig(os.path.join("fig", "task-{}_reaction_time.png".format(task)))
+        plt.show()
+
+
+def view_converse_reward_latency(tdata, mice, tasks, bin=100):
+    tasks = tasks if isinstance(tasks, list) else [tasks]
+    for task in tasks:
+        data = tdata.mice_delta[task][
+            (tdata.mice_delta[task].type.isin(["reward_latency"]))  # &
+            # (tdata.mice_delta.mouse_id == mice)
+        ].noreward_duration_sec
+        fig = plt.figure(figsize=(15, 8), dpi=100)
+        data.plot.hist(bins=bin)
+        plt.xlabel("reward latency(s)")
+        plt.title("reward latency task:{}".format(task))
+        plt.savefig(os.path.join("fig", "task-{}_reward_latency.png".format(task)))
+        plt.show()
+        plt.close()
+        # under 100
+        data[data <= 300].plot.hist(bins=bin)
+        plt.xlabel("reward latency(s)")
+        plt.title("reward latency task:{}".format(task))
+        plt.savefig(os.path.join("fig", "task-{}_reward_latency_u300.png".format(task)))
+        plt.show()
+        plt.close()
+
+
+def view_50step_entropy(tdata, mice, tasks):
+    # entropy
+    data = tdata.mice_task[
+        (tdata.mice_task.task.isin(tasks)) &
+        (tdata.mice_task.event_type.isin(["reward"]))]
+    for task in tasks:
+        df = data[(data.task == task)].groupby(["cumsum_correct_taskreset"]).mean()
+        fig, ax = plt.subplots(1, 1, figsize=(15, 8), dpi=100)
+        fig.suptitle('50step entropy task:{}'.format(task))
+        ax.plot(df.index, df['entropy_50'])
+        ax.set_ylabel('Entropy (bit)')
+        plt.savefig(os.path.join("fig", "task-{}_entropy.png".format(task)))
+        plt.show()
+        plt.close()
+    for task in tasks:
+        for mouse_id in mice:
+            df = data[(data.task == task) & (data.mouse_id == mouse_id)]
+            fig, ax = plt.subplots(1, 1, figsize=(15, 8), dpi=100)
+            fig.suptitle('50step entropy task:{}'.format(task))
+            ax.plot(df.index, df['entropy_50'])
+            ax.set_ylabel('Entropy (bit)')
+            plt.savefig(os.path.join("fig", "no{}_task-{}_entropy.png".format(mouse_id, task)))
+            plt.show()
+            plt.close()
 
 
 def test_base30_debug():
