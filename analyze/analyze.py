@@ -1183,7 +1183,7 @@ def view_50step_entropy(tdata, mice, tasks):
         plt.close()
     for task in tasks:
         for mouse_id in mice:
-            df = data[(data.task == task) & (data.mouse_id == mouse_id)]
+            df = data[(data.task == task) & (data.mouse_id == mouse_id)].set_index("cumsum_correct_taskreset")
             fig, ax = plt.subplots(1, 1, figsize=(15, 8), dpi=100)
             fig.suptitle('50step entropy task:{}'.format(task))
             ax.plot(df.index, df['entropy_50'])
