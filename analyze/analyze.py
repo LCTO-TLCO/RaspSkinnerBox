@@ -90,21 +90,26 @@ class task_data:
             # all 0: 2.probability
             # 3.task_prob, 4.self.delta, 5.self.fig_prob_tmp, 6.pattern
             for mouse_id in self.mouse_no:
-                print('mouse_id={}'.format(mouse_id))
-                # self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
-                # self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[
-                #     mouse_id], self.fig_prob[mouse_id], self.pattern_prob[mouse_id] = self.read_data()
-                self.data_file = os.path.join(self.logpath, "no{:03d}_action.csv".format(mouse_id))
-                tmp = self.read_data()
-                self.mice_task = append_dataframe(self.mice_task, tmp[0], mouse_id)
-                # 0
-                self.probability = append_dataframe(self.probability, tmp[1], mouse_id)
-                self.task_prob = append_dataframe(self.task_prob, tmp[2], mouse_id)
-                self.mice_delta = append_dataframe(self.mice_delta, tmp[3], mouse_id)
-                # 単体
-                self.fig_prob = append_dataframe(self.fig_prob, tmp[4], mouse_id)
-                self.pattern_prob = append_dataframe(self.pattern_prob, tmp[5], mouse_id)
-                self.mice_entropy = append_dataframe(self.mice_entropy, tmp[6], mouse_id)
+                try:
+                    print('mouse_id={}'.format(mouse_id))
+                    # self.data_file = "{}no{:03d}_action.csv".format(self.logpath, mouse_id)
+                    # self.mice_task[mouse_id], self.probability[mouse_id], self.task_prob[mouse_id], self.mice_delta[
+                    #     mouse_id], self.fig_prob[mouse_id], self.pattern_prob[mouse_id] = self.read_data()
+                    self.data_file = os.path.join(self.logpath, "no{:03d}_action.csv".format(mouse_id))
+                    tmp = self.read_data()
+                    self.mice_task = append_dataframe(self.mice_task, tmp[0], mouse_id)
+                    # 0
+                    self.probability = append_dataframe(self.probability, tmp[1], mouse_id)
+                    self.task_prob = append_dataframe(self.task_prob, tmp[2], mouse_id)
+                    self.mice_delta = append_dataframe(self.mice_delta, tmp[3], mouse_id)
+                    # 単体
+                    self.fig_prob = append_dataframe(self.fig_prob, tmp[4], mouse_id)
+                    self.pattern_prob = append_dataframe(self.pattern_prob, tmp[5], mouse_id)
+                    self.mice_entropy = append_dataframe(self.mice_entropy, tmp[6], mouse_id)
+                except Exception as e:
+                    print("error! no {}".format(mouse_id))
+                    print(e)
+                    continue
             self.export_csv()
         print('done')
 
@@ -194,7 +199,7 @@ class task_data:
                     return delta_df
 
                 delta_df = data[data.task == task].session_id.drop_duplicates().map(calculate)
-                deltas[task] = pd.concat(list(delta_df), sort=False)
+                deltas[task] = pd.concat(list(delta_df), sort=False) if len(delta_df) else delta_df
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
             return deltas
 
@@ -1168,17 +1173,22 @@ def view_converse_reward_latency(tdata, mice, tasks, bin=100):
 
 
 def view_50step_entropy(tdata, mice, tasks):
+    data = tdata
+    if isinstance(tdata, list):
+        data = pd.concat([d.mice_task for d in tdata])
+    else:
+        data = tdata.mice_task
     # entropy
-    data = tdata.mice_task[
-        (tdata.mice_task.task.isin(tasks)) &
-        (tdata.mice_task.event_type.isin(["reward"]))]
+    data = data[
+        (data.task.isin(tasks)) &
+        (data.event_type.isin(["reward"]))]
     for task in tasks:
-        df = data[(data.task == task)].groupby(["cumsum_correct_taskreset"]).mean()
+        df = data[(data.task == task)].groupby(["cumsum_correct_taskreset"]).mean().head(150)
         fig, ax = plt.subplots(1, 1, figsize=(15, 8), dpi=100)
         fig.suptitle('50step entropy task:{}'.format(task))
         ax.plot(df.index, df['entropy_50'])
         ax.set_ylabel('Entropy (bit)')
-        plt.savefig(os.path.join("fig", "task-{}_entropy.png".format(task)))
+        plt.savefig(os.path.join("fig", "task-{}_entropy_upto150.png".format(task)))
         plt.show()
         plt.close()
     for task in tasks:
@@ -1191,6 +1201,22 @@ def view_50step_entropy(tdata, mice, tasks):
             plt.savefig(os.path.join("fig", "no{}_task-{}_entropy.png".format(mouse_id, task)))
             plt.show()
             plt.close()
+
+
+def export_previeous_entropy(tdata, mice, tasks):
+    # entropy
+    data = tdata.mice_task[
+        (tdata.mice_task.task.isin(tasks)) &
+        (tdata.mice_task.event_type.isin(["reward"]))]
+    ret_val = dict(zip(tasks, [pd.DataFrame() for _ in tasks]))
+    for task in tasks:
+        for mouse_id in mice:
+            df = data[(data.task == task) & (data.mouse_id == mouse_id)].tail(150).head(100).reset_index()
+            ret_val[task] = ret_val[task].append(
+                df["entropy_50"].to_frame().assign(mouse_id=mouse_id))
+        ret_val[task].to_csv(os.path.join("data", "allmice_{}_previous_100step_entropy.csv".format(task)))
+        ret_val[task].groupby(level=0).mean().entropy_50.to_csv(
+            os.path.join("data", "mean_{}_previous_100step_entropy.csv".format(task)),index=False)
 
 
 def test_base30_debug():
