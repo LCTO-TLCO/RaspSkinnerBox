@@ -153,7 +153,7 @@ def task(task_no: str, remained: int):
             # perseverative response measurement after reward & magazine nose poke detection
             while not is_hole_poked("dispenser_sensor"):
                 h = is_holes_poked(target_holes)
-                if not h:
+                if h:
                     export(task_no, session_no, correct_times, "nose poke after rew", h)
                     sleep(0.5)
                 sleep(0.01)
