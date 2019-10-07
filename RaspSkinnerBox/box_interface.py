@@ -3,10 +3,12 @@ from typing import Union
 from file_io import *
 from time import sleep
 from random import choice
-from app import DEBUG
+from app_1hole import DEBUG
 
 if not DEBUG:
     import RPi.GPIO as GPIO
+if DEBUG:
+    import msvcrt
 
 # output
 hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
@@ -115,7 +117,7 @@ def is_hole_poked(no: Union[int, str]):
         return True
 
 
-def is_holes_poked(holes: list):
+def is_holes_poked(holes: list, dev_poke=True):
     if not DEBUG:
         global hole_sensor
         #    print(str(hole_sensor))
@@ -128,7 +130,8 @@ def is_holes_poked(holes: list):
             if is_hole_poked(hole_sensor[hole]):
                 return hole
     elif DEBUG:
-        return choice(holes)
+        import msvcrt
+        return choice(holes) * msvcrt.kbhit()
 
     return False
 
