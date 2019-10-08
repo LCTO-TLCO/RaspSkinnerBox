@@ -117,7 +117,7 @@ def is_hole_poked(no: Union[int, str]):
         return True
 
 
-def is_holes_poked(holes: list, dev_poke=True):
+def is_holes_poked(holes: list, dev_poke=True, dev_stop=False):
     if not DEBUG:
         global hole_sensor
         #    print(str(hole_sensor))
@@ -131,7 +131,8 @@ def is_holes_poked(holes: list, dev_poke=True):
                 return hole
     elif DEBUG:
         import msvcrt
-        return choice(holes) * msvcrt.kbhit()
+        return choice(holes) * msvcrt.kbhit() if not dev_stop else choice(holes) * bool(
+            input("debug mode: type any key"))
 
     return False
 

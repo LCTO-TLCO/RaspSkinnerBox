@@ -16,7 +16,6 @@ from file_io import *
 
 # reset_time = datetime(today.year, today.month, today.day, 6, 0, 0) + timedelta(days=1)
 # ex_limit = {True: [1, 3], False: [50, 100]}
-ex_limit = {True: [1, 3, 3, 3, 3, 3, 3], False: [50, 50, 50, 50, 100, 300, 300]}  # updated
 limit = {True: 25, False: 1}
 is_time_limit_task = False
 current_task_name = ""
@@ -107,13 +106,16 @@ def task(task_no: str, remained: int):
             premature = False
             timelimit = False
             base_time = datetime.now()
+            cue_delay = current_task.get("cue_delay", 5) if isinstance(current_task.get("cue_delay", 5),
+                                                                       int) else choice(current_task["cue_delay"])
             while not (premature or timelimit):
-                if (datetime.now() - base_time).seconds >= current_task["cue_delay"]:
+                if (datetime.now() - base_time).seconds >= cue_delay:
                     timelimit = True
+                print(current_task["target_hole"])
                 if is_holes_poked(current_task["target_hole"], False):
                     premature = True
                     export(task_no, session_no, correct_times, "premature")
-                sleep(0.2)
+                sleep(0.05)
             if premature:
                 continue
 
@@ -136,6 +138,7 @@ def task(task_no: str, remained: int):
                 is_correct = True
                 export(task_no, session_no, correct_times, "nose poke", h)
                 export(task_no, session_no, correct_times, "reward", h)
+                correct_times += 1
             # time over
             if end_time:
                 if end_time < datetime.now():
@@ -175,21 +178,23 @@ def task(task_no: str, remained: int):
 
 def T0():
     print("T0 start")
-    global reward, current_task_name
+    global reward, current_task_name, feeds_today
     current_task_name = "T0"
     times = 0
     session_no = 0
     task_no = "T0"
+    current_task = ex_flow[task_no]
     hole_lamp_turn("dispenser_lamp", "on")
     export(task_no, session_no, times, "start")
     hole_lamps_turn("off")
-    for times in range(0, ex_limit[DEBUG][0]):
+    for times in range(0, int(current_task["upper_limit"] / limit[DEBUG])):
         #        if reset_time <= datetime.now():
         #            dispense_all(reward)
         hole_lamp_turn("dispenser_lamp", "on")
         while not is_hole_poked("dispenser_sensor"):
             sleep(0.01)
         dispense_pelet()
+        feeds_today += 1
         export(task_no, session_no, times, "reward")
         hole_lamp_turn("dispenser_lamp", "off")
         ITI([4, 8, 16, 32])
@@ -263,7 +268,7 @@ def unpayed_feeds_calculate():
 
 def overpayed_feeds_calculate():
     global feeds_today, current_task_name
-    return feeds_today >= ex_flow[current_task_name].get("feed_upper", 100)
+    return feeds_today >= ex_flow[current_task_name].get("feed_upper", 70)
 
 
 if __name__ == "__main__":
