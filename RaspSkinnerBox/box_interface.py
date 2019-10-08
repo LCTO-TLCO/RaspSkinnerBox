@@ -3,7 +3,7 @@ from typing import Union
 from file_io import *
 from time import sleep
 from random import choice
-from app_1hole import DEBUG
+from app import DEBUG
 
 if not DEBUG:
     import RPi.GPIO as GPIO
