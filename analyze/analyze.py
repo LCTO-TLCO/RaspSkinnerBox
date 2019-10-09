@@ -657,7 +657,8 @@ def view_averaged_prob_same_prev(tdata, mice, tasks):
         plt.xlabel('Trial')
         plt.title('{}'.format(task))
     # plt.savefig('fig/{}_prob_all4.png'.format(graph_ins.exportpath))
-    plt.savefig('fig/prob_all4.png')
+    plt.rcParams["font.size"] = 18
+    plt.savefig('fig/prob_all4_{}.png'.format(tasks[0]))
     plt.show()
 
 
@@ -823,7 +824,7 @@ def view_trial_per_time(tdata, mice=[18], task="All5_30"):
 
 def view_prob_same_choice_burst(tdata, mice, tasks, burst=1):
     """ fig4 """
-    tdata_ci = tdata.mice_task[tdata.mice_task.event_type.isin(["reward", "failure"])]
+    tdata_ci = tdata[tdata.event_type.isin(["reward", "failure"])]
     tdata_ci = tdata_ci[
         tdata_ci.burst.isin(tdata_ci.burst.unique()[tdata_ci.groupby("burst").burst.count() > burst])].reset_index()
 
@@ -882,28 +883,28 @@ def view_prob_same_choice_burst(tdata, mice, tasks, burst=1):
             xlen = c_same_avg.size
             # xax = np.array(range(1, xlen + 1))
             xax = np.array(range(forward_trace + 1))
-            ax[tasks.index(task)].plot(xax, c_same_avg, color="orange", label="rewarded start")
-            ax[tasks.index(task)].errorbar(xax, c_same_avg, yerr=c_same_var, capsize=2, fmt='o', markersize=1,
+            ax.plot(xax, c_same_avg, color="orange", label="rewarded start")
+            ax.errorbar(xax, c_same_avg, yerr=c_same_var, capsize=2, fmt='o', markersize=1,
                                            ecolor='black',
                                            markeredgecolor="black", color='w', lolims=True)
 
-            ax[tasks.index(task)].plot(xax, f_same_avg, color="blue", label="no-rewarded start")
-            ax[tasks.index(task)].errorbar(xax, f_same_avg, yerr=f_same_var, capsize=2, fmt='o', markersize=1,
+            ax.plot(xax, f_same_avg, color="blue", label="no-rewarded start")
+            ax.errorbar(xax, f_same_avg, yerr=f_same_var, capsize=2, fmt='o', markersize=1,
                                            ecolor='black',
                                            markeredgecolor="black", color='w', uplims=True)
 
             # plt.ion()
-            ax[tasks.index(task)].set_xticks(xax)
-            ax[tasks.index(task)].set_xlim(-0.5, xlen + 0.5)
-            ax[tasks.index(task)].set_ylim(0, 1.05)
+            ax.set_xticks(xax)
+            ax.set_xlim(-0.5, xlen + 0.5)
+            ax.set_ylim(0, 1.05)
             if tasks.index(task) == 0:
-                ax[tasks.index(task)].set_ylabel('P (same choice)')
+                ax.set_ylabel('P (same choice)')
             if tasks.index(task) == int(len(tasks) / 2):
-                lgnd = ax[tasks.index(task)].legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=2,
+                lgnd = ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=2,
                                                     mode="expand")
             if tasks.index(task) in [0, len(tasks) - 1]:
-                ax[tasks.index(task)].set_xlabel('Trial')
-            ax[tasks.index(task)].set_title('{}'.format(task))
+                ax.set_xlabel('Trial')
+            ax.set_title('{}'.format(task))
         # label
         # plt.legend()
         lgnd.get_frame().set_linewidth(0.0)
@@ -1136,40 +1137,57 @@ def export_all_entropy(tdata, mice, tasks=["All5_90", "All5_30", "All5_30_drug"]
 
 def view_converse_reaction_time(tdata, mice, tasks):
     tasks = tasks if isinstance(tasks, list) else [tasks]
+    tdata = tdata if isinstance(tdata, list) else [tdata]
     for task in tasks:
-        data = tdata.mice_delta[task][
-            (tdata.mice_delta[task].type.isin(["reaction_time"]))  # &
-            # (tdata.mice_delta.mouse_id == mice)
-        ].reaction_time_sec
-        fig = plt.figure(figsize=(15, 8), dpi=100)
-        data.plot.hist(bins=100)
-        plt.title("reaction time task:{}".format(task))
-        plt.xlabel("reaction time(s)")
-        plt.savefig(os.path.join("fig", "task-{}_reaction_time.png".format(task)))
-        plt.show()
+        for data in tdata:
+            data = data.mice_delta[task][
+                (data.mice_delta[task].type.isin(["reaction_time"]))  # &
+                # (tdata.mice_delta.mouse_id == mice)
+            ].reaction_time_sec
+            fig = plt.figure(figsize=(15, 8), dpi=100)
+            data.plot.hist(bins=100)
+            plt.title("reaction time task:{}".format(task))
+            plt.xlabel("reaction time(s)")
+            plt.rcParams["font.size"] = 18
+            plt.savefig(os.path.join("fig", "task-{}_reaction_time.png".format(task)))
+            plt.show()
 
 
 def view_converse_reward_latency(tdata, mice, tasks, bin=100):
     tasks = tasks if isinstance(tasks, list) else [tasks]
+    tdata = tdata if isinstance(tdata, list) else [tdata]
     for task in tasks:
-        data = tdata.mice_delta[task][
-            (tdata.mice_delta[task].type.isin(["reward_latency"]))  # &
-            # (tdata.mice_delta.mouse_id == mice)
-        ].noreward_duration_sec
-        fig = plt.figure(figsize=(15, 8), dpi=100)
-        data.plot.hist(bins=bin)
-        plt.xlabel("reward latency(s)")
-        plt.title("reward latency task:{}".format(task))
-        plt.savefig(os.path.join("fig", "task-{}_reward_latency.png".format(task)))
-        plt.show()
-        plt.close()
-        # under 100
-        data[data <= 300].plot.hist(bins=bin)
-        plt.xlabel("reward latency(s)")
-        plt.title("reward latency task:{}".format(task))
-        plt.savefig(os.path.join("fig", "task-{}_reward_latency_u300.png".format(task)))
-        plt.show()
-        plt.close()
+        for data in tdata:
+            data = data.mice_delta[task][
+                (data.mice_delta[task].type.isin(["reward_latency"]))  # &
+                # (tdata.mice_delta.mouse_id == mice)
+            ].noreward_duration_sec
+            fig = plt.figure(figsize=(15, 8), dpi=100)
+            data.plot.hist(bins=bin)
+            plt.xlabel("reward latency(s)")
+            plt.title("reward latency task:{}".format(task))
+            plt.rcParams["font.size"] = 18
+            plt.savefig(os.path.join("fig", "task-{}_reward_latency.png".format(task)))
+            plt.show()
+            plt.close()
+            # under 100
+            fig = plt.figure(figsize=(15, 8), dpi=100)
+            data[data <= 300].plot.hist(bins=bin)
+            plt.xlabel("reward latency(s)")
+            plt.title("reward latency task:{}".format(task))
+            plt.rcParams["font.size"] = 18
+            plt.savefig(os.path.join("fig", "task-{}_reward_latency_u300.png".format(task)))
+            plt.show()
+            plt.close()
+            # under 30000
+            fig = plt.figure(figsize=(15, 8), dpi=100)
+            data[data <= 10000].plot.hist(bins=bin)
+            plt.xlabel("reward latency(s)")
+            plt.title("reward latency task:{}".format(task))
+            plt.rcParams["font.size"] = 18
+            plt.savefig(os.path.join("fig", "task-{}_reward_latency_u10000.png".format(task)))
+            plt.show()
+            plt.close()
 
 
 def view_50step_entropy(tdata, mice, tasks):
@@ -1188,6 +1206,7 @@ def view_50step_entropy(tdata, mice, tasks):
         fig.suptitle('50step entropy task:{}'.format(task))
         ax.plot(df.index, df['entropy_50'])
         ax.set_ylabel('Entropy (bit)')
+        plt.rcParams["font.size"] = 18
         plt.savefig(os.path.join("fig", "task-{}_entropy_upto150.png".format(task)))
         plt.show()
         plt.close()
@@ -1216,7 +1235,7 @@ def export_previeous_entropy(tdata, mice, tasks):
                 df["entropy_50"].to_frame().assign(mouse_id=mouse_id))
         ret_val[task].to_csv(os.path.join("data", "allmice_{}_previous_100step_entropy.csv".format(task)))
         ret_val[task].groupby(level=0).mean().entropy_50.to_csv(
-            os.path.join("data", "mean_{}_previous_100step_entropy.csv".format(task)),index=False)
+            os.path.join("data", "mean_{}_previous_100step_entropy.csv".format(task)), index=False)
 
 
 def test_base30_debug():
