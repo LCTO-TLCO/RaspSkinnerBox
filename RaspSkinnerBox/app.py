@@ -111,7 +111,6 @@ def task(task_no: str, remained: int):
             while not (premature or timelimit):
                 if (datetime.now() - base_time).seconds >= cue_delay:
                     timelimit = True
-                print(current_task["target_hole"])
                 if is_holes_poked(current_task["target_hole"], False):
                     premature = True
                     export(task_no, session_no, correct_times, "premature")
@@ -126,8 +125,10 @@ def task(task_no: str, remained: int):
 
         # time
         end_time = False
+        houselamp_end_time = False
         if current_task["limited_hold"] >= 0:
-            end_time = datetime.now() + timedelta(seconds=current_task["limited_hold"])
+            end_time = datetime.now() + timedelta(seconds=max([current_task["limited_hold"],5]))
+            houselamp_end_time = datetime.now() + timedelta(seconds=current_task["limited_hold"])
         hole_poked = False
         is_correct = False
         time_over = False
@@ -144,6 +145,9 @@ def task(task_no: str, remained: int):
                 if end_time < datetime.now():
                     time_over = True
                     export(task_no, session_no, correct_times, "time over")
+            if houselamp_end_time:
+                if houselamp_end_time < datetime.now():
+                    hole_lamps_turn("off", target_holes)
             sleep(0.01)
         # end
         hole_lamps_turn("off", target_holes)
