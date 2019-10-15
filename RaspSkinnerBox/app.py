@@ -121,8 +121,12 @@ def task(task_no: str, remained: int):
 
         # time
         end_time = False
+        light_end = False
         if current_task["limited_hold"] >= 0:
-            end_time = datetime.now() + timedelta(seconds=current_task["limited_hold"])
+            end_time = datetime.now() + timedelta(seconds=current_task["limited_hold"]) if current_task[
+                                                                                               "limited_hold"] >= 5 else datetime.now() + timedelta(
+                seconds=5)
+            light_end = datetime.now() + timedelta(seconds=current_task["limited_hold"])
         hole_poked = False
         is_correct = False
         time_over = False
@@ -138,6 +142,10 @@ def task(task_no: str, remained: int):
                 else:
                     export(task_no, session_no, correct_times, "nose poke", h)
                     export(task_no, session_no, correct_times, "failure", h)
+            # light off
+            if not light_end == False:
+                if light_end < datetime.now():
+                    hole_lamps_turn("off")
             # time over
             if not end_time == False:
                 if end_time < datetime.now():
