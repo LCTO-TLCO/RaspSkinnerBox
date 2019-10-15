@@ -143,11 +143,11 @@ def task(task_no: str, remained: int):
                     export(task_no, session_no, correct_times, "nose poke", h)
                     export(task_no, session_no, correct_times, "failure", h)
             # light off
-            if not light_end == False:
+            if light_end is not False:
                 if light_end < datetime.now():
                     hole_lamps_turn("off")
             # time over
-            if not end_time == False:
+            if end_time is not False:
                 if end_time < datetime.now():
                     time_over = True
                     export(task_no, session_no, correct_times, "time over")
