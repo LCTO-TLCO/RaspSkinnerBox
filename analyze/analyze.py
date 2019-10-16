@@ -143,7 +143,8 @@ class task_data:
             list(map(remove_terminate, data.index[:-1]))
             data.reset_index(drop=True, inplace=True)
             data["session_id"] = list(map(rehash, data.index))
-            data = data[data.session_id.isin(data.session_id[data.event_type.isin(["reward", "failure", "time over"])])]
+            data = data[
+                data.session_id.isin(data.session_id[data.event_type.isin(["reward", "premature", "time over"])])]
             data.reset_index(drop=True, inplace=True)
             self.session_id = 0
             data["session_id"] = list(map(rehash, data.index))
@@ -152,7 +153,7 @@ class task_data:
 
         def add_timedelta():
             data = self.data
-            data = data[data.session_id.isin(data[data.event_type.isin(['reward', 'failure'])]["session_id"])]
+            data = data[data.session_id.isin(data[data.event_type.isin(['reward', 'premature'])]["session_id"])]
             deltas = {}
             for task in self.tasks:
                 def calculate(session):
@@ -161,7 +162,7 @@ class task_data:
                     current_target = data[data.session_id.isin([session])]
                     if bool(sum(current_target["event_type"].isin(["task called"]))):
                         task_call = current_target[current_target["event_type"] == "task called"]
-                        task_end = current_target[current_target["event_type"] == "nose poke"]
+                        task_end = current_target[current_target["event_type"].isin(["nose poke", "premature"])]
                         reaction_time = task_end.at[task_end.index[0], "timestamps"] - task_call.at[
                             task_call.index[0], "timestamps"]
                         # 連続無報酬期間
@@ -170,14 +171,15 @@ class task_data:
                                     data["timestamps"] < task_call.at[task_call.index[0], "timestamps"])].tail(1)
                         norewarded_time = task_call.at[task_call.index[0], "timestamps"] - previous_reward.at[
                             previous_reward.index[0], "timestamps"]
-                        correct_incorrect = "correct" if bool(
-                            sum(current_target["event_type"].isin(["reward"]))) else "incorrect"
+                        correct_premature = "correct" if bool(
+                            sum(current_target["event_type"].isin(["reward"]))) else "premature"
                         # df 追加
                         delta_df = delta_df.append(
-                            {'type': 'reaction_time',
+                            {'session_id': session,
+                             'type': 'reaction_time',
                              'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
                              'reaction_time_sec': pd.to_timedelta(reaction_time) / np.timedelta64(1, 's'),
-                             'correct_incorrect': correct_incorrect},
+                             'correct_premature': correct_premature},
                             ignore_index=True)
                     # reward latency
                     if bool(sum(current_target["event_type"].isin(["reward"]))) and bool(
@@ -192,7 +194,8 @@ class task_data:
                         norewarded_time = nose_poke.at[nose_poke.index[0], "timestamps"] - previous_reward.at[
                             previous_reward.index[0], "timestamps"]
                         delta_df = delta_df.append(
-                            {'type': 'reward_latency',
+                            {'session_id': session,
+                             'type': 'reward_latency',
                              'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
                              'reward_latency_sec': pd.to_timedelta(reward_latency) / np.timedelta64(1, 's')
                              }, ignore_index=True)
@@ -217,15 +220,15 @@ class task_data:
                     task_start_index.append(i)
 
             data["hole_correct"] = -1
-            data["hole_incorrect"] = -1
+            data["hole_premature"] = -1
             data["is_correct"] = -1
-            data["is_incorrect"] = -1
+            data["is_premature"] = -1
             data["is_omission"] = -1
             data["cumsum_correct"] = -1
-            data["cumsum_incorrect"] = -1
+            data["cumsum_premature"] = -1
             data["cumsum_omission"] = -1
             data["cumsum_correct_taskreset"] = -1
-            data["cumsum_incorrect_taskreset"] = -1
+            data["cumsum_premature_taskreset"] = -1
             data["cumsum_omission_taskreset"] = -1
             for hole_no in range(1, 9 + 1, 2):
                 data["is_hole{}".format(str(hole_no))] = -1
@@ -237,18 +240,18 @@ class task_data:
             # SettingWithCopyWarning
             data.loc[data["event_type"].isin(["reward"]), 'hole_correct'] = data["hole_no"]
             data.loc[~data["event_type"].isin(["reward"]), 'hole_correct'] = np.nan
-            data.loc[data["event_type"].isin(["failure"]), 'hole_incorrect'] = data["hole_no"]
-            data.loc[~data["event_type"].isin(["failure"]), 'hole_incorrect'] = np.nan
+            data.loc[data["event_type"].isin(["premature"]), 'hole_premature'] = data["hole_no"]
+            data.loc[~data["event_type"].isin(["premature"]), 'hole_premature'] = np.nan
 
             data.loc[data["event_type"].isin(["reward"]), 'is_correct'] = 1
             data.loc[~data["event_type"].isin(["reward"]), 'is_correct'] = np.nan
-            data.loc[data["event_type"].isin(["failure"]), 'is_incorrect'] = 1
-            data.loc[~data["event_type"].isin(["failure"]), 'is_incorrect'] = np.nan
+            data.loc[data["event_type"].isin(["premature"]), 'is_premature'] = 1
+            data.loc[~data["event_type"].isin(["premature"]), 'is_premature'] = np.nan
             data.loc[data["event_type"].isin(["time over"]), 'is_omission'] = 1
             data.loc[~data["event_type"].isin(["time over"]), 'is_omission'] = np.nan
 
             data["cumsum_correct"] = data["is_correct"].cumsum(axis=0)
-            data["cumsum_incorrect"] = data["is_incorrect"].cumsum(axis=0)
+            data["cumsum_premature"] = data["is_premature"].cumsum(axis=0)
             data["cumsum_omission"] = data["is_omission"].cumsum(axis=0)
 
             for hole_no in range(1, 9 + 1, 2):
@@ -276,10 +279,10 @@ class task_data:
             #                                                                pre_omission
             def add_cumsum():
                 data["cumsum_correct_taskreset"] = data["is_correct"].fillna(0)
-                data["cumsum_incorrect_taskreset"] = data["is_incorrect"].fillna(0)
+                data["cumsum_premature_taskreset"] = data["is_premature"].fillna(0)
                 data["cumsum_omission_taskreset"] = data["is_omission"].fillna(0)
                 data["cumsum_correct_taskreset"] = data.groupby("task")["cumsum_correct_taskreset"].cumsum()
-                data["cumsum_incorrect_taskreset"] = data.groupby("task")["cumsum_incorrect_taskreset"].cumsum()
+                data["cumsum_premature_taskreset"] = data.groupby("task")["cumsum_premature_taskreset"].cumsum()
                 data["cumsum_omission_taskreset"] = data.groupby("task")["cumsum_omission_taskreset"].cumsum()
 
             add_cumsum()
@@ -295,7 +298,7 @@ class task_data:
             return data
 
         def calc_entropy(section=150):
-            data = self.data[self.data.event_type.isin(['reward', 'failure'])]
+            data = self.data[self.data.event_type.isin(['reward', 'premature'])]
 
             def min_max(x, axis=None):
                 np.array(x)
@@ -320,7 +323,7 @@ class task_data:
             # endregion
 
         def count_task() -> dict:
-            dc = self.data[self.data["event_type"].isin(["reward", "failure"])]
+            dc = self.data[self.data["event_type"].isin(["reward", "premature"])]
             # dc = self.data[self.data["event_type"].isin(["reward", "failure", "time over"])]
 
             dc = dc.reset_index()
@@ -338,7 +341,7 @@ class task_data:
 
             for task in self.tasks:
                 after_c_starts_task[task] = dc[(dc["is_correct"] == 1) & (dc["task"] == task)]
-                after_f_starts_task[task] = dc[(dc["is_incorrect"] == 1) & (dc["task"] == task)]
+                after_f_starts_task[task] = dc[(dc["is_premature"] == 1) & (dc["task"] == task)]
                 after_c_all_task[task] = float(len(after_c_starts_task[task]))
                 after_f_all_task[task] = float(len(after_f_starts_task[task]))
 
@@ -394,8 +397,8 @@ class task_data:
                                                        ).fillna(0.0)}
                 data = self.data[
                     (self.data.task == task) & (
-                        self.data.event_type.isin(["reward", "failure", "time over"]))].reset_index(drop=True)
-                data_ci = data[data.event_type.isin(["reward", "failure"])].reset_index(drop=True)
+                        self.data.event_type.isin(["reward", "premature", "time over"]))].reset_index(drop=True)
+                data_ci = data[data.event_type.isin(["reward", "premature"])].reset_index(drop=True)
                 # search pattern
 
                 f_pattern_matching = lambda x: sum([
@@ -447,7 +450,7 @@ class task_data:
                     self.burst_id = self.burst_id + 1
                 return self.burst_id
 
-            data = self.data[self.data.event_type.isin(["reward", "failure", "time over"])]
+            data = self.data[self.data.event_type.isin(["reward", "premature", "time over"])]
             self.data = self.data.merge(
                 pd.DataFrame({"session_id": self.data.session_id.unique(),
                               "burst": list(map(calc_burst, self.data.session_id.unique()))}),
@@ -455,7 +458,7 @@ class task_data:
             print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
         def entropy_analyzing(section=10, bit=self.bit):
-            data = self.data[(self.data.event_type.isin(["reward", "failure"])) & (self.data.task.isin(self.tasks))]
+            data = self.data[(self.data.event_type.isin(["reward", "premature"])) & (self.data.task.isin(self.tasks))]
             entropy_df = data[
                 ["session_id", "task", "entropy_{}".format(section), "entropy_after_{}".format(section), "pattern"]]
             count_correct = lambda pat: np.nan if np.isnan(pat) else "{:b}".format(int(pat)).zfill(bit).count("1")
@@ -472,7 +475,7 @@ class task_data:
         self.data = add_hot_vector()
         self.data_ci = self.data
         self.data.loc[
-            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "hole_choice_entropy"] = calc_entropy()
+            self.data.index[self.data.event_type.isin(['reward', 'premature'])], "hole_choice_entropy"] = calc_entropy()
         # ent_section = 10
         # self.data.loc[
         #     self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_10"] = calc_entropy(ent_section)
@@ -483,12 +486,13 @@ class task_data:
         #     ([np.nan] * (ent_section + self.bit - 1))
         ent_section = 50
         self.data.loc[
-            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_{}".format(
+            self.data.index[self.data.event_type.isin(['reward', 'premature'])], "entropy_{}".format(
                 ent_section)] = calc_entropy(ent_section)
         self.data.loc[
-            self.data.index[self.data.event_type.isin(['reward', 'failure'])], "entropy_after_{}".format(ent_section)] = \
+            self.data.index[self.data.event_type.isin(['reward', 'premature'])], "entropy_after_{}".format(
+                ent_section)] = \
             self.data.loc[self.data.index[self.data.event_type.isin(
-                ['reward', 'failure'])], "entropy_{}".format(ent_section)][(ent_section + self.bit - 1):].tolist() + \
+                ['reward', 'premature'])], "entropy_{}".format(ent_section)][(ent_section + self.bit - 1):].tolist() + \
             ([np.nan] * (ent_section + self.bit - 1))
         self.delta = add_timedelta()
         self.data_not_omission = self.data[
@@ -496,16 +500,16 @@ class task_data:
 
         # action Probability
         after_c_all = float(len(self.data[self.data["is_correct"] == 1]))
-        after_f_all = float(len(self.data[self.data["is_incorrect"] == 1]))
+        after_f_all = float(len(self.data[self.data["is_premature"] == 1]))
         after_c_starts = self.data[self.data["is_correct"] == 1]
-        after_f_starts = self.data[self.data["is_incorrect"] == 1]
+        after_f_starts = self.data[self.data["is_premature"] == 1]
         after_c_all_task = {}
         after_f_all_task = {}
         after_c_starts_task = {}
         after_f_starts_task = {}
         for task in self.tasks:
             after_c_starts_task[task] = self.data[(self.data["is_correct"] == 1) & (self.data["task"] == task)]
-            after_f_starts_task[task] = self.data[(self.data["is_incorrect"] == 1) & (self.data["task"] == task)]
+            after_f_starts_task[task] = self.data[(self.data["is_premature"] == 1) & (self.data["task"] == task)]
             after_c_all_task[task] = float(len(after_c_starts_task[task]))
             after_f_all_task[task] = float(len(after_f_starts_task[task]))
 
@@ -605,6 +609,44 @@ class task_data:
         print("{} ; {} done".format(datetime.now(), sys._getframe().f_code.co_name))
 
 
+def export_onehole_csv(tdata, mice, tasks):
+    df = dict(zip(tasks, [pd.DataFrame() for _ in tasks]))
+    for task in tasks:
+        for mouse_id in mice:
+            data_timedelta = tdata.mice_delta[task][(tdata.mice_delta[task].mouse_id.isin([mouse_id]))]
+            data_action = tdata.mice_task[
+                (tdata.mice_task.task.isin([task])) & (tdata.mice_task.mouse_id.isin([mouse_id]))]
+            tmp_df = data_action.merge(
+                data_timedelta[(data_timedelta.type.isin(["reward_latency"]))][
+                    ["reward_latency_sec", "session_id"]],
+                on="session_id", how='left')
+            tmp_df = tmp_df.merge(
+                data_timedelta[(data_timedelta.type.isin(["reaction_time"]))].drop(
+                    columns="reward_latency_sec"),
+                on="session_id", how='left')
+            tmp_df.loc[
+                tmp_df.index[tmp_df.event_type.isin(["premature", "omission"])].to_list(), "reaction_time_sec"] = \
+                data_timedelta.reaction_time_sec[
+                    (data_timedelta.type.isin(["reaction_time"])) & (~data_timedelta.session_id.isin(
+                        (data_timedelta.session_id[
+                             data_timedelta.type.isin(["reward_latency"])].drop_duplicates().to_list())))].to_list()
+
+            # nosepoke after reward
+
+            def check_poke_after(correct_num):
+                data = data_action[data_action.cumsum_correct_taskreset.isin([correct_num])]
+                return bool(sum(data.event_type.isin(["nose poke after rew"])))
+
+            poke_after = list(map(check_poke_after, data_action[
+                data_action.event_type.isin(["reward", "premature", "omission"])].cumsum_correct_taskreset.unique()))
+            tmp_df = tmp_df.assign(poke_after=np.nan)[tmp_df.event_type.isin(["reward", "premature", "time over"])]
+            tmp_df.loc[tmp_df.index[tmp_df.event_type.isin(["reward"])], "poke_after"] = poke_after
+            tmp_df = tmp_df[
+                ["timestamps", "task", "event_type", "reaction_time_sec", "reward_latency_sec", "poke_after"]]
+            df[task] = pd.concat([df[task], tmp_df])
+        df[task].to_csv(os.path.join("data", "{}_task-{}_1holedata.csv".format("all", task)), index=False)
+
+
 def view_averaged_prob_same_prev(tdata, mice, tasks):
     m = []
     t = []
@@ -665,7 +707,7 @@ def view_averaged_prob_same_prev(tdata, mice, tasks):
 def view_summary(tdata, mice, tasks, x="session_id"):
     for mouse_id in mice:
         def plot(mdf, task="all"):
-            labels = ["incorrect", "correct", "omission"]
+            labels = ["premature", "correct", "omission"]
             df = mdf[mdf["event_type"].isin(["reward", "failure", "time over"])]
 
             # past time
@@ -885,13 +927,13 @@ def view_prob_same_choice_burst(tdata, mice, tasks, burst=1):
             xax = np.array(range(forward_trace + 1))
             ax.plot(xax, c_same_avg, color="orange", label="rewarded start")
             ax.errorbar(xax, c_same_avg, yerr=c_same_var, capsize=2, fmt='o', markersize=1,
-                                           ecolor='black',
-                                           markeredgecolor="black", color='w', lolims=True)
+                        ecolor='black',
+                        markeredgecolor="black", color='w', lolims=True)
 
             ax.plot(xax, f_same_avg, color="blue", label="no-rewarded start")
             ax.errorbar(xax, f_same_avg, yerr=f_same_var, capsize=2, fmt='o', markersize=1,
-                                           ecolor='black',
-                                           markeredgecolor="black", color='w', uplims=True)
+                        ecolor='black',
+                        markeredgecolor="black", color='w', uplims=True)
 
             # plt.ion()
             ax.set_xticks(xax)
@@ -901,7 +943,7 @@ def view_prob_same_choice_burst(tdata, mice, tasks, burst=1):
                 ax.set_ylabel('P (same choice)')
             if tasks.index(task) == int(len(tasks) / 2):
                 lgnd = ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=2,
-                                                    mode="expand")
+                                 mode="expand")
             if tasks.index(task) in [0, len(tasks) - 1]:
                 ax.set_xlabel('Trial')
             ax.set_title('{}'.format(task))
@@ -1342,7 +1384,7 @@ def test_base90():
 
 if __name__ == "__main__":
     print("{} ; started".format(datetime.now()))
-    tdata_38, _, _ = task_data([38], ["All5_90", "All5_30"], "./")
+    tdata = task_data([998], ["Base_ITI5"], "./")
     print("{} ; all done".format(datetime.now()))
 
 # tdata, mice, tasks = test_51317()
