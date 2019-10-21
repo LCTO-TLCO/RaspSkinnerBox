@@ -129,7 +129,9 @@
         "17:00",
         "06:00"
       ]
-    ]
+    ],
+    "feed_upper": 70,
+    "payoff": true
   },
   "Random_ITI357": {
     "task_call": true,
@@ -154,6 +156,8 @@
         "17:00",
         "06:00"
       ]
-    ]
+    ],
+    "feed_upper": 70,
+    "payoff": true
   }
 }

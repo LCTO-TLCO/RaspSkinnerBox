@@ -71,7 +71,7 @@ def task(task_no: str, remained: int):
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
         schedule.run_pending()
-        if overpayed_feeds_calculate() and ex_flow[current_task_name].get("feed_upper", False):
+        if overpayed_feeds_calculate():
             sleep(5)
             continue
         if is_time_limit_task:
@@ -85,11 +85,11 @@ def task(task_no: str, remained: int):
                 continue
 
         export(task_no, session_no, correct_times, "start")
+        hole_lamp_turn("house_lamp", "off")
+        hole_lamp_turn("dispenser_lamp", "on")
 
         # task call
         if current_task.get("task_call", False):
-            hole_lamp_turn("house_lamp", "on")
-            hole_lamp_turn("dispenser_lamp", "on")
             if not DEBUG:
                 while not is_hole_poked("dispenser_sensor"):
                     sleep(0.01)
@@ -98,9 +98,9 @@ def task(task_no: str, remained: int):
                 input()
             if current_task.get("time", False) and not any(list(map(is_execution_time, current_task.get("time", [])))):
                 continue
-            hole_lamp_turn("dispenser_lamp", "off")
             export(task_no, session_no, correct_times, "task called")
             hole_lamp_turn("house_lamp", "off")
+            hole_lamp_turn("dispenser_lamp", "off")
 
             # cue delay
             premature = False
@@ -118,6 +118,9 @@ def task(task_no: str, remained: int):
             if premature:
                 continue
 
+        hole_lamp_turn("house_lamp", "off")
+        hole_lamp_turn("dispenser_lamp", "off")
+
         # hole setup
         target_holes = current_task["target_hole"]
         hole_lamps_turn("on", target_holes)
@@ -127,7 +130,7 @@ def task(task_no: str, remained: int):
         end_time = False
         houselamp_end_time = False
         if current_task["limited_hold"] >= 0:
-            end_time = datetime.now() + timedelta(seconds=max([current_task["limited_hold"],5]))
+            end_time = datetime.now() + timedelta(seconds=max([current_task["limited_hold"], 5]))
             houselamp_end_time = datetime.now() + timedelta(seconds=current_task["limited_hold"])
         hole_poked = False
         is_correct = False
@@ -151,8 +154,9 @@ def task(task_no: str, remained: int):
             sleep(0.01)
         # end
         hole_lamps_turn("off", target_holes)
+        hole_lamp_turn("house_lamp", "off")
+        hole_lamp_turn("dispenser_lamp", "on")
         if is_correct:
-            hole_lamp_turn("dispenser_lamp", "on")
             dispense_pelet()
             feeds_today += 1
             sleep(1)
@@ -164,12 +168,10 @@ def task(task_no: str, remained: int):
                         sleep(0.01)
                 sleep(0.01)
             export(task_no, session_no, correct_times, "magazine nose poked")
-            hole_lamp_turn("dispenser_lamp", "off")
             actualITI = ITI(current_task["ITI_correct"])
             export(task_no, session_no, correct_times, "ITI", actualITI)
         else:
             #            sleep(int(20/limit[DEBUG]))
-            hole_lamp_turn("house_lamp", "off")
             actualITI = ITI(current_task["ITI_failure"])
             export(task_no, session_no, correct_times, "ITI", actualITI)
         session_no += 1
@@ -272,7 +274,7 @@ def unpayed_feeds_calculate():
 
 def overpayed_feeds_calculate():
     global feeds_today, current_task_name
-    return feeds_today >= ex_flow[current_task_name].get("feed_upper", 70)
+    return feeds_today >= ex_flow[current_task_name].get("feed_upper", False)
 
 
 if __name__ == "__main__":
