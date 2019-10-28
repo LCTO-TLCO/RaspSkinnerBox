@@ -23,6 +23,7 @@ exist_reserved_payoff = False
 feeds_today = 0
 current_reset_time = None
 reward = 70
+payoff_flag = False
 
 seed(32)
 
@@ -47,7 +48,7 @@ def run(terminate="", remained=-1):
 
 def task(task_no: str, remained: int):
     # initialize
-    global reward, is_time_limit_task, current_task_name, feeds_today, current_reset_time
+    global reward, is_time_limit_task, current_task_name, feeds_today, current_reset_time, payoff_flag
     current_task = ex_flow[task_no]
     print("{} start".format(task_no))
     hole_lamps_turn("off")
@@ -55,7 +56,7 @@ def task(task_no: str, remained: int):
     current_task_name = task_no
     current_reset_time = current_task.get("reset_time", "07:00")
     schedule.every().day.at(current_reset_time).do(unpayed_feeds_calculate)
-    feeds_today = int(calc_todays_feed(select_basetime(current_reset_time)) + timedelta(days=1))
+    feeds_today = int(calc_todays_feed(select_basetime(current_reset_time) + timedelta(days=1)))
     begin = 0
     is_time_limit_task = "time" in current_task
     if remained == -1:
@@ -68,14 +69,16 @@ def task(task_no: str, remained: int):
     reward = ex_flow[current_task_name].get("feed_upper", 70)
     # start time
     start_time = ex_flow[task_no].get("start_time", False)
-    start_time = select_basetime(start_time) + timedelta(days=1) if not len(ex_flow.keys()) == 1 else False
-
+    start_time = select_basetime(start_time) + timedelta(days=1) if not list(ex_flow.keys())[
+                                                                            0] == current_task_name else False
+    print("start at {}".format(start_time))
     # main
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
         schedule.run_pending()
-        if current_task.get("terminate_when_payoff", False):
+        if current_task.get("terminate_when_payoff", False) and payoff_flag:
             break
+        payoff_flag = False
         if overpayed_feeds_calculate():
             sleep(5)
             continue
@@ -100,7 +103,7 @@ def task(task_no: str, remained: int):
         if current_task.get("task_call", False):
             if not DEBUG:
                 while not is_hole_poked("dispenser_sensor"):
-                    if not not any(list(map(is_execution_time, current_task["time"]))):
+                    if not not any(list(map(is_execution_time, current_task.get("time", [])))):
                         continue
                     sleep(0.01)
             elif DEBUG:
@@ -255,7 +258,7 @@ def dispense_all(feed):
 
 def unpayed_feeds_calculate():
     """ 直前の精算時間までに吐き出した餌の数を計上し足りなければdispense_all """
-    global current_task_name, reward, exist_reserved_payoff, feeds_today, current_reset_time
+    global current_task_name, reward, exist_reserved_payoff, feeds_today, current_reset_time, payoff_flag
     if ex_flow[current_task_name].get("payoff", False):
         # リスケ
         if any(list(map(is_execution_time, ex_flow[current_task_name].get("time", [["00:00", "00:00"]])))):
@@ -276,7 +279,7 @@ def unpayed_feeds_calculate():
             print("reward = {}".format(reward)) if DEBUG else None
             dispense_all(min(1, reward))
             reward -= 1
-
+            payoff_flag = True
             sleep(1 * 60)
         reward = ex_flow[current_task_name].get("feed_upper", 70)
         feeds_today = 0
@@ -285,7 +288,7 @@ def unpayed_feeds_calculate():
 
 def overpayed_feeds_calculate():
     global feeds_today, current_task_name
-    return feeds_today >= ex_flow[current_task_name].get("feed_upper", False)
+    return feeds_today >= ex_flow[current_task_name].get("feed_upper", 70)
 
 
 if __name__ == "__main__":
