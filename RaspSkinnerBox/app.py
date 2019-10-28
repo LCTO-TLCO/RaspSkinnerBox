@@ -55,7 +55,7 @@ def task(task_no: str, remained: int):
     current_task_name = task_no
     current_reset_time = current_task.get("reset_time", "07:00")
     schedule.every().day.at(current_reset_time).do(unpayed_feeds_calculate)
-    feeds_today = int(calc_todays_feed(select_basetime(current_reset_time)))
+    feeds_today = int(calc_todays_feed(select_basetime(current_reset_time)) + timedelta(days=1))
     begin = 0
     is_time_limit_task = "time" in current_task
     if remained == -1:
@@ -92,6 +92,8 @@ def task(task_no: str, remained: int):
         if current_task.get("task_call", False):
             if not DEBUG:
                 while not is_hole_poked("dispenser_sensor"):
+                    if not not any(list(map(is_execution_time, current_task["time"]))):
+                        continue
                     sleep(0.01)
             elif DEBUG:
                 print("debug mode: type any key to call task")
