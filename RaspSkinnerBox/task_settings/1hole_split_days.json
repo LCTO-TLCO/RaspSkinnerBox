@@ -1,0 +1,272 @@
+{
+  "No TC": {
+    "task_call": false,
+    "limited_hold": -1,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "ITI_correct": [
+      4
+    ],
+    "ITI_failure": [
+      4
+    ],
+    "upper_limit": 50
+  },
+  "TC 30s": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": 5,
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50
+  },
+  "TC 20s": {
+    "task_call": true,
+    "limited_hold": 20,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": 5,
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50
+  },
+  "TC 10s": {
+    "task_call": true,
+    "limited_hold": 10,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": 5,
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50
+  },
+  "TC 5s": {
+    "task_call": true,
+    "limited_hold": 5,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": 5,
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50
+  },
+  "TC 2s": {
+    "task_call": true,
+    "limited_hold": 2,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": 5,
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50
+  },
+  "TC 1s": {
+    "task_call": true,
+    "limited_hold": 1,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": 5,
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70
+  },
+  "Base_ITI5_Day1": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": 5,
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "time": [
+      [
+        "17:00",
+        "06:00"
+      ]
+    ],
+    "feed_upper": 70,
+    "payoff": true,
+    "start_time": "17:00",
+    "terminate_when_payoff": true
+  },
+  "Base_ITI5_Day2": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": 5,
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "time": [
+      [
+        "17:00",
+        "06:00"
+      ]
+    ],
+    "feed_upper": 70,
+    "payoff": true,
+    "start_time": "17:00",
+    "terminate_when_payoff": true
+  },
+  "Base_ITI5_Day3": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": 5,
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "time": [
+      [
+        "17:00",
+        "06:00"
+      ]
+    ],
+    "feed_upper": 70,
+    "payoff": true,
+    "start_time": "17:00",
+    "terminate_when_payoff": true
+  },
+  "Random_ITI357_Day1": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": [
+      3,
+      5,
+      7
+    ],
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "time": [
+      [
+        "17:00",
+        "06:00"
+      ]
+    ],
+    "feed_upper": 70,
+    "payoff": true,
+    "start_time": "17:00",
+    "terminate_when_payoff": true
+  },
+  "Random_ITI357_Day2": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": [
+      3,
+      5,
+      7
+    ],
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "time": [
+      [
+        "17:00",
+        "06:00"
+      ]
+    ],
+    "feed_upper": 70,
+    "payoff": true,
+    "start_time": "17:00",
+    "terminate_when_payoff": true
+  },
+  "Random_ITI357_Day3": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": [
+      3,
+      5,
+      7
+    ],
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "time": [
+      [
+        "17:00",
+        "06:00"
+      ]
+    ],
+    "feed_upper": 70,
+    "payoff": true,
+    "start_time": "17:00",
+    "terminate_when_payoff": true
+  }
+}

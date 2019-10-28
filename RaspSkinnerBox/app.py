@@ -66,11 +66,16 @@ def task(task_no: str, remained: int):
         begin = 0
     correct_times = begin
     reward = ex_flow[current_task_name].get("feed_upper", 70)
+    # start time
+    start_time = ex_flow[task_no].get("start_time", False)
+    start_time = select_basetime(start_time) + timedelta(days=1) if not len(ex_flow.keys()) == 1 else False
 
     # main
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
         schedule.run_pending()
+        if current_task.get("terminate_when_payoff", False):
+            break
         if overpayed_feeds_calculate():
             sleep(5)
             continue
@@ -83,7 +88,10 @@ def task(task_no: str, remained: int):
                     print("pending ... not in {}".format(current_task["time"]))
                 sleep(5)
                 continue
-
+        if start_time:
+            if start_time > datetime.now():
+                sleep(5)
+                continue
         export(task_no, session_no, correct_times, "start")
         hole_lamp_turn("house_lamp", "off")
         hole_lamp_turn("dispenser_lamp", "on")
@@ -222,6 +230,7 @@ def is_execution_time(start_end: list):
 
 
 def select_basetime(times="07:00"):
+    # (past) last datetime
     hours = int(times.split(":")[0])
     minutes = int(times.split(":")[1])
 
