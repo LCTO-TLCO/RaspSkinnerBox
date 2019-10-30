@@ -69,10 +69,13 @@ def task(task_no: str, remained: int):
     reward = ex_flow[current_task_name].get("feed_upper", 70)
     # start time
     start_time = ex_flow[task_no].get("start_time", False)
-    start_time = select_basetime(start_time) + timedelta(days=1) if not list(ex_flow.keys())[
-                                                                            0] == current_task_name else select_basetime(
-        start_time)
+    # タスク指定開始時のみbasetimeを過去にする
+    start_time = (select_basetime(start_time) if list(ex_flow.keys())[
+                                                    0] == current_task_name else select_basetime(
+        start_time) + timedelta(days=1))if start_time else start_time
     print("start at {}".format(start_time))
+    payoff_flag = False
+
     # main
     while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
