@@ -107,14 +107,14 @@ def task(task_no: str, remained: int):
         if current_task.get("task_call", False):
             if not DEBUG:
                 while not is_hole_poked("dispenser_sensor"):
-                    if not any(list(map(is_execution_time, current_task.get("time", ["00:00", "23:59"])))):
+                    if not any(list(map(is_execution_time, current_task.get("time", [["00:00", "23:59"]])))):
                         break
                     sleep(0.01)
             elif DEBUG:
                 print("debug mode: type any key to call task")
                 input()
             if current_task.get("time", False) and not any(
-                    list(map(is_execution_time, current_task.get("time", ["00:00", "23:59"])))):
+                    list(map(is_execution_time, current_task.get("time", [["00:00", "23:59"]])))):
                 continue
             export(task_no, session_no, correct_times, "task called")
             hole_lamp_turn("house_lamp", "off")
