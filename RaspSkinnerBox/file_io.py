@@ -96,13 +96,16 @@ def daily_log(basetime):
                             parse_dates=[0])
     # this "basetime" means end point
     feed_dataframe = feeds[(basetime > feeds.date) & (feeds.date > basetime - timedelta(days=1))]
-    string = ','.join([str(datetime.now()),
-                       "reward",
-                       str(feed_dataframe.groupby("reason").sum().loc["reward", "feed_num"] if any(
-                           feed_dataframe.reason.isin(["reward"])) else 0),
-                       "payoff",
-                       str(feed_dataframe.groupby("reason").sum().loc["payoff", "feed_num"] if any(
-                           feed_dataframe.reason.isin(["payoff"])) else 0)])
+    feed_list = [str(datetime.now()),
+                 "reward",
+                 str(feed_dataframe.groupby("reason").sum().loc["reward", "feed_num"] if any(
+                     feed_dataframe.reason.isin(["reward"])) else 0)
+                 ]
+    payoff_dataframe = feeds[(basetime < feeds.date) & (feeds.date > basetime + timedelta(days=1))]
+    feed_list += ["payoff",
+                  str(payoff_dataframe.groupby("reason").sum().loc["payoff", "feed_num"] if any(
+                      payoff_dataframe.reason.isin(["payoff"])) else 0)]
+    string = ','.join(feed_list)
     with open(os.path.join('log', daily_logfile_path), 'a+') as daily_dispence_log_file:
         daily_dispence_log_file.write(string + "\n")
         daily_dispence_log_file.flush()

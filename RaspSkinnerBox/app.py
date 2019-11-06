@@ -81,14 +81,18 @@ def task(task_no: str, remained: int):
         # task start
         schedule.run_pending()
         if current_task.get("terminate_when_payoff", False) and payoff_flag:
+            print("terminate with payoff!".format())
             break
         payoff_flag = False
         if overpayed_feeds_calculate():
+            if all([datetime.now().minute % 5, datetime.now().second == 0]):
+                print("over payed ...")
             sleep(5)
             continue
         if is_time_limit_task:
             if (not any(list(map(is_execution_time, current_task["time"])))) and exist_reserved_payoff:
                 unpayed_feeds_calculate()
+                print("terminate payoff complete!")
                 continue
             elif not any(list(map(is_execution_time, current_task["time"]))):
                 if all([datetime.now().minute % 5, datetime.now().second == 0]):
@@ -98,6 +102,8 @@ def task(task_no: str, remained: int):
         if start_time:
             if start_time > datetime.now():
                 sleep(5)
+                if all([datetime.now().minute % 5, datetime.now().second == 0]):
+                    print("stopping ... not after {}".format(start_time))
                 continue
         export(task_no, session_no, correct_times, "start")
         hole_lamp_turn("house_lamp", "off")

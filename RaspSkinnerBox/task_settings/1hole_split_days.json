@@ -1,5 +1,5 @@
 {
-  "No TC": {
+  "NoTC": {
     "task_call": false,
     "limited_hold": -1,
     "target_hole": [
@@ -17,7 +17,7 @@
     ],
     "upper_limit": 50
   },
-  "TC 30s": {
+  "TC30s": {
     "task_call": true,
     "limited_hold": 30,
     "target_hole": [
@@ -32,7 +32,7 @@
     ],
     "upper_limit": 50
   },
-  "TC 20s": {
+  "TC20s": {
     "task_call": true,
     "limited_hold": 20,
     "target_hole": [
@@ -47,7 +47,7 @@
     ],
     "upper_limit": 50
   },
-  "TC 10s": {
+  "TC10s": {
     "task_call": true,
     "limited_hold": 10,
     "target_hole": [
@@ -62,7 +62,7 @@
     ],
     "upper_limit": 50
   },
-  "TC 5s": {
+  "TC5s": {
     "task_call": true,
     "limited_hold": 5,
     "target_hole": [
@@ -77,7 +77,7 @@
     ],
     "upper_limit": 50
   },
-  "TC 2s": {
+  "TC2s": {
     "task_call": true,
     "limited_hold": 2,
     "target_hole": [
@@ -92,7 +92,7 @@
     ],
     "upper_limit": 50
   },
-  "TC 1s": {
+  "TC1s": {
     "task_call": true,
     "limited_hold": 1,
     "target_hole": [
