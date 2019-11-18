@@ -6,8 +6,26 @@ from datetime import *
 from random import seed, choice
 import random
 from defines import mouse_no
+import logging
 
-DEBUG = False
+# logger setting
+logging.basicConfig(
+    level=logging.DEBUG,
+    filename='infos.txt',
+    filemode='a',
+    format='%(asctime)s %(levelname)s %(module)s %(funcName)s line%(lineno)d %(message)s')
+
+console = logging.StreamHandler()
+console.setLevel(getattr(logging, 'INFO'))
+console_formatter = logging.Formatter(
+    '%(asctime)s %(levelname)s %(module)s %(funcName)s line:%(lineno)d %(message)s')
+console.setFormatter(console_formatter)
+logger = logging.getLogger(__name__)
+logger.addHandler(console)
+logging.getLogger("box_interface").addHandler(console)
+
+# debug mode
+DEBUG = True
 
 from box_interface import *
 from file_io import *
@@ -16,7 +34,7 @@ from file_io import *
 
 # reset_time = datetime(today.year, today.month, today.day, 6, 0, 0) + timedelta(days=1)
 # ex_limit = {True: [1, 3], False: [50, 100]}
-limit = {True: 25, False: 1}
+limit = {True: 1, False: 1}
 is_time_limit_task = False
 current_task_name = ""
 exist_reserved_payoff = False
@@ -35,7 +53,7 @@ def run(terminate="", remained=-1):
     # unpayed_feeds_calculate()
     if terminate in list(ex_flow.keys()):
         i = list(ex_flow.keys()).index(terminate)
-        print("i=" + str(i))
+        logger.info("i=" + str(i))
         for delete_task in list(ex_flow.keys())[0:i]:
             del ex_flow[delete_task]
     for term in ex_flow:
@@ -50,7 +68,7 @@ def task(task_no: str, remained: int):
     # initialize
     global reward, is_time_limit_task, current_task_name, feeds_today, current_reset_time, payoff_flag
     current_task = ex_flow[task_no]
-    print("{} start".format(task_no))
+    logger.info("task {} start".format(task_no))
     hole_lamps_turn("off")
     session_no = last_session_id()
     current_task_name = task_no
@@ -70,40 +88,39 @@ def task(task_no: str, remained: int):
     # start time
     start_time = ex_flow[task_no].get("start_time", False)
     # タスク指定開始時のみbasetimeを過去にする
-    start_time = (select_basetime(start_time) if list(ex_flow.keys())[
-                                                    0] == current_task_name else select_basetime(
-        start_time) + timedelta(days=1))if start_time else start_time
-    print("start at {}".format(start_time))
+    if start_time:
+        start_time = (select_basetime(start_time) if list(ex_flow.keys())[0] == current_task_name else select_basetime(
+            start_time) + timedelta(days=1))
     payoff_flag = False
 
     # main
-    while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
+    while correct_times < int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
         schedule.run_pending()
         if current_task.get("terminate_when_payoff", False) and payoff_flag:
-            print("terminate with payoff!".format())
+            logger.info("terminate with payoff!".format())
             break
         payoff_flag = False
         if overpayed_feeds_calculate():
             if all([datetime.now().minute % 5, datetime.now().second == 0]):
-                print("over payed ...")
+                logger.info("over payed ...")
             sleep(5)
             continue
         if is_time_limit_task:
             if (not any(list(map(is_execution_time, current_task["time"])))) and exist_reserved_payoff:
                 unpayed_feeds_calculate()
-                print("terminate payoff complete!")
+                logger.info("terminate payoff complete!")
                 continue
             elif not any(list(map(is_execution_time, current_task["time"]))):
                 if all([datetime.now().minute % 5, datetime.now().second == 0]):
-                    print("pending ... not in {}".format(current_task["time"]))
+                    logger.info("pending ... not in {}".format(current_task["time"]))
                 sleep(5)
                 continue
         if start_time:
             if start_time > datetime.now():
                 sleep(5)
                 if all([datetime.now().minute % 5, datetime.now().second == 0]):
-                    print("stopping ... not after {}".format(start_time))
+                    logger.info("task stopping ... not after {}".format(start_time))
                 continue
         export(task_no, session_no, correct_times, "start")
         hole_lamp_turn("house_lamp", "off")
@@ -117,8 +134,7 @@ def task(task_no: str, remained: int):
                         break
                     sleep(0.01)
             elif DEBUG:
-                print("debug mode: type any key to call task")
-                input()
+                input("type ENTER key to call task")
             if current_task.get("time", False) and not any(
                     list(map(is_execution_time, current_task.get("time", [["00:00", "23:59"]])))):
                 continue
@@ -168,13 +184,14 @@ def task(task_no: str, remained: int):
                 export(task_no, session_no, correct_times, "reward", h)
                 correct_times += 1
             # time over
-            if end_time:
+            elif end_time:
                 if end_time < datetime.now():
                     time_over = True
                     export(task_no, session_no, correct_times, "time over")
-            if houselamp_end_time:
+            elif houselamp_end_time:
                 if houselamp_end_time < datetime.now():
                     hole_lamps_turn("off", target_holes)
+                    houselamp_end_time = False
             sleep(0.01)
         # end
         hole_lamps_turn("off", target_holes)
@@ -203,11 +220,11 @@ def task(task_no: str, remained: int):
     # task end
     # reward = reward - correct_times
     schedule.clear()
-    print("{} end".format(task_no))
+    logger.info("{} end".format(task_no))
 
 
 def T0():
-    print("T0 start")
+    logger.info("T0 start")
     global reward, current_task_name, feeds_today
     current_task_name = "T0"
     times = 0
@@ -230,7 +247,7 @@ def T0():
         ITI([4, 8, 16, 32])
         session_no += 1
     reward = reward - times
-    print("T0 end")
+    logger.info("T0 end")
 
 
 # time
@@ -287,7 +304,7 @@ def unpayed_feeds_calculate():
             #     daily_log(select_basetime(current_reset_time))
             #     exist_reserved_payoff = True
             #     return
-            print("reward = {}".format(reward)) if DEBUG else None
+            logger.info("reward = {}".format(reward)) if DEBUG else None
             dispense_all(min(1, reward))
             reward -= 1
             payoff_flag = True
@@ -299,7 +316,7 @@ def unpayed_feeds_calculate():
 
 def overpayed_feeds_calculate():
     global feeds_today, current_task_name
-    return feeds_today >= ex_flow[current_task_name].get("feed_upper", 70)
+    return feeds_today > ex_flow[current_task_name].get("feed_upper", 70)
 
 
 if __name__ == "__main__":
@@ -307,17 +324,20 @@ if __name__ == "__main__":
         terminate_task = ""
         remained = -1
         # if len(sys.argv) == 1:
-        #     print("usage: python app.py mouse_No terminate_task_No remained_number_of_tasks")
+        #     logger.info("usage: python app.py mouse_No terminate_task_No remained_number_of_tasks")
         #     sys.exit()
         # mouse_no = sys.argv[1]
         if len(sys.argv) >= 2:
             terminate_task = sys.argv[1]
         if len(sys.argv) == 3:
             remained = int(sys.argv[2])
-            print("remained{}".format(remained))
+            logger.info("remained{}".format(remained))
         run(terminate_task, remained)
+        print("hello")
     except Exception as e:
         # error log
+        print("error occured")
         error_log(e)
+        raise
     finally:
         shutdown()

@@ -4,12 +4,15 @@ from file_io import *
 from time import sleep
 from random import choice
 from app import DEBUG
+import logging
+
 
 if not DEBUG:
     import RPi.GPIO as GPIO
 if DEBUG:
     import msvcrt
 
+logger = logging.getLogger(__name__)
 # output
 hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
 # hole_lamp = {3: 18, 5: 23, 7: 24}
@@ -32,20 +35,20 @@ def setup():
             if type(outputs) == type({}):
                 for no in list(outputs.keys()):
                     GPIO.setup(outputs[no], GPIO.OUT, initial=GPIO.LOW)
-                    print("hole lamp [{\033[32m" + str(no) + "\033[0m}] = GPIO output [" + str(outputs[no]) + "]")
+                    logger.info("hole lamp [{\033[32m" + str(no) + "\033[0m}] = GPIO output [" + str(outputs[no]) + "]")
                 continue
             GPIO.setup(outputs, GPIO.OUT, initial=GPIO.LOW)
-            print("output [" + str(outputs) + "] = GPIO output [" + str(outputs) + "]")
+            logger.info("output [" + str(outputs) + "] = GPIO output [" + str(outputs) + "]")
         # input
         for inputs in [dispenser_sensor, hole_sensor]:
             if isinstance(inputs, dict):
                 for no in inputs.keys():
                     GPIO.setup(inputs[no], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-                    print("hole sensor [{\033[32m" + str(no) + "\033[0m}] = GPIO input [" + str(inputs[no]) + "]")
+                    logger.info("hole sensor [{\033[32m" + str(no) + "\033[0m}] = GPIO input [" + str(inputs[no]) + "]")
                     holes_event_setup(inputs[no])
                 continue
             GPIO.setup(inputs, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            print("input [" + str(inputs) + "] = GPIO input [" + str(inputs) + "]")
+            logger.info("input [" + str(inputs) + "] = GPIO input [" + str(inputs) + "]")
         set_dir()
 
 
@@ -69,7 +72,7 @@ def dispense_pelet(reason="reward"):
         GPIO.output(dispenser_magazine, GPIO.LOW)
         magagine_log(reason)
     else:
-        print("dispence for {}: {}".format(reason, 1))
+        logger.info("dispence for {}: {}".format(reason, 1))
 
 
 def hole_lamp_turn(target: Union[int, str], switch: str):
@@ -81,7 +84,7 @@ def hole_lamp_turn(target: Union[int, str], switch: str):
         elif "lamp" in target:
             exec("GPIO.output({},do[switch])".format(target))
     elif DEBUG:
-        print("debug: {} hole turn {}".format(target, switch))
+        logger.info("debug: {} hole turn {}".format(target, switch))
 
 
 def hole_lamps_turn(switch: str, target=[]):
@@ -112,8 +115,7 @@ def is_hole_poked(no: Union[int, str]):
                 return True
         return False
     elif DEBUG:
-        print("debug mode: type any key")
-        input()
+        input("debug mode: type ENTER key")
         return True
 
 
@@ -132,7 +134,7 @@ def is_holes_poked(holes: list, dev_poke=True, dev_stop=False):
     elif DEBUG:
         import msvcrt
         return choice(holes) * msvcrt.kbhit() if not dev_stop else choice(holes) * bool(
-            input("debug mode: type any key"))
+            input("debug mode: type ENTER key"))
 
     return False
 

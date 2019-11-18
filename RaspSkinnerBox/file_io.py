@@ -13,7 +13,8 @@ import pandas as pd
 logging.basicConfig(
     level=logging.DEBUG,
     filename='error.txt',
-    filemode='a')
+    filemode='a',
+    format='%(asctime)s %(levelname)-8s %(module)-18s %(funcName)-10s %(lineno)4s: %(message)s')
 
 # define
 logfile_path = 'no{}_action.csv'
@@ -165,12 +166,14 @@ def all_nosepoke_log(channel: int, event_type: str):
 
 
 def calc_todays_feed(basetime):
+    # basetime: it's upper
     if not os.path.exists(dispence_logfile_path):
         return 0
-    feeds_today = pd.read_csv(os.path.join("log", dispence_logfile_path), names=["date", "feed_num", "reason"],
-                              parse_dates=[0])
-    feeds_today = feeds_today[((basetime > feeds_today.date) & (feeds_today.date > basetime - timedelta(days=1)))]
-    return feeds_today.groupby("reason").sum().loc["reward", "feed_num"]
+    feeds_today_df = pd.read_csv(os.path.join("log", dispence_logfile_path), names=["date", "feed_num", "reason"],
+                                 parse_dates=[0])
+    feeds_today_df = feeds_today_df[
+        ((basetime > feeds_today_df.date) & (feeds_today_df.date > basetime - timedelta(days=1)))]
+    return feeds_today_df.groupby("reason").sum().loc["reward", "feed_num"]
 
 
 if __name__ == "__main__":
