@@ -1272,13 +1272,13 @@ def export_previeous_entropy(tdata, mice, tasks):
     ret_val = dict(zip(tasks, [pd.DataFrame() for _ in tasks]))
     for task in tasks:
         for mouse_id in mice:
-            df = data[(data.task == task) & (data.mouse_id == mouse_id)].tail(150).head(100).reset_index()
+            df = data[(data.task == task) & (data.mouse_id == mouse_id)].tail(100).head(50).reset_index()
             ret_val[task] = ret_val[task].append(
                 df["entropy_50"].to_frame().assign(mouse_id=mouse_id))
             data[(data.task == task) & (data.mouse_id == mouse_id)].head(100).reset_index().tail(50)[
                 "entropy_50"].to_frame().to_csv(
                 os.path.join("data", "pre_entropy_no{}_task_{}.csv".format(mouse_id, task)))
-            data[(data.task == task) & (data.mouse_id == mouse_id)].reset_index().tail(100)[
+            data[(data.task == task) & (data.mouse_id == mouse_id)].reset_index().tail(50)[
                 "entropy_50"].to_frame().to_csv(
                 os.path.join("data", "past_entropy_no{}_task_{}.csv".format(mouse_id, task)))
         ret_val[task].to_csv(os.path.join("data", "allmice_{}_previous_100step_entropy.csv".format(task)))
