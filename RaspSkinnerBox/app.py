@@ -25,7 +25,7 @@ logger.addHandler(console)
 logging.getLogger("box_interface").addHandler(console)
 
 # debug mode
-DEBUG = True
+DEBUG = False
 
 from box_interface import *
 from file_io import *
