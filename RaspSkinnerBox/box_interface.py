@@ -35,20 +35,20 @@ def setup():
             if type(outputs) == type({}):
                 for no in list(outputs.keys()):
                     GPIO.setup(outputs[no], GPIO.OUT, initial=GPIO.LOW)
-                    logger.info("hole lamp [{\033[32m" + str(no) + "\033[0m}] = GPIO output [" + str(outputs[no]) + "]")
+                    print("hole lamp [{\033[32m" + str(no) + "\033[0m}] = GPIO output [" + str(outputs[no]) + "]")
                 continue
             GPIO.setup(outputs, GPIO.OUT, initial=GPIO.LOW)
-            logger.info("output [" + str(outputs) + "] = GPIO output [" + str(outputs) + "]")
+            print("output [" + str(outputs) + "] = GPIO output [" + str(outputs) + "]")
         # input
         for inputs in [dispenser_sensor, hole_sensor]:
             if isinstance(inputs, dict):
                 for no in inputs.keys():
                     GPIO.setup(inputs[no], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-                    logger.info("hole sensor [{\033[32m" + str(no) + "\033[0m}] = GPIO input [" + str(inputs[no]) + "]")
+                    print("hole sensor [{\033[32m" + str(no) + "\033[0m}] = GPIO input [" + str(inputs[no]) + "]")
                     holes_event_setup(inputs[no])
                 continue
             GPIO.setup(inputs, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            logger.info("input [" + str(inputs) + "] = GPIO input [" + str(inputs) + "]")
+            print("input [" + str(inputs) + "] = GPIO input [" + str(inputs) + "]")
         set_dir()
 
 
@@ -72,7 +72,7 @@ def dispense_pelet(reason="reward"):
         GPIO.output(dispenser_magazine, GPIO.LOW)
         magagine_log(reason)
     else:
-        logger.info("dispence for {}: {}".format(reason, 1))
+        print("dispence for {}: {}".format(reason, 1))
 
 
 def hole_lamp_turn(target: Union[int, str], switch: str):
@@ -84,7 +84,7 @@ def hole_lamp_turn(target: Union[int, str], switch: str):
         elif "lamp" in target:
             exec("GPIO.output({},do[switch])".format(target))
     elif DEBUG:
-        logger.info("debug: {} hole turn {}".format(target, switch))
+        print("debug: {} hole turn {}".format(target, switch))
 
 
 def hole_lamps_turn(switch: str, target=[]):

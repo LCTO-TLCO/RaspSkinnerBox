@@ -281,7 +281,7 @@ def ITI(secs: list):
 def dispense_all(feed):
     for f in range(feed):
         dispense_pelet("payoff")
-        sleep(5)
+        sleep(60)
 
 
 def unpayed_feeds_calculate():
@@ -294,24 +294,25 @@ def unpayed_feeds_calculate():
             return
         exist_reserved_payoff = False
         # calc remain
-        reward = reward - calc_todays_feed(select_basetime(current_reset_time))
+        reward = reward - feeds_today
         # dispense
         #    sleep(5 * 60)
         if DEBUG:
             reward = 3
+        logger.info("payoff_num:{}".format(reward))
         while reward > 0:
             # if any(list(map(is_execution_time, ex_flow[current_task_name]["time"]))):
             #     daily_log(select_basetime(current_reset_time))
             #     exist_reserved_payoff = True
             #     return
-            logger.info("reward = {}".format(reward)) if DEBUG else None
+            print("payoff: reward = {}".format(reward)) if DEBUG else None
             dispense_all(min(1, reward))
             reward -= 1
             payoff_flag = True
-            sleep(1 * 60)
         reward = ex_flow[current_task_name].get("feed_upper", 70)
     feeds_today = 0
     daily_log(select_basetime(current_reset_time))
+    logger.info("unpayed_feeds_calculate complete")
 
 
 def overpayed_feeds_calculate():
