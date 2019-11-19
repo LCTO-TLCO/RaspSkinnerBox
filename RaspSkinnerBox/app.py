@@ -101,11 +101,6 @@ def task(task_no: str, remained: int):
             logger.info("terminate with payoff!".format())
             break
         payoff_flag = False
-        if overpayed_feeds_calculate():
-            if all([datetime.now().minute % 5, datetime.now().second == 0]):
-                logger.info("over payed ...")
-            sleep(5)
-            continue
         if is_time_limit_task:
             if (not any(list(map(is_execution_time, current_task["time"])))) and exist_reserved_payoff:
                 unpayed_feeds_calculate()
@@ -122,6 +117,11 @@ def task(task_no: str, remained: int):
                 if all([datetime.now().minute % 5, datetime.now().second == 0]):
                     logger.info("task stopping ... not after {}".format(start_time))
                 continue
+        if overpayed_feeds_calculate():
+            if all([datetime.now().minute % 5, datetime.now().second == 0]):
+                logger.info("over payed ...")
+            sleep(5)
+            continue
         export(task_no, session_no, correct_times, "start")
         hole_lamp_turn("house_lamp", "off")
         hole_lamp_turn("dispenser_lamp", "on")
@@ -310,7 +310,7 @@ def unpayed_feeds_calculate():
             payoff_flag = True
             sleep(1 * 60)
         reward = ex_flow[current_task_name].get("feed_upper", 70)
-        feeds_today = 0
+    feeds_today = 0
     daily_log(select_basetime(current_reset_time))
 
 
