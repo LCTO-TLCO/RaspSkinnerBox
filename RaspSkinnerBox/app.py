@@ -230,11 +230,11 @@ def T0():
     times = 0
     session_no = 0
     task_no = "T0"
-    current_task = ex_flow[task_no]
+    # current_task = ex_flow[task_no]
     hole_lamp_turn("dispenser_lamp", "on")
     export(task_no, session_no, times, "start")
     hole_lamps_turn("off")
-    for times in range(0, int(current_task["upper_limit"] / limit[DEBUG])):
+    for times in range(0, int(50 / limit[DEBUG])):
         #        if reset_time <= datetime.now():
         #            dispense_all(reward)
         hole_lamp_turn("dispenser_lamp", "on")
