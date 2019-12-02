@@ -25,7 +25,7 @@ logger.addHandler(console)
 logging.getLogger("box_interface").addHandler(console)
 
 # debug mode
-DEBUG = False
+DEBUG = True
 
 from box_interface import *
 from file_io import *
@@ -96,6 +96,12 @@ def task(task_no: str, remained: int):
     # main
     while correct_times < int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
+        if start_time:
+            if start_time > datetime.now():
+                sleep(5)
+                if all([datetime.now().minute % 5, datetime.now().second == 0]):
+                    logger.info("task stopping ... not after {}".format(start_time))
+                continue
         schedule.run_pending()
         if current_task.get("terminate_when_payoff", False) and payoff_flag:
             logger.info("terminate with payoff!".format())
@@ -110,12 +116,6 @@ def task(task_no: str, remained: int):
                 if all([datetime.now().minute % 5, datetime.now().second == 0]):
                     logger.info("pending ... not in {}".format(current_task["time"]))
                 sleep(5)
-                continue
-        if start_time:
-            if start_time > datetime.now():
-                sleep(5)
-                if all([datetime.now().minute % 5, datetime.now().second == 0]):
-                    logger.info("task stopping ... not after {}".format(start_time))
                 continue
         if overpayed_feeds_calculate():
             if all([datetime.now().minute % 5, datetime.now().second == 0]):
