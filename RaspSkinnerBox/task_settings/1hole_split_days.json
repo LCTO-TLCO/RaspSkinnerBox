@@ -15,11 +15,12 @@
     "ITI_failure": [
       4
     ],
-    "upper_limit": 50
+    "upper_limit": 40
   },
   "TC30s": {
     "task_call": true,
     "limited_hold": 30,
+    "limited_hold2": 30,
     "target_hole": [
       5
     ],
@@ -30,11 +31,18 @@
     "ITI_failure": [
       5
     ],
-    "upper_limit": 50
+    "time": [
+      [
+        "10:00",
+        "09:30"
+      ]
+    ],
+    "upper_limit": 40
   },
   "TC20s": {
     "task_call": true,
     "limited_hold": 20,
+    "limited_hold2": 20,
     "target_hole": [
       5
     ],
@@ -45,11 +53,18 @@
     "ITI_failure": [
       5
     ],
-    "upper_limit": 50
+    "time": [
+      [
+        "10:00",
+        "09:30"
+      ]
+    ],
+    "upper_limit": 40
   },
   "TC10s": {
     "task_call": true,
     "limited_hold": 10,
+    "limited_hold2": 10,
     "target_hole": [
       5
     ],
@@ -60,11 +75,18 @@
     "ITI_failure": [
       5
     ],
-    "upper_limit": 50
+    "time": [
+      [
+        "10:00",
+        "09:30"
+      ]
+    ],
+    "upper_limit": 40
   },
   "TC5s": {
     "task_call": true,
     "limited_hold": 5,
+    "limited_hold2": 5,
     "target_hole": [
       5
     ],
@@ -75,11 +97,18 @@
     "ITI_failure": [
       5
     ],
-    "upper_limit": 50
+    "time": [
+      [
+        "10:00",
+        "09:30"
+      ]
+    ],
+    "upper_limit": 40
   },
   "TC2s": {
     "task_call": true,
     "limited_hold": 2,
+    "limited_hold2": 5,
     "target_hole": [
       5
     ],
@@ -90,11 +119,18 @@
     "ITI_failure": [
       5
     ],
-    "upper_limit": 50
+    "time": [
+      [
+        "10:00",
+        "09:30"
+      ]
+    ],
+    "upper_limit": 40
   },
   "TC1s": {
     "task_call": true,
     "limited_hold": 1,
+    "limited_hold2": 5,
     "target_hole": [
       5
     ],
@@ -104,12 +140,19 @@
     ],
     "ITI_failure": [
       5
+    ],
+    "time": [
+      [
+        "10:00",
+        "09:30"
+      ]
     ],
     "upper_limit": 70
   },
   "Base_ITI5_Day1": {
     "task_call": true,
-    "limited_hold": 30,
+    "limited_hold": 1,
+    "limited_hold2": 5,
     "target_hole": [
       5
     ],
@@ -134,7 +177,8 @@
   },
   "Base_ITI5_Day2": {
     "task_call": true,
-    "limited_hold": 30,
+    "limited_hold": 1,
+    "limited_hold2": 5,
     "target_hole": [
       5
     ],
@@ -159,7 +203,8 @@
   },
   "Base_ITI5_Day3": {
     "task_call": true,
-    "limited_hold": 30,
+    "limited_hold": 1,
+    "limited_hold2": 5,
     "target_hole": [
       5
     ],
@@ -184,7 +229,8 @@
   },
   "Random_ITI357_Day1": {
     "task_call": true,
-    "limited_hold": 30,
+    "limited_hold": 1,
+    "limited_hold2": 5,
     "target_hole": [
       5
     ],
@@ -213,7 +259,8 @@
   },
   "Random_ITI357_Day2": {
     "task_call": true,
-    "limited_hold": 30,
+    "limited_hold": 1,
+    "limited_hold2": 5,
     "target_hole": [
       5
     ],
@@ -242,7 +289,68 @@
   },
   "Random_ITI357_Day3": {
     "task_call": true,
-    "limited_hold": 30,
+    "limited_hold": 1,
+    "limited_hold2": 5,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": [
+      3,
+      5,
+      7
+    ],
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "time": [
+      [
+        "17:00",
+        "06:00"
+      ]
+    ],
+    "feed_upper": 70,
+    "payoff": true,
+    "start_time": "17:00",
+    "terminate_when_payoff": true
+  },
+  "Random_ITI357_Day4": {
+    "task_call": true,
+    "limited_hold": 1,
+    "limited_hold2": 2,
+    "target_hole": [
+      5
+    ],
+    "cue_delay": [
+      3,
+      5,
+      7
+    ],
+    "ITI_correct": [
+      5
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "time": [
+      [
+        "17:00",
+        "06:00"
+      ]
+    ],
+    "feed_upper": 70,
+    "payoff": true,
+    "start_time": "17:00",
+    "terminate_when_payoff": true
+  },
+  "Random_ITI357_Day5": {
+    "task_call": true,
+    "limited_hold": 1,
+    "limited_hold2": 1,
     "target_hole": [
       5
     ],

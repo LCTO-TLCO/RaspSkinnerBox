@@ -25,7 +25,7 @@ logger.addHandler(console)
 logging.getLogger("box_interface").addHandler(console)
 
 # debug mode
-DEBUG = True
+DEBUG = False
 
 from box_interface import *
 from file_io import *
@@ -72,7 +72,7 @@ def task(task_no: str, remained: int):
     hole_lamps_turn("off")
     session_no = last_session_id()
     current_task_name = task_no
-    current_reset_time = current_task.get("reset_time", "07:00")
+    current_reset_time = current_task.get("reset_time", "07:00") if not DEBUG else "06:00"
     schedule.every().day.at(current_reset_time).do(unpayed_feeds_calculate)
     feeds_today = int(calc_todays_feed(select_basetime(current_reset_time) + timedelta(days=1)))
     begin = 0
@@ -92,7 +92,7 @@ def task(task_no: str, remained: int):
         start_time = (select_basetime(start_time) if list(ex_flow.keys())[0] == current_task_name else select_basetime(
             start_time) + timedelta(days=1))
     payoff_flag = False
-
+    feeds_today = 70 if DEBUG else feeds_today
     # main
     while correct_times < int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
@@ -170,7 +170,8 @@ def task(task_no: str, remained: int):
         end_time = False
         houselamp_end_time = False
         if current_task["limited_hold"] >= 0:
-            end_time = datetime.now() + timedelta(seconds=max([current_task["limited_hold"], 5]))
+            # バグを吐くようにする
+            end_time = datetime.now() + timedelta(seconds=current_task["limited_hold2"])
             houselamp_end_time = datetime.now() + timedelta(seconds=current_task["limited_hold"])
         hole_poked = False
         is_correct = False
@@ -308,7 +309,7 @@ def unpayed_feeds_calculate():
             print("payoff: reward = {}".format(reward)) if DEBUG else None
             dispense_all(min(1, reward))
             reward -= 1
-            payoff_flag = True
+        payoff_flag = True
         reward = ex_flow[current_task_name].get("feed_upper", 70)
     feeds_today = 0
     daily_log(select_basetime(current_reset_time))
