@@ -231,11 +231,11 @@ def T0():
     times = 0
     session_no = 0
     task_no = "T0"
-    # current_task = ex_flow[task_no]
+    current_task = ex_flow[task_no]
     hole_lamp_turn("dispenser_lamp", "on")
     export(task_no, session_no, times, "start")
     hole_lamps_turn("off")
-    for times in range(0, int(50 / limit[DEBUG])):
+    for times in range(0, int(current_task["upper_limit"] / limit[DEBUG])):
         #        if reset_time <= datetime.now():
         #            dispense_all(reward)
         hole_lamp_turn("dispenser_lamp", "on")
@@ -280,8 +280,10 @@ def ITI(secs: list):
 
 
 def dispense_all(feed):
+    global current_task_name
     for f in range(feed):
         dispense_pelet("payoff")
+        export(current_task_name, -1, -1, "payoff")
         sleep(60)
 
 
@@ -295,21 +297,21 @@ def unpayed_feeds_calculate():
             return
         exist_reserved_payoff = False
         # calc remain
-        reward = reward - feeds_today
+        remain_reward = reward - feeds_today
         # dispense
         #    sleep(5 * 60)
         if DEBUG:
             reward = 3
-        logger.info("payoff_num:{}".format(reward))
-        while reward > 0:
+        logger.info("payoff_num:{}".format(remain_reward))
+        while remain_reward > 0:
             # if any(list(map(is_execution_time, ex_flow[current_task_name]["time"]))):
             #     daily_log(select_basetime(current_reset_time))
             #     exist_reserved_payoff = True
             #     return
-            print("payoff: reward = {}".format(reward)) if DEBUG else None
-            dispense_all(min(1, reward))
-            reward -= 1
-        payoff_flag = True
+            print("payoff: reward = {}".format(remain_reward)) if DEBUG else None
+            dispense_all(min(1, remain_reward))
+            remain_reward -= 1
+            payoff_flag = True
         reward = ex_flow[current_task_name].get("feed_upper", 70)
     feeds_today = 0
     daily_log(select_basetime(current_reset_time))

@@ -62,6 +62,9 @@ def set_dir():
 def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0):
     logstring = ','.join([str(datetime.now()), task_no, str(session_no), str(times), event_type])
     with open(os.path.join("log", logfile_path), 'a+') as logfile:
+        head = ["task", "session", "rewardnum", "action", "cond"]
+        if os.path.getsize(logfile_path):
+            logfile.write(",".join(head) + "\n")
         logfile.write(",".join([logstring, str(hole_no)]) + "\n")
         logfile.flush()
     print(add_color(logstring, str(hole_no)))
