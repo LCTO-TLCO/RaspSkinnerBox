@@ -99,10 +99,11 @@ def task(task_no: str, remained: int):
         # task start
         if start_time:
             if start_time > datetime.now():
-                if is_holes_poked(current_task["target_hole"]) and not rising:
-                    export(task_no, session_no, correct_times, "nosepoke before task start time",
-                           is_holes_poked(current_task["target_hole"]))
-                    rising = True
+                if is_holes_poked(current_task["target_hole"]):
+                    if not rising:                  
+                        export(task_no, session_no, correct_times, "nosepoke before task start time",
+                               is_holes_poked(current_task["target_hole"]))
+                        rising = True
                 else:
                     rising = False
                 if all([datetime.now().minute % 5, datetime.now().second == 0]):
@@ -120,10 +121,11 @@ def task(task_no: str, remained: int):
                 logger.info("terminate payoff complete!")
                 continue
             elif not any(list(map(is_execution_time, current_task["time"]))):
-                if is_holes_poked(current_task["target_hole"]) and not rising:
-                    export(task_no, session_no, correct_times, "nosepoke not between execution time",
-                           is_holes_poked(current_task["target_hole"]))
-                    rising = True
+                if is_holes_poked(current_task["target_hole"]):
+                    if not rising:
+                        export(task_no, session_no, correct_times, "nosepoke not between execution time",
+                               is_holes_poked(current_task["target_hole"]))
+                        rising = True
                 else:
                     rising = False
                 if all([datetime.now().minute % 5, datetime.now().second == 0]):
@@ -131,10 +133,11 @@ def task(task_no: str, remained: int):
                 sleep(1)
                 continue
         if overpayed_feeds_calculate():
-            if is_holes_poked(current_task["target_hole"]) and not rising:
-                export(task_no, session_no, correct_times, "nosepoke when overpayed",
-                       is_holes_poked(current_task["target_hole"]))
-                rising = True
+            if is_holes_poked(current_task["target_hole"]):
+                if not rising:
+                    export(task_no, session_no, correct_times, "nosepoke when overpayed",
+                           is_holes_poked(current_task["target_hole"]))
+                    rising = True
             else:
                 rising = False
             if all([datetime.now().minute % 5, datetime.now().second == 0]):
@@ -150,10 +153,11 @@ def task(task_no: str, remained: int):
         if current_task.get("task_call", False):
             if not DEBUG:
                 while not is_hole_poked("dispenser_sensor"):
-                    if is_holes_poked(current_task["target_hole"]) and not rising:
-                        export(task_no, session_no, correct_times, "nosepoke before task call",
-                               is_holes_poked(current_task["target_hole"]))
-                        rising = True
+                    if is_holes_poked(current_task["target_hole"]):
+                        if not rising:
+                            export(task_no, session_no, correct_times, "nosepoke before task call",
+                                   is_holes_poked(current_task["target_hole"]))
+                            rising = True
                     else:
                         rising = False
                     if not any(list(map(is_execution_time, current_task.get("time", [["00:00", "23:59"]])))):
@@ -175,6 +179,7 @@ def task(task_no: str, remained: int):
             base_time = datetime.now()
             cue_delay = current_task.get("cue_delay", 5) if isinstance(current_task.get("cue_delay", 5),
                                                                        int) else choice(current_task["cue_delay"])
+            export(task_no, session_no, correct_times, "cue delay", cue_delay)
             while not (premature or timelimit):
                 if (datetime.now() - base_time).seconds >= cue_delay:
                     timelimit = True
@@ -184,9 +189,6 @@ def task(task_no: str, remained: int):
                 sleep(0.05)
             if premature:
                 continue
-
-        # hole_lamp_turn("house_lamp", "off")
-        hole_lamp_turn("dispenser_lamp", "off")
 
         # hole setup
         q_holes = [choice(current_task["target_hole"])]
@@ -228,8 +230,8 @@ def task(task_no: str, remained: int):
         # end
         hole_lamps_turn("off", target_holes)
         # hole_lamp_turn("house_lamp", "off")
-        hole_lamp_turn("dispenser_lamp", "on")
         if is_correct:
+            hole_lamp_turn("dispenser_lamp", "on")
             dispense_pelet()
             feeds_today += 1
             sleep(1)
@@ -241,6 +243,7 @@ def task(task_no: str, remained: int):
                         sleep(0.01)
                 sleep(0.01)
             export(task_no, session_no, correct_times, "magazine nose poked")
+            hole_lamp_turn("dispenser_lamp", "off")
             actualITI = ITI(current_task["ITI_correct"])
             export(task_no, session_no, correct_times, "ITI", actualITI)
         else:

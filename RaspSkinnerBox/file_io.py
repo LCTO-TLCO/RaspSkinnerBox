@@ -165,7 +165,7 @@ def all_nosepoke_log(channel: int, event_type: str):
     from box_interface import sensor_pins
     string = ','.join([str(datetime.now()), event_type, str(channel), str(sensor_pins.get(channel, ""))])
     with open(os.path.join("log", nosepoke_logfile_path), 'a+') as poke_log:
-        poke_log.write(",".join(["Timestamp", "event", "pin", "channelName"] + "\n")) if os.path.getsize(
+        poke_log.write(",".join(["Timestamp", "event", "pin", "channelName"] + ["\n"])) if os.path.getsize(
             os.path.join("log", nosepoke_logfile_path)) else None
         poke_log.write(string + "\n")
         poke_log.flush()
