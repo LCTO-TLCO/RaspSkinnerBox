@@ -6,7 +6,6 @@ from random import choice
 from app import DEBUG
 import logging
 
-
 if not DEBUG:
     import RPi.GPIO as GPIO
 if DEBUG:
@@ -24,6 +23,7 @@ house_lamp = 27
 dispenser_sensor = 5
 # hole_sensor = {3: 6, 5: 26, 7: 19}
 hole_sensor = {1: 12, 3: 6, 5: 26, 7: 19, 9: 16}
+sensor_pins = zip(list(hole_sensor.values()) + [dispenser_sensor], list(hole_sensor.keys()) + ["dispenser"])
 
 
 def setup():
