@@ -140,7 +140,7 @@ def select_preview_payoff():
 
 
 def last_session_id():
-    if not os.path.exists(logfile_path):
+    if not os.path.exists(os.path.join("log", logfile_path)):
         return 0
     else:
         with open(os.path.join("log", logfile_path), 'r') as logfile:

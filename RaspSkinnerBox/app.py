@@ -100,7 +100,7 @@ def task(task_no: str, remained: int):
         if start_time:
             if start_time > datetime.now():
                 if is_holes_poked(current_task["target_hole"]):
-                    if not rising:                  
+                    if not rising:
                         export(task_no, session_no, correct_times, "nosepoke before task start time",
                                is_holes_poked(current_task["target_hole"]))
                         rising = True
@@ -185,16 +185,18 @@ def task(task_no: str, remained: int):
                     timelimit = True
                 if is_holes_poked(current_task["target_hole"], False):
                     premature = True
-                    export(task_no, session_no, correct_times, "premature", is_holes_poked(current_task["target_hole"]))
+                    export(task_no, session_no, correct_times, "premature",
+                           is_holes_poked(current_task["target_hole"]))
                 sleep(0.05)
             if premature:
                 continue
 
         # hole setup
         q_holes = [choice(current_task["target_hole"])]
-
         target_holes = current_task["target_hole"]
-        hole_lamps_turn("on", q_holes)
+        stimule_holes = target_holes if current_task.get("stimulate_all", False) else q_holes
+
+        hole_lamps_turn("on", stimule_holes)
         export(task_no, session_no, correct_times, "pokelight on", q_holes[0])
 
         # time
@@ -208,7 +210,7 @@ def task(task_no: str, remained: int):
         is_correct = False
         time_over = False
         while not (hole_poked or time_over):
-            h = is_holes_poked(target_holes)
+            h = is_holes_poked(q_holes)
             # if h in q_holes:
             if h:
                 export(task_no, session_no, correct_times, "nose poke", h)
@@ -269,7 +271,7 @@ def T0():
     hole_lamp_turn("dispenser_lamp", "on")
     export(task_no, session_no, times, "start")
     hole_lamps_turn("off")
-    for times in range(0, int(current_task["upper_limit"] / limit[DEBUG])):
+    for times in range(0, int(current_task.get("upper_limit", 50) / limit[DEBUG])):
         #        if reset_time <= datetime.now():
         #            dispense_all(reward)
         hole_lamp_turn("dispenser_lamp", "on")
@@ -279,7 +281,7 @@ def T0():
         feeds_today += 1
         export(task_no, session_no, times, "reward")
         hole_lamp_turn("dispenser_lamp", "off")
-        ITI([4, 8, 16, 32])
+        ITI(current_task.get("ITI", [4, 8, 16, 32]))
         session_no += 1
     reward = reward - times
     logger.info("T0 end")
