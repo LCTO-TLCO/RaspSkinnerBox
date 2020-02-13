@@ -123,6 +123,7 @@ def file_setup(mouse_no):
     nosepoke_logfile_path = nosepoke_logfile_path.format(mouse_no.zfill(3))
     settings_logfile_path = settings_logfile_path.format(mouse_no.zfill(3))
     shutil.copyfile(setting_file, os.path.join('log', settings_logfile_path))
+    read_rehash_dataframe()
 
 
 def select_preview_payoff():
@@ -143,9 +144,63 @@ def last_session_id():
     if not os.path.exists(os.path.join("log", logfile_path)):
         return 0
     else:
-        with open(os.path.join("log", logfile_path), 'r') as logfile:
-            last = logfile.readlines()[-1]
-            return int(last[3]) + 1
+        logfile = pd.read_csv(os.path.join("log", logfile_path), parse_dates=[0])
+        last = logfile.tail(1)
+        return int(last.session.to_list()[0]) + 1
+
+
+def read_rehash_dataframe():
+    feeds = pd.read_csv(os.path.join("log", logfile_path), parse_dates=[0])
+
+    def rehash_session_id():
+        data = feeds
+        print("max_id_col:{}".format(len(data)))
+
+        def remove_terminate(index):
+            if data.at[index, "action"] == data.at[index + 1, "action"] and data.at[index, "action"] == "start":
+                data.drop(index, inplace=True)
+
+        def rehash(x_index):
+            id = data.at[data.index[max(x_index - 1, 0)], "session"]
+            if data.at[data.index[x_index], "task"] == "T0" or x_index == 0:
+                if (x_index == 0 or data.shift(1).at[data.index[x_index], "action"] == "start") and \
+                        len(data[:x_index][data.session == 0]) == 0:
+                    data.at[x_index, "session"] = 0
+                    return 0
+                data.at[x_index, "session"] = id + 1
+                return id + 1
+            if data.at[data.index[x_index], "action"] == "start":
+                data.at[x_index, "session"] = id + 1
+                return id + 1
+            else:
+                data.at[x_index, "session"] = id
+                return id
+
+        list(map(remove_terminate, data.index[:-1]))
+        data.reset_index(drop=True, inplace=True)
+        data["session"] = list(map(rehash, data.index))
+        data = data[data.session.isin(data.session[data.action.isin(["reward", "failure", "premature", "time over"])])]
+        data.reset_index(drop=True, inplace=True)
+        data["session"] = list(map(rehash, data.index))
+        return data
+
+    feeds = rehash_session_id()
+    feeds.to_csv(os.path.join("log", logfile_path), index=False)
+    # return feeds
+
+
+def select_last_session_log(session_duration=20):
+    if not os.path.exists(os.path.join("log", logfile_path)):
+        return 0
+    else:
+        feeds = pd.read_csv(os.path.join("log", logfile_path), parse_dates=[0])
+        feeds = feeds[
+            (feeds.session.isin(
+                list(range(max(last_session_id() - session_duration, 0), last_session_id() + 1)))) & (
+                feeds.action.isin(["reward", "failure", "premature", "time over"]))]
+        ret_val = {"accuracy": len(feeds[feeds.action.isin(["reward"])]) / max(len(feeds), 1),
+                   "omission": len(feeds[feeds.action.isin(["time over"])]) / max(len(feeds), 1)}
+        return ret_val
 
 
 def error_log(error):

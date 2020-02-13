@@ -1,0 +1,251 @@
+{
+  "T0": {
+    "upper_limit": 50
+  },
+  "T1": {
+    "task_call": false,
+    "limited_hold": -1,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50,
+    "reward_late": [],
+    "payoff": false,
+    "stimulate_all": true
+  },
+  "T2": {
+    "task_call": true,
+    "limited_hold": 60,
+    "limited_hold2": 60,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 100,
+    "reward_late": [],
+    "payoff": false
+  },
+  "Training16": {
+    "task_call": true,
+    "limited_hold": 16,
+    "limited_hold2": 16,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50,
+    "feed_upper": 50,
+    "payoff": true,
+    "criterion": {
+      "trials": 50,
+      "accuracy": 60,
+      "or": {
+        "omission": 30,
+        "correct": 200
+      }
+    },
+    "check_all": true,
+    "premature": true
+  },
+  "Training8": {
+    "task_call": true,
+    "limited_hold": 8,
+    "limited_hold2": 8,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50,
+    "feed_upper": 50,
+    "payoff": true,
+    "criterion": {
+      "trials": 50,
+      "accuracy": 60,
+      "or": {
+        "omission": 30,
+        "correct": 200
+      }
+    },
+    "check_all": true,
+    "premature": true
+  },
+  "Training4": {
+    "task_call": true,
+    "limited_hold": 4,
+    "limited_hold2": 4,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50,
+    "feed_upper": 50,
+    "payoff": true,
+    "criterion": {
+      "trials": 50,
+      "accuracy": 60,
+      "or": {
+        "omission": 30,
+        "correct": 200
+      }
+    },
+    "check_all": true,
+    "premature": true
+  },
+  "Training2": {
+    "task_call": true,
+    "limited_hold": 2,
+    "limited_hold2": 2,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50,
+    "feed_upper": 50,
+    "payoff": true,
+    "criterion": {
+      "trials": 50,
+      "accuracy": 60,
+      "or": {
+        "omission": 30,
+        "correct": 200
+      }
+    },
+    "check_all": true,
+    "premature": true
+  },
+  "Training1p5": {
+    "task_call": true,
+    "limited_hold": 1.5,
+    "limited_hold2": 1.5,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50,
+    "feed_upper": 50,
+    "payoff": true,
+    "criterion": {
+      "trials": 50,
+      "accuracy": 60,
+      "or": {
+        "omission": 30,
+        "correct": 200
+      }
+    },
+    "check_all": true,
+    "premature": true
+  },
+  "Training1": {
+    "task_call": true,
+    "limited_hold": 1,
+    "limited_hold2": 1,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 50,
+    "feed_upper": 50,
+    "payoff": true,
+    "criterion": {
+      "trials": 50,
+      "accuracy": 60,
+      "or": {
+        "omission": 30,
+        "correct": 200
+      }
+    },
+    "check_all": true,
+    "premature": true
+  }
+}
