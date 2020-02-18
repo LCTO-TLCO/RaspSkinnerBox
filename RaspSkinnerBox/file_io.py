@@ -105,7 +105,7 @@ def daily_log(basetime):
                  str(feed_dataframe.groupby("reason").sum().loc["reward", "feed_num"] if any(
                      feed_dataframe.reason.isin(["reward"])) else 0)
                  ]
-    payoff_dataframe = feeds[(datetime.now() < feeds.date) & (feeds.date > basetime + timedelta(days=1))]
+    payoff_dataframe = feeds[(datetime.now() < feeds.date) & (feeds.date > basetime - timedelta(days=1))]
     feed_list += ["payoff",
                   str(payoff_dataframe.groupby("reason").sum().loc["payoff", "feed_num"] if any(
                       payoff_dataframe.reason.isin(["payoff"])) else 0)]
@@ -140,16 +140,22 @@ def select_preview_payoff():
                                            10, 0, 0)
 
 
-def last_session_id():
+def last_session_id(task=""):
     if not os.path.exists(os.path.join("log", logfile_path)):
         return 0
     else:
         logfile = pd.read_csv(os.path.join("log", logfile_path), parse_dates=[0])
+        logfile = logfile[logfile.task.isin([task])]
         last = logfile.tail(1)
+        if last.empty:
+            return 0
         return int(last.session.to_list()[0]) + 1
 
 
 def read_rehash_dataframe():
+    if not os.path.exists(os.path.join("log", logfile_path)):
+        return
+
     feeds = pd.read_csv(os.path.join("log", logfile_path), parse_dates=[0])
 
     def rehash_session_id():
@@ -189,7 +195,7 @@ def read_rehash_dataframe():
     # return feeds
 
 
-def select_last_session_log(session_duration=20):
+def select_last_session_log(session_duration=20,task=""):
     if not os.path.exists(os.path.join("log", logfile_path)):
         return 0
     else:
@@ -197,7 +203,9 @@ def select_last_session_log(session_duration=20):
         feeds = feeds[
             (feeds.session.isin(
                 list(range(max(last_session_id() - session_duration, 0), last_session_id() + 1)))) & (
-                feeds.action.isin(["reward", "failure", "premature", "time over"]))]
+                feeds.action.isin(["reward", "failure", "premature", "time over"]) &
+		(feeds.task.isin([task]))
+		)]
         ret_val = {"accuracy": len(feeds[feeds.action.isin(["reward"])]) / max(len(feeds), 1),
                    "omission": len(feeds[feeds.action.isin(["time over"])]) / max(len(feeds), 1)}
         return ret_val

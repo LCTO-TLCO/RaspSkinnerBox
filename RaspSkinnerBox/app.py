@@ -50,7 +50,6 @@ def run(terminate="", remained=-1):
     global mouse_no
     setup()
     file_setup(mouse_no)
-    # unpayed_feeds_calculate()
     if terminate in list(ex_flow.keys()):
         i = list(ex_flow.keys()).index(terminate)
         logger.info("i=" + str(i))
@@ -70,7 +69,7 @@ def task(task_no: str, remained: int):
     current_task = ex_flow[task_no]
     logger.info("task {} start".format(task_no))
     hole_lamps_turn("off")
-    session_no = last_session_id()
+    session_no = last_session_id(current_task_name)
     current_task_name = task_no
     current_reset_time = current_task.get("reset_time", "07:00") if not DEBUG else "06:00"
     schedule.every().day.at(current_reset_time).do(unpayed_feeds_calculate)
@@ -97,7 +96,7 @@ def task(task_no: str, remained: int):
 
     def is_continue():
         if current_task.get("criterion", False):
-            session_data = select_last_session_log(min(session_no, 20))
+            session_data = select_last_session_log(min(session_no, 20),current_task_name)
             crit_and = []
             crit_or = []
             crit_and.append(current_task.get("trials", True) < session_no)
@@ -214,7 +213,7 @@ def task(task_no: str, remained: int):
         q_holes = [choice(current_task["target_hole"])]
         target_holes = current_task["target_hole"]
         stimule_holes = target_holes if current_task.get("stimulate_all", False) else q_holes
-        check_holes = [target_holes if current_task.get("check_all", False) else q_holes]
+        check_holes = target_holes if current_task.get("check_all", False) else q_holes
 
         hole_lamps_turn("on", stimule_holes)
         export(task_no, session_no, correct_times, "pokelight on", "/".join([str(x) for x in stimule_holes]))
@@ -366,7 +365,8 @@ def unpayed_feeds_calculate():
             #     exist_reserved_payoff = True
             #     return
             print("payoff: reward = {}".format(remain_reward)) if DEBUG else None
-            dispense_all(min(1, remain_reward))
+            export(current_task_name, -1, -1, "payoff")
+            dispense_all(1)
             remain_reward -= 1
             payoff_flag = True
         reward = ex_flow[current_task_name].get("feed_upper", 70)
