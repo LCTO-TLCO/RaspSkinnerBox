@@ -96,7 +96,7 @@ def task(task_no: str, remained: int):
 
     def is_continue():
         if current_task.get("criterion", False):
-            session_data = select_last_session_log(min(session_no, 20),current_task_name)
+            session_data = select_last_session_log(min(session_no, 20), current_task_name)
             crit_and = []
             crit_or = []
             crit_and.append(current_task.get("trials", True) < session_no)
@@ -331,7 +331,10 @@ def ITI(secs: list):
     if DEBUG:
         secs = [2]  # changed
     selected = choice(secs) if isinstance(secs, list) else secs
-    sleep(selected)
+    start_time = datetime.now()
+    end_time = datetime.now() + timedelta(seconds=selected)
+    while start_time >= end_time:
+        sleep(0.1)
     return selected
 
 

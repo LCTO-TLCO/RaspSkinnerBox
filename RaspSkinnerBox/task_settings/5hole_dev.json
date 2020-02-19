@@ -47,7 +47,7 @@
   "Training16": {
     "task_call": true,
     "limited_hold": 16,
-    "limited_hold2": 16,
+    "limited_hold2": 20,
     "target_hole": [
       1,
       3,
@@ -81,7 +81,7 @@
   "Training8": {
     "task_call": true,
     "limited_hold": 8,
-    "limited_hold2": 8,
+    "limited_hold2": 12,
     "target_hole": [
       1,
       3,
@@ -115,7 +115,7 @@
   "Training4": {
     "task_call": true,
     "limited_hold": 4,
-    "limited_hold2": 4,
+    "limited_hold2": 8,
     "target_hole": [
       1,
       3,
@@ -149,7 +149,7 @@
   "Training2": {
     "task_call": true,
     "limited_hold": 2,
-    "limited_hold2": 2,
+    "limited_hold2": 6,
     "target_hole": [
       1,
       3,
@@ -183,7 +183,7 @@
   "Training1p5": {
     "task_call": true,
     "limited_hold": 1.5,
-    "limited_hold2": 1.5,
+    "limited_hold2": 5.5,
     "target_hole": [
       1,
       3,
@@ -217,7 +217,7 @@
   "Training1": {
     "task_call": true,
     "limited_hold": 1,
-    "limited_hold2": 1,
+    "limited_hold2": 5,
     "target_hole": [
       1,
       3,

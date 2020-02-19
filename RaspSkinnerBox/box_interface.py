@@ -32,7 +32,7 @@ def setup():
         GPIO.setmode(GPIO.BCM)
         # output
         for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp, house_lamp]:
-            if type(outputs) == type({}):
+            if isinstance(outputs, dict):
                 for no in list(outputs.keys()):
                     GPIO.setup(outputs[no], GPIO.OUT, initial=GPIO.LOW)
                     print("hole lamp [{\033[32m" + str(no) + "\033[0m}] = GPIO output [" + str(outputs[no]) + "]")
@@ -40,15 +40,13 @@ def setup():
             GPIO.setup(outputs, GPIO.OUT, initial=GPIO.LOW)
             print("output [" + str(outputs) + "] = GPIO output [" + str(outputs) + "]")
         # input
-        for inputs in [dispenser_sensor, hole_sensor]:
-            if isinstance(inputs, dict):
-                for no in inputs.keys():
-                    GPIO.setup(inputs[no], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-                    print("hole sensor [{\033[32m" + str(no) + "\033[0m}] = GPIO input [" + str(inputs[no]) + "]")
-                    holes_event_setup(inputs[no])
-                continue
-            GPIO.setup(inputs, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            print("input [" + str(inputs) + "] = GPIO input [" + str(inputs) + "]")
+        for pin, name in sensor_pins:
+            GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+            holes_event_setup(pin)
+            if isinstance(name, int):
+                print("hole sensor [{\033[32m" + str(name) + "\033[0m}] = GPIO input [" + str(pin) + "]")
+            elif isinstance(name, str):
+                print("input [" + str(pin) + "] = GPIO input [" + str(pin) + "]")
         set_dir()
 
 
@@ -56,7 +54,7 @@ def shutdown():
     global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
     if not DEBUG:
         for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp]:
-            if type(outputs) == type({}):
+            if isinstance(outputs, dict):
                 for no in outputs.keys():
                     GPIO.output(outputs[no], GPIO.LOW)
                 continue
@@ -135,7 +133,6 @@ def is_holes_poked(holes: list, dev_poke=True, dev_stop=False):
         import msvcrt
         return choice(holes) * msvcrt.kbhit() if not dev_stop else choice(holes) * bool(
             input("debug mode: type ENTER key"))
-
     return False
 
 

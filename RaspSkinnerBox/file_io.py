@@ -27,7 +27,7 @@ ex_flow = OrderedDict({})
 ex_flow.update(json.load(open(setting_file, "r"), object_pairs_hook=OrderedDict))
 
 
-class pycolor:
+class Pycolor:
     RED = '\033[31m'
     GREEN = '\033[32m'
     YELLOW = '\033[33m'
@@ -40,16 +40,16 @@ class pycolor:
     UNDERLINE = '\033[4m'
 
 
-colors = {'time over': pycolor.PURPLE,
-          'reward': pycolor.GREEN,
-          'failure': pycolor.YELLOW,
-          'task called': pycolor.WHITE,
+colors = {'time over': Pycolor.PURPLE,
+          'reward': Pycolor.GREEN,
+          'failure': Pycolor.YELLOW,
+          'task called': Pycolor.WHITE,
           }
-integers = {'1': pycolor.CYAN,
-            '3': pycolor.GREEN,
-            '5': pycolor.RED,
-            '7': pycolor.YELLOW,
-            '9': pycolor.BLUE}
+integers = {'1': Pycolor.CYAN,
+            '3': Pycolor.GREEN,
+            '5': Pycolor.RED,
+            '7': Pycolor.YELLOW,
+            '9': Pycolor.BLUE}
 
 
 def set_dir():
@@ -73,11 +73,11 @@ def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0
 def add_color(string: str, integer: str):
     global colors, integers
     for keyword, new_color in colors.items():
-        string = string.replace(keyword, "".join([new_color, keyword, pycolor.END]))
+        string = string.replace(keyword, "".join([new_color, keyword, Pycolor.END]))
     retval = ""
     for st in integer:
         if st in integers.keys():
-            retval += st.replace(st, "".join([integers[st], st, pycolor.END]))
+            retval += st.replace(st, "".join([integers[st], st, Pycolor.END]))
         else:
             retval += st
 
@@ -126,18 +126,18 @@ def file_setup(mouse_no):
     read_rehash_dataframe()
 
 
-def select_preview_payoff():
-    # read csv
-    with open(os.path.join("log", dispence_logfile_path), 'a+') as dispense_log_file:
-        data = csv.reader(dispense_log_file)
-        # select cols
-        preview_payoff_time = -1
-        if datetime.now().hour < 10:
-            preview_payoff_time = datetime(datetime.today().year, datetime.today().month, datetime.today().day - 1,
-                                           10, 0, 0)
-        else:
-            preview_payoff_time = datetime(datetime.today().year, datetime.today().month, datetime.today().day,
-                                           10, 0, 0)
+# def select_preview_payoff():
+#     # read csv
+#     with open(os.path.join("log", dispence_logfile_path), 'a+') as dispense_log_file:
+#         data = csv.reader(dispense_log_file)
+#         # select cols
+#         preview_payoff_time = -1
+#         if datetime.now().hour < 10:
+#             preview_payoff_time = datetime(datetime.today().year, datetime.today().month, datetime.today().day - 1,
+#                                            10, 0, 0)
+#         else:
+#             preview_payoff_time = datetime(datetime.today().year, datetime.today().month, datetime.today().day,
+#                                            10, 0, 0)
 
 
 def last_session_id(task=""):
@@ -195,7 +195,7 @@ def read_rehash_dataframe():
     # return feeds
 
 
-def select_last_session_log(session_duration=20,task=""):
+def select_last_session_log(session_duration=20, task=""):
     if not os.path.exists(os.path.join("log", logfile_path)):
         return 0
     else:
@@ -203,9 +203,9 @@ def select_last_session_log(session_duration=20,task=""):
         feeds = feeds[
             (feeds.session.isin(
                 list(range(max(last_session_id() - session_duration, 0), last_session_id() + 1)))) & (
-                feeds.action.isin(["reward", "failure", "premature", "time over"]) &
-		(feeds.task.isin([task]))
-		)]
+                    feeds.action.isin(["reward", "failure", "premature", "time over"]) &
+                    (feeds.task.isin([task]))
+            )]
         ret_val = {"accuracy": len(feeds[feeds.action.isin(["reward"])]) / max(len(feeds), 1),
                    "omission": len(feeds[feeds.action.isin(["time over"])]) / max(len(feeds), 1)}
         return ret_val
@@ -228,7 +228,7 @@ def all_nosepoke_log(channel: int, event_type: str):
     from box_interface import sensor_pins
     string = ','.join([str(datetime.now()), event_type, str(channel), str(sensor_pins.get(channel, ""))])
     with open(os.path.join("log", nosepoke_logfile_path), 'a+') as poke_log:
-        poke_log.write(",".join(["Timestamp", "event", "pin", "channelName"] + ["\n"])) if os.path.getsize(
+        poke_log.write(",".join(["Timestamp", "event", "pin", "channelName"] + ["\n"])) if not os.path.getsize(
             os.path.join("log", nosepoke_logfile_path)) else None
         poke_log.write(string + "\n")
         poke_log.flush()
