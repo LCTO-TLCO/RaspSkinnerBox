@@ -74,15 +74,17 @@ def task(task_no: str, remained: int):
     current_reset_time = current_task.get("reset_time", "07:00") if not DEBUG else "06:00"
     schedule.every().day.at(current_reset_time).do(unpayed_feeds_calculate)
     feeds_today = int(calc_todays_feed(select_basetime(current_reset_time) + timedelta(days=1)))
-    begin = 0
+    correct_times = 0
     is_time_limit_task = "time" in current_task
     if remained == -1:
-        begin = 0
+        correct_times = 0
     else:
-        begin = int(current_task["upper_limit"] / limit[DEBUG]) - remained
-    if begin < 0:
-        begin = 0
-    correct_times = begin
+        correct_times = int(current_task.get("upper_limit",0) / limit[DEBUG]) - remained
+    if "criterion" in current_task:
+        correct_times = remained
+    if correct_times < 0:
+        correct_times = 0
+
     reward = ex_flow[current_task_name].get("feed_upper", 70)
     # start time
     start_time = ex_flow[task_no].get("start_time", False)
@@ -104,11 +106,13 @@ def task(task_no: str, remained: int):
             crit_or.append(
                 current_task.get("or", {"omission": False}).get("omission", False) > session_data["omission"])
             crit_or.append(current_task.get("or", {"correct": False}).get("correct", False) <= correct_times)
-            print("trials:{0}, accuracy:{1:.1f}%, omission:{2:.1f}%, correct num:{3}".format(
-                session_no,
-                session_data["accuracy"] * 100,
-                session_data["omission"] * 100,
-                correct_times))
+            if not (overpayed_feeds_calculate() or start_time or not any(
+                    list(map(is_execution_time, current_task.get("time", [["00:00", "23:59"]]))))):
+                print("trials:{0}, accuracy:{1:.1f}%, omission:{2:.1f}%, correct num:{3}".format(
+                    session_no,
+                    session_data["accuracy"] * 100,
+                    session_data["omission"] * 100,
+                    correct_times))
             return not all([all(crit_and), any([any(crit_or), not bool(current_task.get("or", False))])])
         return correct_times < int(current_task["upper_limit"] / limit[DEBUG])
 
@@ -266,11 +270,11 @@ def task(task_no: str, remained: int):
                 sleep(0.01)
             export(task_no, session_no, correct_times, "magazine nose poked")
             hole_lamp_turn("dispenser_lamp", "off")
-            actualITI = ITI(current_task["ITI_correct"])
+            actualITI = ITI(current_task["ITI_correct"], correct_times=correct_times)
             export(task_no, session_no, correct_times, "ITI", actualITI)
         else:
             #            sleep(int(20/limit[DEBUG]))
-            actualITI = ITI(current_task["ITI_failure"])
+            actualITI = ITI(current_task["ITI_failure"], correct_times=correct_times)
             export(task_no, session_no, correct_times, "ITI", actualITI)
         session_no += 1
 
@@ -301,7 +305,7 @@ def T0():
         feeds_today += 1
         export(task_no, session_no, times, "reward")
         hole_lamp_turn("dispenser_lamp", "off")
-        ITI(current_task.get("ITI", [4, 8, 16, 32]))
+        ITI(current_task.get("ITI", [4, 8, 16, 32]), correct_times=times)
         session_no += 1
     reward = reward - times
     logger.info("T0 end")
@@ -327,13 +331,23 @@ def select_basetime(times="07:00"):
     return datetime.combine(today, time(hours, minutes))
 
 
-def ITI(secs: list):
+def ITI(secs: list, correct_times=-1):
+    global current_task_name, ex_flow
     if DEBUG:
         secs = [2]  # changed
     selected = choice(secs) if isinstance(secs, list) else secs
-    start_time = datetime.now()
+    current_task = ex_flow[current_task_name]
     end_time = datetime.now() + timedelta(seconds=selected)
-    while start_time >= end_time:
+    rising = False
+    while datetime.now() <= end_time:
+        if is_holes_poked(current_task["target_hole"]):
+            if not rising:
+                export(current_task_name, last_session_id(current_task_name) - 1, correct_times,
+                       "nosepoke when overpayed",
+                       is_holes_poked(current_task["target_hole"]))
+                rising = True
+        else:
+            rising = False
         sleep(0.1)
     return selected
 
@@ -380,7 +394,9 @@ def unpayed_feeds_calculate():
 
 def overpayed_feeds_calculate():
     global feeds_today, current_task_name
-    return feeds_today > ex_flow[current_task_name].get("feed_upper", 70)
+    if ex_flow[current_task_name].get("overpay", True):
+        return feeds_today > ex_flow[current_task_name].get("feed_upper", 70)
+    return False
 
 
 if __name__ == "__main__":

@@ -65,7 +65,8 @@
       5
     ],
     "upper_limit": 50,
-    "feed_upper": 50,
+    "feed_upper": 100,
+    "overpay": false,
     "payoff": true,
     "criterion": {
       "trials": 50,
@@ -99,8 +100,9 @@
       5
     ],
     "upper_limit": 50,
-    "feed_upper": 50,
+    "feed_upper": 100,
     "payoff": true,
+    "overpay": false,
     "criterion": {
       "trials": 50,
       "accuracy": 60,
@@ -135,6 +137,7 @@
     "upper_limit": 50,
     "feed_upper": 50,
     "payoff": true,
+    "overpay": false,
     "criterion": {
       "trials": 50,
       "accuracy": 60,
@@ -169,6 +172,7 @@
     "upper_limit": 50,
     "feed_upper": 50,
     "payoff": true,
+    "overpay": false,
     "criterion": {
       "trials": 50,
       "accuracy": 60,
@@ -203,6 +207,7 @@
     "upper_limit": 50,
     "feed_upper": 50,
     "payoff": true,
+    "overpay": false,
     "criterion": {
       "trials": 50,
       "accuracy": 60,
@@ -237,7 +242,8 @@
     "upper_limit": 50,
     "feed_upper": 50,
     "payoff": true,
-    "criterion": {
+    "overpay": false,
+      "criterion": {
       "trials": 50,
       "accuracy": 60,
       "or": {

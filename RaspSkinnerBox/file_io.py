@@ -202,7 +202,7 @@ def select_last_session_log(session_duration=20, task=""):
         feeds = pd.read_csv(os.path.join("log", logfile_path), parse_dates=[0])
         feeds = feeds[
             (feeds.session.isin(
-                list(range(max(last_session_id() - session_duration, 0), last_session_id() + 1)))) & (
+                list(range(max(last_session_id(task) - session_duration, 0), last_session_id(task) + 1)))) & (
                     feeds.action.isin(["reward", "failure", "premature", "time over"]) &
                     (feeds.task.isin([task]))
             )]

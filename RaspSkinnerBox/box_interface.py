@@ -40,7 +40,7 @@ def setup():
             GPIO.setup(outputs, GPIO.OUT, initial=GPIO.LOW)
             print("output [" + str(outputs) + "] = GPIO output [" + str(outputs) + "]")
         # input
-        for pin, name in sensor_pins:
+        for pin, name in sensor_pins.items():
             GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             holes_event_setup(pin)
             if isinstance(name, int):
