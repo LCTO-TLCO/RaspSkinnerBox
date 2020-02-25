@@ -96,7 +96,7 @@ def task(task_no: str, remained: int):
 
     def is_continue():
         if current_task.get("criterion", False):
-            session_data = select_last_session_log(min(session_no, 20), current_task_name)
+            session_data = select_last_session_log(20, current_task_name)
             crit_and = []
             crit_or = []
             crit_and.append(current_task.get("trials", True) < session_no)

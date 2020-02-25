@@ -214,13 +214,12 @@ def select_last_session_log(session_duration=20, task=""):
     else:
         feeds = pd.read_csv(os.path.join("log", logfile_path), parse_dates=[0])
         feeds = feeds[
-            (feeds.session.isin(
-                list(range(max(last_session_id(task) - session_duration, 0), last_session_id(task) + 1)))) & (
-                    feeds.action.isin(["reward", "failure", "premature", "time over"]) &
-                    (feeds.task.isin([task]))
-            )]
-        ret_val = {"accuracy": len(feeds[feeds.action.isin(["reward"])]) / max(len(feeds), 1),
-                   "omission": len(feeds[feeds.action.isin(["time over"])]) / max(len(feeds), 1)}
+            (feeds.action.isin(["reward", "failure", "premature", "time over"]) &
+             (feeds.task.isin([task])))]
+
+        ret_val = {
+            "accuracy": (feeds.action.isin(["reward"]).rolling(session_duration).sum() / session_duration).iloc[-1],
+            "omission": (feeds.action.isin(["time over"]).rolling(session_duration).sum() / session_duration).iloc[-1]}
         return ret_val
 
 
