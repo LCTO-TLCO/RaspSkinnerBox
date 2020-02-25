@@ -32,8 +32,6 @@ from file_io import *
 
 # define
 
-# reset_time = datetime(today.year, today.month, today.day, 6, 0, 0) + timedelta(days=1)
-# ex_limit = {True: [1, 3], False: [50, 100]}
 limit = {True: 1, False: 1}
 is_time_limit_task = False
 current_task_name = ""
@@ -79,7 +77,7 @@ def task(task_no: str, remained: int):
     if remained == -1:
         correct_times = 0
     else:
-        correct_times = int(current_task.get("upper_limit",0) / limit[DEBUG]) - remained
+        correct_times = int(current_task.get("upper_limit", 0) / limit[DEBUG]) - remained
     if "criterion" in current_task:
         correct_times = remained
     if correct_times < 0:
@@ -106,13 +104,14 @@ def task(task_no: str, remained: int):
             crit_or.append(
                 current_task.get("or", {"omission": False}).get("omission", False) > session_data["omission"])
             crit_or.append(current_task.get("or", {"correct": False}).get("correct", False) <= correct_times)
+            japanese_dict = {True: "達成中", False: "未達成"}
             if not (overpayed_feeds_calculate() or start_time or not any(
                     list(map(is_execution_time, current_task.get("time", [["00:00", "23:59"]]))))):
-                print("trials:{0}, accuracy:{1:.1f}%, omission:{2:.1f}%, correct num:{3}".format(
-                    session_no,
-                    session_data["accuracy"] * 100,
-                    session_data["omission"] * 100,
-                    correct_times))
+                export_crit(task_no, session_no, session_data["accuracy"] * 100, session_data["omission"] * 100,
+                            correct_times)
+                print("trials:{0} & accuracy:{1} & (omission:{2} or correct num:{3})".format(
+                    japanese_dict[crit_and[0]], japanese_dict[crit_and[1]], japanese_dict[crit_or[0]],
+                    japanese_dict[crit_or[1]]))
             return not all([all(crit_and), any([any(crit_or), not bool(current_task.get("or", False))])])
         return correct_times < int(current_task["upper_limit"] / limit[DEBUG])
 
@@ -167,7 +166,6 @@ def task(task_no: str, remained: int):
             sleep(1)
             continue
         export(task_no, session_no, correct_times, "start")
-        # hole_lamp_turn("house_lamp", "on")
         hole_lamp_turn("dispenser_lamp", "on")
 
         # task call
@@ -192,7 +190,6 @@ def task(task_no: str, remained: int):
                 hole_lamp_turn("dispenser_lamp", "off")
                 continue
             export(task_no, session_no, correct_times, "task called")
-            # hole_lamp_turn("house_lamp", "off")
             hole_lamp_turn("dispenser_lamp", "off")
 
             # cue delay
@@ -372,15 +369,10 @@ def unpayed_feeds_calculate():
         # calc remain
         remain_reward = reward - feeds_today
         # dispense
-        #    sleep(5 * 60)
         if DEBUG:
             reward = 3
         logger.info("payoff_num:{}".format(remain_reward))
         while remain_reward > 0:
-            # if any(list(map(is_execution_time, ex_flow[current_task_name]["time"]))):
-            #     daily_log(select_basetime(current_reset_time))
-            #     exist_reserved_payoff = True
-            #     return
             print("payoff: reward = {}".format(remain_reward)) if DEBUG else None
             export(current_task_name, -1, -1, "payoff")
             dispense_all(1)
@@ -403,10 +395,6 @@ if __name__ == "__main__":
     try:
         terminate_task = ""
         remained = -1
-        # if len(sys.argv) == 1:
-        #     logger.info("usage: python app.py mouse_No terminate_task_No remained_number_of_tasks")
-        #     sys.exit()
-        # mouse_no = sys.argv[1]
         if len(sys.argv) >= 2:
             terminate_task = sys.argv[1]
         if len(sys.argv) == 3:

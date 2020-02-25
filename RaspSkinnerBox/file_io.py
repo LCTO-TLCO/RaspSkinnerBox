@@ -22,6 +22,7 @@ dispence_logfile_path = 'no{}_dispencer.csv'
 nosepoke_logfile_path = 'no{}_nosepoke.csv'
 settings_logfile_path = 'no{}_task_settings.json'
 daily_logfile_path = 'no{}_daily_feed.csv'
+critlogfile_path = 'no{}_critics.csv'
 ex_flow = OrderedDict({})
 # ex_flow = OrderedDict()
 ex_flow.update(json.load(open(setting_file, "r"), object_pairs_hook=OrderedDict))
@@ -70,6 +71,17 @@ def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0
     print(add_color(logstring, str(hole_no)))
 
 
+def export_crit(task: str, trials: int, accuracy: float, omission: float, correct: int):
+    logstring = ','.join(
+        [str(datetime.now()), str(datetime.now()), task, str(trials), str(accuracy), str(omission), str(correct)])
+    with open(os.path.join("log", critlogfile_path), 'a+') as logfile:
+        head = ["Timestamps", "task", "trials", "accuracy", "omission", "correct"]
+        if not os.path.getsize(os.path.join("log", critlogfile_path)):
+            logfile.write(",".join(head) + "\n")
+        logfile.write(logstring + "\n")
+        logfile.flush()
+
+
 def add_color(string: str, integer: str):
     global colors, integers
     for keyword, new_color in colors.items():
@@ -116,13 +128,14 @@ def daily_log(basetime):
 
 
 def file_setup(mouse_no):
-    global logfile_path, dispence_logfile_path, nosepoke_logfile_path, settings_logfile_path, daily_logfile_path
+    global logfile_path, dispence_logfile_path, nosepoke_logfile_path, settings_logfile_path, daily_logfile_path, critlogfile_path
     logfile_path = logfile_path.format(mouse_no.zfill(3))
     dispence_logfile_path = dispence_logfile_path.format(mouse_no.zfill(3))
     daily_logfile_path = daily_logfile_path.format(mouse_no.zfill(3))
     nosepoke_logfile_path = nosepoke_logfile_path.format(mouse_no.zfill(3))
     settings_logfile_path = settings_logfile_path.format(mouse_no.zfill(3))
     shutil.copyfile(setting_file, os.path.join('log', settings_logfile_path))
+    critlogfile_path = critlogfile_path.format(mouse_no.zfill(3))
     read_rehash_dataframe()
 
 
