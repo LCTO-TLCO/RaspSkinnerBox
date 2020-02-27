@@ -100,9 +100,9 @@ def task(task_no: str, remained: int):
             crit_and = []
             crit_or = []
             crit_and.append(current_task.get("trials", True) < session_no)
-            crit_and.append(current_task.get("accuracy", True) < session_data["accuracy"])
+            crit_and.append(current_task.get("accuracy", True) / 100 < session_data["accuracy"])
             crit_or.append(
-                current_task.get("or", {"omission": False}).get("omission", False) > session_data["omission"])
+                current_task.get("or", {"omission": False}).get("omission", False) / 100 > session_data["omission"])
             crit_or.append(current_task.get("or", {"correct": False}).get("correct", False) <= correct_times)
             japanese_dict = {True: "達成中", False: "未達成"}
             if not (overpayed_feeds_calculate() or start_time or not any(
