@@ -54,7 +54,7 @@
   - limited_hold : int    
   タスクコールしてから終了までの時間、タイムリミット。設定する場合は秒数を整数で、設定しない場合は-1を記述。
   - limited_hold2 : int
-  タスクコールしてから
+  タスクコールしてから選択肢ライト消灯までの時間。設定する場合は秒数を整数で、設定しない場合は-1を記述。
   - target_hole : list  
   nose poke を検知する・タスクコール中に光るhole noを、リストで記述。
   - ITI_correct : int or list  
@@ -76,6 +76,8 @@
   1. overpay 項目をfalse としなかった場合における、一日として定義した期間のうちに獲得する reward 総数の下限値。一日で獲得したえさの量がこの数に達しなかった場合、不足分だけ無条件で放出される。
   - check_all(optional) : bool  
   正解でない選択肢(hole)を選んだ(nosepokeした)際に失敗としてカウントするかどうか。false だと、正解選択肢以外を選んだ際に何も起こらない。デフォルトは false。
+  - correct_all(optional): bool
+  正解がすべての穴か対象を一つだけ選ぶかどうか。trueの場合全ての穴を正解とし、falseでは一つだけ選ぶ。デフォルトは false。
   - premature(optional)
   お手付き(cue_delay中に選択肢を選択した際、)
   - overpay(optional)   
