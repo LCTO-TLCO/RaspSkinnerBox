@@ -93,6 +93,7 @@ def task(task_no: str, remained: int):
     payoff_flag = False
     feeds_today = 0 if DEBUG else feeds_today
     rising = False
+    before_task = False
 
     def is_continue():
         if current_task.get("criterion", False):
@@ -120,6 +121,8 @@ def task(task_no: str, remained: int):
         # task start
         if start_time:
             if start_time > datetime.now():
+                before_task = True
+                schedule.clear()
                 if is_holes_poked(current_task["target_hole"]):
                     if not rising:
                         export(task_no, session_no, correct_times, "nosepoke before task start time",
@@ -129,9 +132,15 @@ def task(task_no: str, remained: int):
                     rising = False
                 if all([datetime.now().minute % 5, datetime.now().second == 0]):
                     logger.info("task stopping ... not after {}".format(start_time))
-                sleep(5)
+                sleep(0.5)
                 continue
-        schedule.run_pending()
+            else:
+                if before_task:
+                    schedule.every().day.at(current_reset_time).do(unpayed_feeds_calculate)
+                    before_task = False
+                schedule.run_pending()
+        if not before_task:
+            schedule.run_pending()
         if current_task.get("terminate_when_payoff", False) and payoff_flag:
             logger.info("terminate with payoff!")
             break
@@ -215,6 +224,7 @@ def task(task_no: str, remained: int):
         target_holes = current_task["target_hole"]
         stimule_holes = target_holes if current_task.get("stimulate_all", False) else q_holes
         check_holes = target_holes if current_task.get("check_all", False) else q_holes
+        correct_holes = target_holes if current_task.get("correct_all", False) else q_holes
 
         hole_lamps_turn("on", stimule_holes)
         export(task_no, session_no, correct_times, "pokelight on", "/".join([str(x) for x in stimule_holes]))
@@ -230,12 +240,12 @@ def task(task_no: str, remained: int):
         is_correct = False
         time_over = False
         while not (hole_poked or time_over):
-            h = is_holes_poked(target_holes)
+            h = is_holes_poked(check_holes)
             # if h in q_holes:
             if h:
                 export(task_no, session_no, correct_times, "nose poke", h)
                 hole_poked = True
-                is_correct = h in check_holes
+                is_correct = h in correct_holes
                 export(task_no, session_no, correct_times, "reward" if is_correct else "failure", h)
                 correct_times += is_correct
             # time over

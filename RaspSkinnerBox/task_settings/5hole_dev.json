@@ -21,7 +21,8 @@
     "upper_limit": 50,
     "reward_late": [],
     "payoff": false,
-    "stimulate_all": true
+    "stimulate_all": true,
+    "correct_all": true
   },
   "T2": {
     "task_call": true,
@@ -42,7 +43,8 @@
     ],
     "upper_limit": 100,
     "reward_late": [],
-    "payoff": false
+    "payoff": false,
+    "correct_all": true
   },
   "Training16": {
     "task_call": true,
@@ -243,7 +245,7 @@
     "feed_upper": 50,
     "payoff": true,
     "overpay": false,
-      "criterion": {
+    "criterion": {
       "trials": 50,
       "accuracy": 60,
       "or": {
@@ -253,5 +255,191 @@
     },
     "check_all": true,
     "premature": true
+  },
+  "Base_Day1": {
+    "task_call": true,
+    "limited_hold": 1,
+    "limited_hold2": 5,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "feed_upper": 70,
+    "payoff": true,
+    "overpay": true,
+    "check_all": true,
+    "premature": true,
+    "terminate_when_payoff": true,
+    "start_time": "07:00"
+  },
+  "Base_Day2": {
+    "task_call": true,
+    "limited_hold": 1,
+    "limited_hold2": 5,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "feed_upper": 70,
+    "payoff": true,
+    "overpay": true,
+    "check_all": true,
+    "premature": true,
+    "terminate_when_payoff": true,
+    "start_time": "07:00"
+  },
+  "Base_Day3": {
+    "task_call": true,
+    "limited_hold": 1,
+    "limited_hold2": 5,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "feed_upper": 70,
+    "payoff": true,
+    "overpay": true,
+    "check_all": true,
+    "premature": true,
+    "terminate_when_payoff": true,
+    "start_time": "07:00"
+  },
+  "Random_Day1": {
+    "task_call": true,
+    "limited_hold": 1,
+    "limited_hold2": 5,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      2.5,
+      5,
+      7.5,
+      10,
+      12.5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "feed_upper": 70,
+    "payoff": true,
+    "overpay": true,
+    "check_all": true,
+    "premature": true,
+    "terminate_when_payoff": true,
+    "start_time": "07:00"
+  },
+  "Random_Day2": {
+    "task_call": true,
+    "limited_hold": 1,
+    "limited_hold2": 5,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      2.5,
+      5,
+      7.5,
+      10,
+      12.5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "feed_upper": 70,
+    "payoff": true,
+    "overpay": true,
+    "check_all": true,
+    "premature": true,
+    "terminate_when_payoff": true,
+    "start_time": "07:00"
+  },
+  "Random_Day3": {
+    "task_call": true,
+    "limited_hold": 1,
+    "limited_hold2": 5,
+    "target_hole": [
+      1,
+      3,
+      5,
+      7,
+      9
+    ],
+    "cue_delay": [
+      2.5,
+      5,
+      7.5,
+      10,
+      12.5
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      5
+    ],
+    "upper_limit": 70,
+    "feed_upper": 70,
+    "payoff": true,
+    "overpay": true,
+    "check_all": true,
+    "premature": true,
+    "terminate_when_payoff": true,
+    "start_time": "07:00"
   }
 }

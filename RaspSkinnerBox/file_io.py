@@ -73,7 +73,7 @@ def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0
 
 def export_crit(task: str, trials: int, accuracy: float, omission: float, correct: int):
     logstring = ','.join(
-        [str(datetime.now()), str(datetime.now()), task, str(trials), str(accuracy), str(omission), str(correct)])
+        [str(datetime.now()), task, str(trials), str(accuracy), str(omission), str(correct)])
     with open(os.path.join("log", critlogfile_path), 'a+') as logfile:
         head = ["Timestamps", "task", "trials", "accuracy", "omission", "correct"]
         if not os.path.getsize(os.path.join("log", critlogfile_path)):
@@ -111,13 +111,13 @@ def daily_log(basetime):
         feeds = pd.read_csv(os.path.join("log", dispence_logfile_path), names=["date", "feed_num", "reason"],
                             parse_dates=[0])
     # this "basetime" means end point
-    feed_dataframe = feeds[(datetime.now() > feeds.date) & (feeds.date > basetime - timedelta(days=1))]
+    feed_dataframe = feeds[(basetime > feeds.date) & (feeds.date > basetime - timedelta(days=1))]
     feed_list = [str(datetime.now()),
                  "reward",
                  str(feed_dataframe.groupby("reason").sum().loc["reward", "feed_num"] if any(
                      feed_dataframe.reason.isin(["reward"])) else 0)
                  ]
-    payoff_dataframe = feeds[(datetime.now() < feeds.date) & (feeds.date > basetime - timedelta(days=1))]
+    payoff_dataframe = feeds[(basetime > feeds.date) & (feeds.date > basetime - timedelta(days=1))]
     feed_list += ["payoff",
                   str(payoff_dataframe.groupby("reason").sum().loc["payoff", "feed_num"] if any(
                       payoff_dataframe.reason.isin(["payoff"])) else 0)]
