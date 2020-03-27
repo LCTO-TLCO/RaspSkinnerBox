@@ -27,8 +27,8 @@
   },
   "T2": {
     "task_call": true,
-    "limited_hold": 60,
-    "limited_hold2": 60,
+    "limited_hold": -1,
+    "limited_hold2": -1,
     "target_hole": [
       1,
       3,
