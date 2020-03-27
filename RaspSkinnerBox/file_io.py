@@ -216,7 +216,8 @@ def select_last_session_log(session_duration=20, task=""):
         feeds = feeds[
             (feeds.action.isin(["reward", "failure", "premature", "time over"]) &
              (feeds.task.isin([task])))]
-
+        if feeds.empty:
+            return {"accuracy":0,"omission":0}
         ret_val = {
             "accuracy": (feeds.action.isin(["reward"]).rolling(session_duration).sum() / session_duration).iloc[-1],
             "omission": (feeds.action.isin(["time over"]).rolling(session_duration).sum() / session_duration).iloc[-1]}

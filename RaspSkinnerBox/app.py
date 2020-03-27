@@ -241,7 +241,6 @@ def task(task_no: str, remained: int):
         time_over = False
         while not (hole_poked or time_over):
             h = is_holes_poked(check_holes)
-            # if h in q_holes:
             if h:
                 export(task_no, session_no, correct_times, "nose poke", h)
                 hole_poked = True
@@ -347,14 +346,15 @@ def ITI(secs: list, correct_times=-1):
     end_time = datetime.now() + timedelta(seconds=selected)
     rising = False
     while datetime.now() <= end_time:
-        if is_holes_poked(current_task["target_hole"]):
-            if not rising:
-                export(current_task_name, last_session_id(current_task_name) - 1, correct_times,
-                       "nosepoke when overpayed",
-                       is_holes_poked(current_task["target_hole"]))
-                rising = True
-        else:
-            rising = False
+        if current_task.get("target_hole",False):
+            if is_holes_poked(current_task["target_hole"]):
+                if not rising:
+                    export(current_task_name, last_session_id(current_task_name) - 1, correct_times,
+                           "nosepoke when overpayed",
+                           is_holes_poked(current_task["target_hole"]))
+                    rising = True
+            else:
+                rising = False
         sleep(0.1)
     return selected
 

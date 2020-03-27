@@ -22,7 +22,8 @@
     "reward_late": [],
     "payoff": false,
     "stimulate_all": true,
-    "correct_all": true
+    "correct_all": true,
+    "check_all": true
   },
   "T2": {
     "task_call": true,
