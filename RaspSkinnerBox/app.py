@@ -261,7 +261,6 @@ def task(task_no: str, remained: int):
             sleep(0.01)
         # end
         hole_lamps_turn("off", stimule_holes)
-        # hole_lamp_turn("house_lamp", "off")
         if is_correct:
             hole_lamp_turn("dispenser_lamp", "on")
             dispense_pelet()
@@ -279,13 +278,11 @@ def task(task_no: str, remained: int):
             actualITI = ITI(current_task["ITI_correct"], correct_times=correct_times)
             export(task_no, session_no, correct_times, "ITI", actualITI)
         else:
-            #            sleep(int(20/limit[DEBUG]))
             actualITI = ITI(current_task["ITI_failure"], correct_times=correct_times)
             export(task_no, session_no, correct_times, "ITI", actualITI)
         session_no += 1
 
     # task end
-    # reward = reward - correct_times
     schedule.clear()
     logger.info("{} end".format(task_no))
 
@@ -346,7 +343,7 @@ def ITI(secs: list, correct_times=-1):
     end_time = datetime.now() + timedelta(seconds=selected)
     rising = False
     while datetime.now() <= end_time:
-        if current_task.get("target_hole",False):
+        if current_task.get("target_hole", False):
             if is_holes_poked(current_task["target_hole"]):
                 if not rising:
                     export(current_task_name, last_session_id(current_task_name) - 1, correct_times,
@@ -364,7 +361,7 @@ def dispense_all(feed):
     for f in range(feed):
         dispense_pelet("payoff")
         export(current_task_name, -1, -1, "payoff")
-        sleep(60)
+        sleep(120)
 
 
 def unpayed_feeds_calculate():
@@ -384,7 +381,7 @@ def unpayed_feeds_calculate():
         logger.info("payoff_num:{}".format(remain_reward))
         while remain_reward > 0:
             print("payoff: reward = {}".format(remain_reward)) if DEBUG else None
-            export(current_task_name, -1, -1, "payoff")
+            # export(current_task_name, -1, -1, "payoff")
             dispense_all(1)
             remain_reward -= 1
             payoff_flag = True

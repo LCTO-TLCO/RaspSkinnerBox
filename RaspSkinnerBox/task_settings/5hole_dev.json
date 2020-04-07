@@ -284,7 +284,8 @@
     "check_all": true,
     "premature": true,
     "terminate_when_payoff": true,
-    "start_time": "07:00"
+    "start_time": "07:00",
+    "reset_time": "04:00"
   },
   "Base_Day2": {
     "task_call": true,
@@ -313,7 +314,8 @@
     "check_all": true,
     "premature": true,
     "terminate_when_payoff": true,
-    "start_time": "07:00"
+    "start_time": "07:00",
+    "reset_time": "04:00"
   },
   "Base_Day3": {
     "task_call": true,
@@ -342,7 +344,8 @@
     "check_all": true,
     "premature": true,
     "terminate_when_payoff": true,
-    "start_time": "07:00"
+    "start_time": "07:00",
+    "reset_time": "04:00"
   },
   "Random_Day1": {
     "task_call": true,
@@ -375,7 +378,8 @@
     "check_all": true,
     "premature": true,
     "terminate_when_payoff": true,
-    "start_time": "07:00"
+    "start_time": "07:00",
+    "reset_time": "04:00"
   },
   "Random_Day2": {
     "task_call": true,
@@ -408,7 +412,8 @@
     "check_all": true,
     "premature": true,
     "terminate_when_payoff": true,
-    "start_time": "07:00"
+    "start_time": "07:00",
+    "reset_time": "04:00"
   },
   "Random_Day3": {
     "task_call": true,
@@ -441,6 +446,7 @@
     "check_all": true,
     "premature": true,
     "terminate_when_payoff": true,
-    "start_time": "07:00"
+    "start_time": "07:00",
+    "reset_time": "04:00"
   }
 }
