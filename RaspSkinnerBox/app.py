@@ -100,11 +100,14 @@ def task(task_no: str, remained: int):
             session_data = select_last_session_log(20, current_task_name)
             crit_and = []
             crit_or = []
-            crit_and.append(current_task.get("trials", True) < session_no)
-            crit_and.append(current_task.get("accuracy", True) / 100 < session_data["accuracy"])
+            crit_and.append(current_task["criterion"].get("trials", True) < session_data["session"])
+            crit_and.append(current_task["criterion"].get("accuracy", True) / 100 < session_data["accuracy"])
             crit_or.append(
-                current_task.get("or", {"omission": False}).get("omission", False) / 100 > session_data["omission"])
-            crit_or.append(current_task.get("or", {"correct": False}).get("correct", False) <= correct_times)
+                current_task["criterion"].get("or", {"omission": False}).get("omission", False) / 100 > session_data[
+                    "omission"])
+            crit_or.append(
+                current_task["criterion"].get("or", {"correct": False}).get("correct", False) <= session_data[
+                    "correct"])
             japanese_dict = {True: "達成中", False: "未達成"}
             if not (overpayed_feeds_calculate() or start_time or not any(
                     list(map(is_execution_time, current_task.get("time", [["00:00", "23:59"]]))))):
@@ -113,7 +116,7 @@ def task(task_no: str, remained: int):
                 print("trials:{0} & accuracy:{1} & (omission:{2} or correct num:{3})".format(
                     japanese_dict[crit_and[0]], japanese_dict[crit_and[1]], japanese_dict[crit_or[0]],
                     japanese_dict[crit_or[1]]))
-            return not all([all(crit_and), any([any(crit_or), not bool(current_task.get("or", False))])])
+            return not all([all(crit_and), any([any(crit_or), not bool(current_task["criterion"].get("or", False))])])
         return correct_times < int(current_task["upper_limit"] / limit[DEBUG])
 
     # main
@@ -121,8 +124,14 @@ def task(task_no: str, remained: int):
         # task start
         if start_time:
             if start_time > datetime.now():
-                before_task = True
-                schedule.clear()
+                if not before_task:
+                    # task 開始前初期設定
+                    before_task = True
+                    schedule.clear()
+                    # payed_feeds_export()
+                    # schedule.every().day.at(current_reset_time).do(payed_feeds_export)
+                # schedule.run_pending()
+                # task stop 中のnose poke 検知
                 if is_holes_poked(current_task["target_hole"]):
                     if not rising:
                         export(task_no, session_no, correct_times, "nosepoke before task start time",
@@ -136,6 +145,8 @@ def task(task_no: str, remained: int):
                 continue
             else:
                 if before_task:
+                    # task開始後初期設定
+                    schedule.clear()
                     schedule.every().day.at(current_reset_time).do(unpayed_feeds_calculate)
                     before_task = False
                 schedule.run_pending()
@@ -347,8 +358,9 @@ def ITI(secs: list, correct_times=-1):
             if is_holes_poked(current_task["target_hole"]):
                 if not rising:
                     export(current_task_name, last_session_id(current_task_name) - 1, correct_times,
-                           "nosepoke when overpayed",
-                           is_holes_poked(current_task["target_hole"]))
+                           "nosepoke between ITI",
+                           is_holes_poked(current_task["target_hole"]) if is_holes_poked(
+                               current_task["target_hole"]) else "dispencer")
                     rising = True
             else:
                 rising = False
@@ -386,6 +398,13 @@ def unpayed_feeds_calculate():
             remain_reward -= 1
             payoff_flag = True
         reward = ex_flow[current_task_name].get("feed_upper", 70)
+    feeds_today = 0
+    daily_log(select_basetime(current_reset_time))
+    logger.info("unpayed_feeds_calculate complete")
+
+
+def payed_feeds_export():
+    global feeds_today, current_reset_time
     feeds_today = 0
     daily_log(select_basetime(current_reset_time))
     logger.info("unpayed_feeds_calculate complete")

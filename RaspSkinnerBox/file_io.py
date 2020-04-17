@@ -210,17 +210,23 @@ def read_rehash_dataframe():
 
 def select_last_session_log(session_duration=20, task=""):
     if not os.path.exists(os.path.join("log", logfile_path)):
-        return 0
+        return {"accuracy": 0, "omission": 0, "correct": 0, "session": 0}
     else:
         feeds = pd.read_csv(os.path.join("log", logfile_path), parse_dates=[0])
         feeds = feeds[
             (feeds.action.isin(["reward", "failure", "premature", "time over"]) &
              (feeds.task.isin([task])))]
         if feeds.empty:
-            return {"accuracy":0,"omission":0}
+            return {"accuracy": 0, "omission": 0, "correct": 0, "session": 0}
         ret_val = {
-            "accuracy": (feeds.action.isin(["reward"]).rolling(session_duration).sum() / session_duration).iloc[-1],
-            "omission": (feeds.action.isin(["time over"]).rolling(session_duration).sum() / session_duration).iloc[-1]}
+            "accuracy":
+                (feeds.action.isin(["reward"]).rolling(session_duration, min_periods=1).sum().iloc[-1] /
+                 feeds.action.rolling(session_duration, min_periods=1).count().iloc[-1]),
+            "omission": (feeds.action.isin(["time over"]).rolling(session_duration, min_periods=1).sum().iloc[-1] /
+                         feeds.action.rolling(session_duration, min_periods=1).count().iloc[-1]),
+            "correct": feeds.action.isin(["reward"]).count(),
+            "session": feeds.action.count()
+        }
         return ret_val
 
 
