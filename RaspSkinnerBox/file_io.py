@@ -65,9 +65,9 @@ def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0
     if task_no == "":
         task_no = last_str("task") if last_str("task") else task_no
     if session_no == -1:
-        session_no = last_str("session") if last_str("session") else session_no
+        session_no = last_str("session") if isinstance(last_str("session"), int) else session_no
     if times == -1:
-        times = last_str("rewardnum") if last_str("rewardnum") else times
+        times = last_str("rewardnum") if isinstance(last_str("rewardnum"), int) else times
     logstring = ','.join([str(datetime.now()), task_no, str(session_no), str(times), event_type])
     with open(os.path.join("log", logfile_path), 'a+') as logfile:
         head = ["Timestamps", "task", "session", "rewardnum", "action", "cond"]
@@ -250,11 +250,6 @@ def select_last_session_log(session_duration=20, task=""):
 def error_log(error):
     logging.exception(error)
     raise
-
-
-
-def callback_both(channel):
-    all_nosepoke_log(channel, "lever_event")
 
 
 def callback_rising(channel):

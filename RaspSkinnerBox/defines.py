@@ -1,3 +1,3 @@
 """ このファイルを編集する """
-mouse_no = "994"
-setting_file = "task_settings/5hole_dev.json"
+mouse_no = "888"
+setting_file = "task_settings/2lever_dev.json"

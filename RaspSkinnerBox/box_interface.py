@@ -18,12 +18,9 @@ lever_lamp = {1: 22, 2: 27}
 # lever_out = {1: 18, 2: 23}
 lever_out = {1: 23, 2: 18}
 
-
 dispenser_magazine = 4
 white_noise = 24
 house_lamp = 17
-
-
 
 # input
 dispenser_sensor = 5
@@ -53,10 +50,11 @@ def setup():
         # input
         for pin, name in sensor_pins.items():
             GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            holes_event_setup(pin)
             if isinstance(name, int):
+                lever_event_setup(pin)
                 print("hole sensor [{\033[32m" + str(name) + "\033[0m}] = GPIO input [" + str(pin) + "]")
             elif isinstance(name, str):
+                hole_event_setup(pin)
                 print("input [" + str(pin) + "] = GPIO input [" + str(pin) + "]")
         set_dir()
 
@@ -150,8 +148,20 @@ def is_holes_poked(holes: list, dev_poke=True, dev_stop=False):
     return False
 
 
-def holes_event_setup(gpio_no: int):
+def lever_event_setup(gpio_no: int):
     if not DEBUG:
-        GPIO.add_event_detect(gpio_no, GPIO.BOTH, callback=callback_both, bouncetime=50)
-        # GPIO.add_event_detect(gpio_no, GPIO.RISING, callback=callback_rising, bouncetime=50)
-        # GPIO.add_event_detect(gpio_no, GPIO.FALLING, callback=callback_falling, bouncetime=50)
+        GPIO.add_event_detect(gpio_no, GPIO.FALLING, callback=callback_lever, bouncetime=50)
+
+
+def hole_event_setup(gpio_no: int):
+    if not DEBUG:
+        GPIO.add_event_detect(gpio_no, GPIO.BOTH, callback=callback_magazine, bouncetime=50)
+
+
+def callback_magazine(channel):
+    # leverとrewardで分ける
+    all_nosepoke_log(channel, "magazine_event")
+
+
+def callback_lever(channel):
+    all_nosepoke_log(channel, "lever_push")
