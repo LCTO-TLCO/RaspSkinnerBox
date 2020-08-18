@@ -12,9 +12,12 @@ if DEBUG:
     import msvcrt
 
 logger = logging.getLogger(__name__)
-lever_lamp = {1: 27, 2: 22}
+# lever_lamp = {1: 27, 2: 22}
+lever_lamp = {1: 22, 2: 27}
 # レバーひっこめる・出す
-lever_out = {1: 18, 2: 23}
+# lever_out = {1: 18, 2: 23}
+lever_out = {1: 23, 2: 18}
+
 
 dispenser_magazine = 4
 white_noise = 24
@@ -24,10 +27,10 @@ house_lamp = 17
 
 # input
 dispenser_sensor = 5
-# hole_sensor = {3: 6, 5: 26, 7: 19}
-# hole_sensor = {1: 12, 3: 6, 5: 26, 7: 19, 9: 16}
 # レバー押す・押してない
-lever_in = {1: 6, 2: 19}
+# lever_in = {1: 6, 2: 19}
+lever_in = {1: 19, 2: 6}
+
 sensor_pins = dict(zip(list(lever_in.values()) + [dispenser_sensor], list(lever_in.keys()) + ["dispenser"]))
 
 # 実機デバッグ用, 入力無効
