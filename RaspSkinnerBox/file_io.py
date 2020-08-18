@@ -61,6 +61,13 @@ def set_dir():
 
 
 def export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0):
+    # わかんないときは一つ前の行をコピーしてくる
+    if task_no == "":
+        task_no = last_str("task") if last_str("task") else task_no
+    if session_no == -1:
+        session_no = last_str("session") if last_str("session") else session_no
+    if times == -1:
+        times = last_str("rewardnum") if last_str("rewardnum") else times
     logstring = ','.join([str(datetime.now()), task_no, str(session_no), str(times), event_type])
     with open(os.path.join("log", logfile_path), 'a+') as logfile:
         head = ["Timestamps", "task", "session", "rewardnum", "action", "cond"]
@@ -152,6 +159,16 @@ def file_setup(mouse_no):
 #             preview_payoff_time = datetime(datetime.today().year, datetime.today().month, datetime.today().day,
 #                                            10, 0, 0)
 
+def last_str(name):
+    if not os.path.exists(os.path.join("log", logfile_path)):
+        return 0
+    else:
+        logfile = pd.read_csv(os.path.join("log", logfile_path), parse_dates=[0])
+        last = logfile.tail(1)
+        if last.empty:
+            return 0
+        return last[name].to_list()[0]
+
 
 def last_session_id(task=""):
     if not os.path.exists(os.path.join("log", logfile_path)):
@@ -235,6 +252,11 @@ def error_log(error):
     raise
 
 
+
+def callback_both(channel):
+    all_nosepoke_log(channel, "lever_event")
+
+
 def callback_rising(channel):
     all_nosepoke_log(channel, "RISING")
 
@@ -244,13 +266,8 @@ def callback_falling(channel):
 
 
 def all_nosepoke_log(channel: int, event_type: str):
-    from box_interface import sensor_pins
-    string = ','.join([str(datetime.now()), event_type, str(channel), str(sensor_pins.get(channel, ""))])
-    with open(os.path.join("log", nosepoke_logfile_path), 'a+') as poke_log:
-        poke_log.write(",".join(["Timestamp", "event", "pin", "channelName"] + ["\n"])) if not os.path.getsize(
-            os.path.join("log", nosepoke_logfile_path)) else None
-        poke_log.write(string + "\n")
-        poke_log.flush()
+    # export(task_no: str, session_no: int, times: int, event_type: str, hole_no=0)
+    export("", -1, -1, event_type, channel)
 
 
 def calc_todays_feed(basetime):

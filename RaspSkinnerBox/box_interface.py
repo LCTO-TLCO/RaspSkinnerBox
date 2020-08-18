@@ -12,26 +12,34 @@ if DEBUG:
     import msvcrt
 
 logger = logging.getLogger(__name__)
-# output
-hole_lamp = {1: 22, 3: 18, 5: 23, 7: 24, 9: 25}
-# hole_lamp = {3: 18, 5: 23, 7: 24}
+lever_lamp = {1: 27, 2: 22}
+# レバーひっこめる・出す
+lever_out = {1: 18, 2: 23}
 
 dispenser_magazine = 4
-dispenser_lamp = 17
-house_lamp = 27
+white_noise = 24
+house_lamp = 17
+
+
+
 # input
 dispenser_sensor = 5
 # hole_sensor = {3: 6, 5: 26, 7: 19}
-hole_sensor = {1: 12, 3: 6, 5: 26, 7: 19, 9: 16}
-sensor_pins = dict(zip(list(hole_sensor.values()) + [dispenser_sensor], list(hole_sensor.keys()) + ["dispenser"]))
+# hole_sensor = {1: 12, 3: 6, 5: 26, 7: 19, 9: 16}
+# レバー押す・押してない
+lever_in = {1: 6, 2: 19}
+sensor_pins = dict(zip(list(lever_in.values()) + [dispenser_sensor], list(lever_in.keys()) + ["dispenser"]))
+
+# 実機デバッグ用, 入力無効
+RASP_DEBUG = False
 
 
 def setup():
     if not DEBUG:
-        global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
+        global lever_lamp, lever_in, white_noise, house_lamp, dispenser_sensor, lever_out
         GPIO.setmode(GPIO.BCM)
         # output
-        for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp, house_lamp]:
+        for outputs in [lever_lamp, lever_out, dispenser_magazine, white_noise, house_lamp]:
             if isinstance(outputs, dict):
                 for no in list(outputs.keys()):
                     GPIO.setup(outputs[no], GPIO.OUT, initial=GPIO.LOW)
@@ -51,9 +59,9 @@ def setup():
 
 
 def shutdown():
-    global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
+    global lever_lamp, lever_in, white_noise, house_lamp, dispenser_sensor, lever_out
     if not DEBUG:
-        for outputs in [hole_lamp, dispenser_magazine, dispenser_lamp]:
+        for outputs in [lever_lamp, lever_out, dispenser_magazine, white_noise]:
             if isinstance(outputs, dict):
                 for no in outputs.keys():
                     GPIO.output(outputs[no], GPIO.LOW)
@@ -63,7 +71,7 @@ def shutdown():
 
 
 def dispense_pelet(reason="reward"):
-    global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
+    global lever_lamp, lever_in, white_noise, house_lamp, dispenser_sensor, lever_out
     if not DEBUG:
         GPIO.output(dispenser_magazine, GPIO.HIGH)
         sleep(0.1)
@@ -74,11 +82,12 @@ def dispense_pelet(reason="reward"):
 
 
 def hole_lamp_turn(target: Union[int, str], switch: str):
-    global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
+    global lever_lamp, lever_in, white_noise, house_lamp, dispenser_sensor, lever_out
     if not DEBUG:
         do = {"on": GPIO.HIGH, "off": GPIO.LOW}
         if isinstance(target, int):
-            GPIO.output(hole_lamp[target], do[switch])
+            GPIO.output(lever_lamp[target], do[switch])
+            GPIO.output(lever_out[target], not do[switch])
         elif "lamp" in target:
             exec("GPIO.output({},do[switch])".format(target))
     elif DEBUG:
@@ -86,9 +95,9 @@ def hole_lamp_turn(target: Union[int, str], switch: str):
 
 
 def hole_lamps_turn(switch: str, target=[]):
-    global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
+    global lever_lamp, lever_in, white_noise, house_lamp, dispenser_sensor, lever_out
     if len(target) == 0:
-        for no in hole_lamp.keys():
+        for no in lever_lamp.keys():
             hole_lamp_turn(no, switch)
     else:
         for no in target:
@@ -96,15 +105,18 @@ def hole_lamps_turn(switch: str, target=[]):
 
 
 def hole_lamp_rand():
-    global hole_lamp, dispenser_lamp, house_lamp, dispenser_sensor, hole_sensor
-    holes = hole_lamp.keys()
+    global lever_lamp, lever_in, white_noise, house_lamp, dispenser_sensor, lever_out
+    holes = lever_lamp.keys()
     num = choice(list(holes))
     hole_lamp_turn(num, "on")
     return num
 
 
 def is_hole_poked(no: Union[int, str]):
-    if not DEBUG:
+    if DEBUG or RASP_DEBUG:
+        input("debug mode: type ENTER key")
+        return True
+    elif not DEBUG:
         if isinstance(no, int):
             if GPIO.input(no) == GPIO.LOW:
                 return True
@@ -112,31 +124,31 @@ def is_hole_poked(no: Union[int, str]):
             if eval("GPIO.input({})".format(no)) == GPIO.LOW:
                 return True
         return False
-    elif DEBUG:
-        input("debug mode: type ENTER key")
-        return True
 
 
 def is_holes_poked(holes: list, dev_poke=True, dev_stop=False):
-    if not DEBUG:
-        global hole_sensor
-        #    print(str(hole_sensor))
-        #    for hole in hole_sensor.values():
-        holes = list(hole_sensor.keys()) if len(holes) == 0 else holes
+    if not DEBUG and not RASP_DEBUG:
+        global lever_in
+        #    print(str(lever_out))
+        #    for hole in lever_out.values():
+        holes = list(lever_in.keys()) if len(holes) == 0 else holes
         if None in holes:
             return False
         for hole in holes:
             #        print(str(hole))
-            if is_hole_poked(hole_sensor[hole]):
+            if is_hole_poked(lever_in[hole]):
                 return hole
     elif DEBUG:
         import msvcrt
         return choice(holes) * msvcrt.kbhit() if not dev_stop else choice(holes) * bool(
             input("debug mode: type ENTER key"))
+    elif RASP_DEBUG:
+        return choice(holes)
     return False
 
 
 def holes_event_setup(gpio_no: int):
     if not DEBUG:
-        GPIO.add_event_detect(gpio_no, GPIO.RISING, callback=callback_rising, bouncetime=50)
+        GPIO.add_event_detect(gpio_no, GPIO.BOTH, callback=callback_both, bouncetime=50)
+        # GPIO.add_event_detect(gpio_no, GPIO.RISING, callback=callback_rising, bouncetime=50)
         # GPIO.add_event_detect(gpio_no, GPIO.FALLING, callback=callback_falling, bouncetime=50)

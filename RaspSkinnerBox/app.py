@@ -186,7 +186,7 @@ def task(task_no: str, remained: int):
             sleep(1)
             continue
         export(task_no, session_no, correct_times, "start")
-        hole_lamp_turn("dispenser_lamp", "on")
+        hole_lamp_turn("house_lamp", "on")
 
         # task call
         rising = False
@@ -207,10 +207,10 @@ def task(task_no: str, remained: int):
                 input("type ENTER key to call task")
             if current_task.get("time", False) and not any(
                     list(map(is_execution_time, current_task.get("time", [["00:00", "23:59"]])))):
-                hole_lamp_turn("dispenser_lamp", "off")
+                hole_lamp_turn("house_lamp", "off")
                 continue
             export(task_no, session_no, correct_times, "task called")
-            hole_lamp_turn("dispenser_lamp", "off")
+            hole_lamp_turn("house_lamp", "off")
 
             # cue delay
             premature = False
@@ -231,52 +231,59 @@ def task(task_no: str, remained: int):
                 continue
 
         # hole setup
-        q_holes = [choice(current_task["target_hole"])]
         target_holes = current_task["target_hole"]
+        q_holes = []
+        hole_lamps_turn("on", target_holes)
+
+        # reward holes setup
+        if not len(current_task["reward_rate"]) == 0:
+            [q_holes.append(h) for h in target_holes if
+             random.random() * 100 <= current_task["reward_rate"][target_holes.index(h)]]
+            q_holes.append(None) if len(q_holes) == 0 else None
+        else:
+            q_holes = target_holes
+        export(task_no, session_no, correct_times, "correct holes", '/'.join([str(s) for s in q_holes]))
+
         stimule_holes = target_holes if current_task.get("stimulate_all", False) else q_holes
         check_holes = target_holes if current_task.get("check_all", False) else q_holes
         correct_holes = target_holes if current_task.get("correct_all", False) else q_holes
-
-        hole_lamps_turn("on", stimule_holes)
-        export(task_no, session_no, correct_times, "pokelight on", "/".join([str(x) for x in stimule_holes]))
 
         # time
         end_time = False
         holelamp_end_time = False
         if current_task["limited_hold"] >= 0:
-            # バグを吐くようにする
-            end_time = datetime.now() + timedelta(seconds=current_task["limited_hold2"])
+            end_time = datetime.now() + timedelta(seconds=current_task.get("limited_hold2", 30))
             holelamp_end_time = datetime.now() + timedelta(seconds=current_task["limited_hold"])
         hole_poked = False
         is_correct = False
         time_over = False
+        hold_time = 0
         while not (hole_poked or time_over):
             h = is_holes_poked(check_holes)
             if h:
-                export(task_no, session_no, correct_times, "nose poke", h)
-                hole_poked = True
-                is_correct = h in correct_holes
-                export(task_no, session_no, correct_times, "reward" if is_correct else "failure", h)
-                correct_times += is_correct
+                # lever check
+                hold_time += 0.01
+                if hold_time >= current_task["duration"]:
+                    export(task_no, session_no, correct_times, "nose poke", h)
+                    hole_poked = True
+                    is_correct = h in correct_holes
+                    export(task_no, session_no, correct_times, "reward" if is_correct else "failure", h)
+                    correct_times += is_correct
+            elif not h:
+                hold_time = 0
             # time over
             if end_time:
                 if end_time < datetime.now():
                     time_over = True
                     export(task_no, session_no, correct_times, "time over")
-            if holelamp_end_time and not time_over:
-                if holelamp_end_time < datetime.now():
-                    hole_lamps_turn("off", stimule_holes)
-                    export(task_no, session_no, correct_times, "pokelight off",
-                           "/".join([str(x) for x in stimule_holes]))
-                    holelamp_end_time = False
             sleep(0.01)
         # end
         hole_lamps_turn("off", stimule_holes)
         if is_correct:
-            hole_lamp_turn("dispenser_lamp", "on")
+            hole_lamp_turn("house_lamp", "on")
             dispense_pelet()
             feeds_today += 1
-            sleep(1)
+            sleep(0.1)
             # perseverative response measurement after reward & magazine nose poke detection
             while not is_hole_poked("dispenser_sensor"):
                 if is_holes_poked(target_holes):
@@ -285,7 +292,7 @@ def task(task_no: str, remained: int):
                         sleep(0.01)
                 sleep(0.01)
             export(task_no, session_no, correct_times, "magazine nose poked")
-            hole_lamp_turn("dispenser_lamp", "off")
+            hole_lamp_turn("house_lamp", "off")
             actualITI = ITI(current_task["ITI_correct"], correct_times=correct_times)
             export(task_no, session_no, correct_times, "ITI", actualITI)
         else:
@@ -306,19 +313,19 @@ def T0():
     session_no = 0
     task_no = "T0"
     current_task = ex_flow[task_no]
-    hole_lamp_turn("dispenser_lamp", "on")
+    hole_lamp_turn("house_lamp", "on")
     export(task_no, session_no, times, "start")
     hole_lamps_turn("off")
     for times in range(0, int(current_task.get("upper_limit", 50) / limit[DEBUG])):
         #        if reset_time <= datetime.now():
         #            dispense_all(reward)
-        hole_lamp_turn("dispenser_lamp", "on")
+        hole_lamp_turn("house_lamp", "on")
         while not is_hole_poked("dispenser_sensor"):
             sleep(0.01)
         dispense_pelet()
         feeds_today += 1
         export(task_no, session_no, times, "reward")
-        hole_lamp_turn("dispenser_lamp", "off")
+        hole_lamp_turn("house_lamp", "off")
         ITI(current_task.get("ITI", [4, 8, 16, 32]), correct_times=times)
         session_no += 1
     reward = reward - times
