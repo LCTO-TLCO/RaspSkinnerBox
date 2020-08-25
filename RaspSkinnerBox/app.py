@@ -275,15 +275,29 @@ def task(task_no: str, remained: int):
         # end
         hole_lamps_turn("off", stimule_holes)
         if is_correct:
+            # correct on(確定演出)
+            if current_task.get("correct_on", False):
+                if str(poked_hole) in current_task["correct_on"].keys():
+                    for fact in current_task["correct_on"][str(poked_hole)]:
+                        exec('hole_lamp_turn({},"on")'.format(fact))
+            sleep(0.01)
+            # reward delay
+            if current_task.get("reward_delay", False):
+                if str(poked_hole) in current_task["reward_delay"].keys():
+                    timelimit = False
+                    base_time = datetime.now()
+                    # list表記ならランダムに選んで待ち時間にする
+                    reward_delay = current_task["reward_delay"].get(str(poked_hole), 0) if isinstance(
+                        current_task["reward_delay"].get(str(poked_hole), 0.0),
+                        (int, float)) else choice(current_task["reward_delay"].get(str(poked_hole), [0]))
+                    export(task_no, session_no, correct_times, "reward delay", reward_delay)
+                    while not timelimit:
+                        if (datetime.now() - base_time).seconds >= reward_delay:
+                            timelimit = True
+                        sleep(0.05)
             hole_lamp_turn("house_lamp", "on")
             dispense_pelet()
             feeds_today += 1
-            if current_task.get("correct_on", False):
-                for lever, facts in current_task["correct_on"].items():
-                    if int(lever) == poked_hole:
-                        for fact in facts:
-                            exec('hole_lamp_turn({},"on")'.format(fact))
-            sleep(0.1)
             # perseverative response measurement after reward & magazine nose poke detection
             while not is_hole_poked("dispenser_sensor"):
                 if is_holes_poked(target_holes):
@@ -293,6 +307,7 @@ def task(task_no: str, remained: int):
                 sleep(0.01)
             export(task_no, session_no, correct_times, "magazine nose poked")
             hole_lamp_turn("house_lamp", "off")
+            # off
             if current_task.get("correct_on", False):
                 for lever, facts in current_task["correct_on"].items():
                     if int(lever) == poked_hole:

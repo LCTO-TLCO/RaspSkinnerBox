@@ -1,0 +1,139 @@
+{
+  "T0": {
+    "upper_limit": 50
+  },
+  "left": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      1,
+      2
+    ],
+    "reward_rate": [
+      50,
+      0
+    ],
+    "cue_delay": [
+      0
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      20
+    ],
+    "upper_limit": 150,
+    "duration": 0.2,
+    "stimulate_all": true,
+    "check_all": true
+  },
+  "right": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      1,
+      2
+    ],
+    "reward_rate": [
+      0,
+      50
+    ],
+    "cue_delay": [
+      0
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      20
+    ],
+    "upper_limit": 150,
+    "duration": 0.2,
+    "stimulate_all": true,
+    "check_all": true
+  },
+  "L30-R60": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      1,
+      2
+    ],
+    "reward_rate": [
+      60,
+      30
+    ],
+    "cue_delay": [
+      0
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      20
+    ],
+    "upper_limit": 150,
+    "duration": 0.2,
+    "stimulate_all": true,
+    "check_all": true
+  },
+  "L60-R30": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      1,
+      2
+    ],
+    "reward_rate": [
+      30,
+      60
+    ],
+    "cue_delay": [
+      0
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      20
+    ],
+    "upper_limit": 150,
+    "duration": 0.2,
+    "stimulate_all": true,
+    "check_all": true
+  },
+  "left_katagawa": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      1,
+      2
+    ],
+    "reward_rate": [
+      50,
+      0
+    ],
+    "cue_delay": [
+      0
+    ],
+    "ITI_correct": [
+      20
+    ],
+    "ITI_failure": [
+      20
+    ],
+    "upper_limit": 150,
+    "duration": 0.2,
+    "stimulate_all": true,
+    "check_all": true,
+    "correct_on": {
+      "1": [
+        "white_noise",
+        "house_lamp"
+      ]
+    },
+    "reward_delay": {
+      "1": 1.0
+    }
+  }
+}
