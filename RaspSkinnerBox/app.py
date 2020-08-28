@@ -71,7 +71,7 @@ def task(task_no: str, remained: int):
     reward = ex_flow[current_task_name].get("feed_upper", 70)
 
     # main
-    while correct_times <= int(current_task["upper_limit"] / limit[DEBUG]):
+    while correct_times < int(current_task["upper_limit"] / limit[DEBUG]):
         # task start
         schedule.run_pending()
         if overpayed_feeds_calculate():
