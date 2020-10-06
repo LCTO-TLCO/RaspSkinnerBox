@@ -19,8 +19,7 @@ lever_lamp = {1: 22, 2: 27}
 lever_out = {1: 23, 2: 18}
 
 dispenser_magazine = 4
-# white_noise = 24
-white_noise = 20
+white_noise = 26
 house_lamp = 17
 
 # input
@@ -83,6 +82,13 @@ def dispense_pelet(reason="reward"):
         print("dispence for {}: {}".format(reason, 1))
 
 
+def set_output(target: str, switch: str):
+    global lever_lamp, lever_in, white_noise, house_lamp, dispenser_sensor, lever_out
+    do = {"on": GPIO.HIGH, "off": GPIO.LOW}
+    #    print(f"GPIO.output({target},{do[switch]})")
+    exec(f"GPIO.output({target},{do[switch]})")
+
+
 def hole_lamp_turn(target: Union[int, str], switch: str):
     global lever_lamp, lever_in, white_noise, house_lamp, dispenser_sensor, lever_out
     if not DEBUG:
@@ -90,7 +96,7 @@ def hole_lamp_turn(target: Union[int, str], switch: str):
         if isinstance(target, int):
             GPIO.output(lever_lamp[target], do[switch])
             GPIO.output(lever_out[target], not do[switch])
-        elif "lamp" in target:
+        elif "lamp" in target or "noise":
             exec("GPIO.output({},do[switch])".format(target))
     elif DEBUG:
         print("debug: {} hole turn {}".format(target, switch))
@@ -166,3 +172,4 @@ def callback_magazine(channel):
 
 def callback_lever(channel):
     all_nosepoke_log(channel, "lever_push")
+

@@ -279,7 +279,8 @@ def task(task_no: str, remained: int):
             if current_task.get("correct_on", False):
                 if str(poked_hole) in current_task["correct_on"].keys():
                     for fact in current_task["correct_on"][str(poked_hole)]:
-                        exec('hole_lamp_turn({},"on")'.format(fact))
+                        print(f'fact={fact}')
+                        hole_lamp_turn(fact, "on")
             sleep(0.01)
             # reward delay
             if current_task.get("reward_delay", False):
@@ -295,6 +296,13 @@ def task(task_no: str, remained: int):
                         if (datetime.now() - base_time).seconds >= reward_delay:
                             timelimit = True
                         sleep(0.05)
+            # off
+            if current_task.get("correct_on", False):
+                for lever, facts in current_task["correct_on"].items():
+                    if int(lever) == poked_hole:
+                        for fact in facts:
+                            hole_lamp_turn(fact, "off")
+            export(task_no, session_no, correct_times, "play noise", reward_delay)
             hole_lamp_turn("house_lamp", "on")
             dispense_pelet()
             feeds_today += 1
@@ -307,15 +315,28 @@ def task(task_no: str, remained: int):
                 sleep(0.01)
             export(task_no, session_no, correct_times, "magazine nose poked")
             hole_lamp_turn("house_lamp", "off")
-            # off
-            if current_task.get("correct_on", False):
-                for lever, facts in current_task["correct_on"].items():
-                    if int(lever) == poked_hole:
-                        for fact in facts:
-                            exec('hole_lamp_turn({},"off")'.format(fact))
             actualITI = ITI(current_task["ITI_correct"], correct_times=correct_times)
             export(task_no, session_no, correct_times, "ITI", actualITI)
         else:
+            # incorrect on(演出)
+            if current_task.get("incorrect_on", False) or current_task.get("incorrect_off", False):
+                reward_delay = current_task["reward_delay"].get(str(poked_hole), 10) if isinstance(
+                    current_task["reward_delay"].get(str(poked_hole), 10.0),
+                    (int, float)) else choice(current_task["reward_delay"].get(str(poked_hole), [10]))
+                if str(poked_hole) in current_task.get("incorrect_on", {}).keys() and not str(
+                        poked_hole) in current_task.get("incorrect_off", {}).keys():
+                    for fact in current_task["incorrect_on"][str(poked_hole)]:
+                        # exec('hole_lamp_turn({},"on")'.format(fact))
+                        print(f'fact={fact}')
+                        hole_lamp_turn(fact, "on")
+                sleep(reward_delay)
+            # off
+            if current_task.get("incorrect_on", False):
+                for lever, facts in current_task["incorrect_on"].items():
+                    if int(lever) == poked_hole:
+                        for fact in facts:
+                            hole_lamp_turn(fact, "off")
+            export(task_no, session_no, correct_times, "play noise", reward_delay)
             actualITI = ITI(current_task["ITI_failure"], correct_times=correct_times)
             export(task_no, session_no, correct_times, "ITI", actualITI)
         session_no += 1
@@ -333,7 +354,7 @@ def T0():
     session_no = 0
     task_no = "T0"
     current_task = ex_flow[task_no]
-    hole_lamp_turn("house_lamp", "on")
+    hole_lamp_turn("house_lamp", "off")
     export(task_no, session_no, times, "start")
     hole_lamps_turn("off")
     for times in range(0, int(current_task.get("upper_limit", 50) / limit[DEBUG])):
@@ -342,7 +363,11 @@ def T0():
         hole_lamp_turn("house_lamp", "on")
         while not is_hole_poked("dispenser_sensor"):
             sleep(0.01)
+        sleep(0.5)
         dispense_pelet()
+        #        set_output(fact, "on")
+        #        sleep(0.2)
+        #        set_output(fact, "off")
         feeds_today += 1
         export(task_no, session_no, times, "reward")
         hole_lamp_turn("house_lamp", "off")
