@@ -19,7 +19,8 @@ lever_lamp = {1: 22, 2: 27}
 lever_out = {1: 23, 2: 18}
 
 dispenser_magazine = 4
-white_noise = 24
+# white_noise = 24
+white_noise = 20
 house_lamp = 17
 
 # input
