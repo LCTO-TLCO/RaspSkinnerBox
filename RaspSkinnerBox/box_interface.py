@@ -12,10 +12,8 @@ if DEBUG:
     import msvcrt
 
 logger = logging.getLogger(__name__)
-# lever_lamp = {1: 27, 2: 22}
-lever_lamp = {1: 22, 2: 27}
+lever_lamp = {1: 27, 2: 22}
 # レバーひっこめる・出す
-# lever_out = {1: 18, 2: 23}
 lever_out = {1: 23, 2: 18}
 
 dispenser_magazine = 4
@@ -85,18 +83,19 @@ def dispense_pelet(reason="reward"):
 def set_output(target: str, switch: str):
     global lever_lamp, lever_in, white_noise, house_lamp, dispenser_sensor, lever_out
     do = {"on": GPIO.HIGH, "off": GPIO.LOW}
-    #    print(f"GPIO.output({target},{do[switch]})")
     exec(f"GPIO.output({target},{do[switch]})")
 
 
-def hole_lamp_turn(target: Union[int, str], switch: str):
+def hole_lamp_turn(target: Union[int, str], switch: str, target_is_lever_light=False):
     global lever_lamp, lever_in, white_noise, house_lamp, dispenser_sensor, lever_out
     if not DEBUG:
         do = {"on": GPIO.HIGH, "off": GPIO.LOW}
         if isinstance(target, int):
-            GPIO.output(lever_lamp[target], do[switch])
-            GPIO.output(lever_out[target], not do[switch])
-        elif "lamp" in target or "noise":
+            if target_is_lever_light:
+                GPIO.output(lever_lamp[target], do[switch])
+            else:
+                GPIO.output(lever_out[target], not do[switch])
+        elif ("lamp" in target) or ("noise" in target):
             exec("GPIO.output({},do[switch])".format(target))
     elif DEBUG:
         print("debug: {} hole turn {}".format(target, switch))
@@ -172,4 +171,3 @@ def callback_magazine(channel):
 
 def callback_lever(channel):
     all_nosepoke_log(channel, "lever_push")
-

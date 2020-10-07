@@ -280,7 +280,11 @@ def task(task_no: str, remained: int):
                 if str(poked_hole) in current_task["correct_on"].keys():
                     for fact in current_task["correct_on"][str(poked_hole)]:
                         print(f'fact={fact}')
-                        hole_lamp_turn(fact, "on")
+                        if "light" in fact:
+                            hole_lamp_turn(poked_hole, "on", target_is_lever_light=True)
+                        else:
+                            hole_lamp_turn(fact, "on")
+
             sleep(0.01)
             # reward delay
             if current_task.get("reward_delay", False):
@@ -301,8 +305,11 @@ def task(task_no: str, remained: int):
                 for lever, facts in current_task["correct_on"].items():
                     if int(lever) == poked_hole:
                         for fact in facts:
-                            hole_lamp_turn(fact, "off")
-            export(task_no, session_no, correct_times, "play noise", reward_delay)
+                            if "light" in fact:
+                                hole_lamp_turn(poked_hole, "off", target_is_lever_light=True)
+                            else:
+                                hole_lamp_turn(fact, "off")
+                export(task_no, session_no, correct_times, "play noise", reward_delay)
             hole_lamp_turn("house_lamp", "on")
             dispense_pelet()
             feeds_today += 1
@@ -326,17 +333,22 @@ def task(task_no: str, remained: int):
                 if str(poked_hole) in current_task.get("incorrect_on", {}).keys() and not str(
                         poked_hole) in current_task.get("incorrect_off", {}).keys():
                     for fact in current_task["incorrect_on"][str(poked_hole)]:
-                        # exec('hole_lamp_turn({},"on")'.format(fact))
                         print(f'fact={fact}')
-                        hole_lamp_turn(fact, "on")
+                        if "light" in fact:
+                            hole_lamp_turn(poked_hole, "on", target_is_lever_light=True)
+                        else:
+                            hole_lamp_turn(fact, "on")
                 sleep(reward_delay)
             # off
             if current_task.get("incorrect_on", False):
                 for lever, facts in current_task["incorrect_on"].items():
                     if int(lever) == poked_hole:
                         for fact in facts:
-                            hole_lamp_turn(fact, "off")
-            export(task_no, session_no, correct_times, "play noise", reward_delay)
+                            if "light" in fact:
+                                hole_lamp_turn(poked_hole, "off", target_is_lever_light=True)
+                            else:
+                                hole_lamp_turn(fact, "off")
+                export(task_no, session_no, correct_times, "play noise", reward_delay)
             actualITI = ITI(current_task["ITI_failure"], correct_times=correct_times)
             export(task_no, session_no, correct_times, "ITI", actualITI)
         session_no += 1
