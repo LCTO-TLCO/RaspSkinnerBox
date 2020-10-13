@@ -29,15 +29,18 @@
     "check_all": true,
     "correct_on": {
       "1": [
-        "lever_light"
+        "lever_light",
+        "lever"
       ],
       "2": [
-        "lever_light"
+        "lever_light",
+        "lever"
       ]
     },
     "incorrect_on": {
       "2": [
-        "lever_light"
+        "lever_light",
+        "lever"
       ]
     },
     "incorrect_off": {
@@ -75,15 +78,18 @@
     "check_all": true,
     "correct_on": {
       "1": [
-        "lever_light"
+        "lever_light",
+        "lever"
       ],
       "2": [
-        "lever_light"
+        "lever_light",
+        "lever"
       ]
     },
     "incorrect_on": {
       "2": [
-        "lever_light"
+        "lever_light",
+        "lever"
       ]
     },
     "incorrect_off": {
@@ -121,15 +127,18 @@
     "check_all": true,
     "correct_on": {
       "1": [
-        "lever_light"
+        "lever_light",
+        "lever"
       ],
       "2": [
-        "lever_light"
+        "lever_light",
+        "lever"
       ]
     },
     "incorrect_on": {
       "2": [
-        "lever_light"
+        "lever_light",
+        "lever"
       ]
     },
     "incorrect_off": {

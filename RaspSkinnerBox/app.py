@@ -277,25 +277,31 @@ def task(task_no: str, remained: int):
         hole_lamps_turn("off", stimule_holes)
         if is_correct:
             # correct on(確定演出)
+            reward_delay = current_task["reward_delay"].get(str(poked_hole), 0) if isinstance(
+                        current_task["reward_delay"].get(str(poked_hole), 0.0),
+                        (int, float)) else choice(current_task["reward_delay"].get(str(poked_hole), [0]))
             if current_task.get("correct_on", False):
                 if str(poked_hole) in current_task["correct_on"].keys():
                     for fact in current_task["correct_on"][str(poked_hole)]:
                         print(f'fact={fact}')
                         if "light" in fact:
                             hole_lamp_turn(poked_hole, "on", target_is_lever_light=True)
+                        elif "lever" in fact:
+                            # lever_lightは引っかからない(改修時順番に注意)
+                            hole_lamp_turn(poked_hole, "on")
                         else:
                             hole_lamp_turn(fact, "on")
+                        export(task_no, session_no, correct_times,
+                               "{}{} on".format(fact, poked_hole if ("light" or "lever") in fact else ""),
+                               reward_delay)
 
             sleep(0.01)
+
             # reward delay
             if current_task.get("reward_delay", False):
                 if str(poked_hole) in current_task["reward_delay"].keys():
                     timelimit = False
                     base_time = datetime.now()
-                    # list表記ならランダムに選んで待ち時間にする
-                    reward_delay = current_task["reward_delay"].get(str(poked_hole), 0) if isinstance(
-                        current_task["reward_delay"].get(str(poked_hole), 0.0),
-                        (int, float)) else choice(current_task["reward_delay"].get(str(poked_hole), [0]))
                     export(task_no, session_no, correct_times, "reward delay", reward_delay)
                     while not timelimit:
                         if (datetime.now() - base_time).seconds >= reward_delay:
@@ -308,10 +314,14 @@ def task(task_no: str, remained: int):
                         for fact in facts:
                             if "light" in fact:
                                 hole_lamp_turn(poked_hole, "off", target_is_lever_light=True)
+                            elif "lever" in fact:
+                                hole_lamp_turn(poked_hole, "off")
                             else:
                                 hole_lamp_turn(fact, "off")
-                export(task_no, session_no, correct_times, "play noise", reward_delay)
-#            hole_lamp_turn("house_lamp", "off")
+                            export(task_no, session_no, correct_times,
+                                   "{}{} off".format(fact, poked_hole if ("light" or "lever") in fact else ""),
+                                   reward_delay)
+            #            hole_lamp_turn("house_lamp", "off")
             dispense_pelet()
             feeds_today += 1
             # perseverative response measurement after reward & magazine nose poke detection
@@ -337,9 +347,20 @@ def task(task_no: str, remained: int):
                         print(f'fact={fact}')
                         if "light" in fact:
                             hole_lamp_turn(poked_hole, "on", target_is_lever_light=True)
+                        elif "lever" in fact:
+                            hole_lamp_turn(poked_hole, "on")
                         else:
                             hole_lamp_turn(fact, "on")
-                sleep(reward_delay)
+                        export(task_no, session_no, correct_times,
+                               "{}{} on".format(fact, poked_hole if ("light" or "lever") in fact else ""),
+                               reward_delay)
+                timelimit = False
+                base_time = datetime.now()
+                export(task_no, session_no, correct_times, "delay", reward_delay)
+                while not timelimit:
+                    if (datetime.now() - base_time).seconds >= reward_delay:
+                        timelimit = True
+                    sleep(0.05)
             # off
             if current_task.get("incorrect_on", False):
                 for lever, facts in current_task["incorrect_on"].items():
@@ -347,9 +368,13 @@ def task(task_no: str, remained: int):
                         for fact in facts:
                             if "light" in fact:
                                 hole_lamp_turn(poked_hole, "off", target_is_lever_light=True)
+                            elif "lever" in fact:
+                                hole_lamp_turn(poked_hole, "on")
                             else:
                                 hole_lamp_turn(fact, "off")
-                export(task_no, session_no, correct_times, "play noise", reward_delay)
+                            export(task_no, session_no, correct_times,
+                                   "{}{} off".format(fact, poked_hole if ("light" or "lever") in fact else ""),
+                                   reward_delay)
             actualITI = ITI(current_task["ITI_failure"], correct_times=correct_times)
             export(task_no, session_no, correct_times, "ITI", actualITI)
         session_no += 1
@@ -373,7 +398,7 @@ def T0():
     for times in range(0, int(current_task.get("upper_limit", 50) / limit[DEBUG])):
         #        if reset_time <= datetime.now():
         #            dispense_all(reward)
-#        hole_lamp_turn("house_lamp", "on")
+        #        hole_lamp_turn("house_lamp", "on")
         while not is_hole_poked("dispenser_sensor"):
             sleep(0.01)
         sleep(0.5)
@@ -383,7 +408,7 @@ def T0():
         #        set_output(fact, "off")
         feeds_today += 1
         export(task_no, session_no, times, "reward")
-#        hole_lamp_turn("house_lamp", "off")
+        #        hole_lamp_turn("house_lamp", "off")
         ITI(current_task.get("ITI", [4, 8, 16, 32]), correct_times=times)
         session_no += 1
     reward = reward - times
