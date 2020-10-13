@@ -2,7 +2,7 @@
   "T0": {
     "upper_limit": 50
   },
-  "phase1": {
+  "L50d-R50p": {
     "task_call": true,
     "limited_hold": 30,
     "target_hole": [
@@ -17,10 +17,10 @@
       0
     ],
     "ITI_correct": [
-      20
+      10
     ],
     "ITI_failure": [
-      20
+      10
     ],
     "overpay": false,
     "upper_limit": 150,
@@ -29,29 +29,26 @@
     "check_all": true,
     "correct_on": {
       "1": [
-        "white_noise",
         "lever_light"
       ],
       "2": [
-        "white_noise",
         "lever_light"
       ]
     },
     "incorrect_on": {
       "2": [
-        "white_noise",
         "lever_light"
       ]
     },
     "incorrect_off": {
-      "1": []
+      "1":[]
     },
     "reward_delay": {
-      "1": 10.0,
-      "2": 10.0
+      "1": 5.0,
+      "2": 5.0
     }
   },
-  "left_buzz": {
+  "L25d-R50p": {
     "task_call": true,
     "limited_hold": 30,
     "target_hole": [
@@ -59,8 +56,8 @@
       2
     ],
     "reward_rate": [
-      100,
-      30
+      25,
+      50
     ],
     "cue_delay": [
       0
@@ -69,7 +66,7 @@
       20
     ],
     "ITI_failure": [
-      20
+      10
     ],
     "overpay": false,
     "upper_limit": 150,
@@ -78,14 +75,69 @@
     "check_all": true,
     "correct_on": {
       "1": [
-        "white_noise"
+        "lever_light"
       ],
       "2": [
+        "lever_light"
       ]
+    },
+    "incorrect_on": {
+      "2": [
+        "lever_light"
+      ]
+    },
+    "incorrect_off": {
+      "1":[]
     },
     "reward_delay": {
       "1": 5.0,
-      "2": 1.0
+      "2": 5.0
+    }
+  },
+  "L12d-R50p": {
+    "task_call": true,
+    "limited_hold": 30,
+    "target_hole": [
+      1,
+      2
+    ],
+    "reward_rate": [
+      12.5,
+      50
+    ],
+    "cue_delay": [
+      0
+    ],
+    "ITI_correct": [
+      10
+    ],
+    "ITI_failure": [
+      10
+    ],
+    "overpay": false,
+    "upper_limit": 150,
+    "duration": 0.2,
+    "stimulate_all": true,
+    "check_all": true,
+    "correct_on": {
+      "1": [
+        "lever_light"
+      ],
+      "2": [
+        "lever_light"
+      ]
+    },
+    "incorrect_on": {
+      "2": [
+        "lever_light"
+      ]
+    },
+    "incorrect_off": {
+      "1":[]
+    },
+    "reward_delay": {
+      "1": 5.0,
+      "2": 5.0
     }
   }
 }

@@ -186,7 +186,7 @@ def task(task_no: str, remained: int):
             sleep(1)
             continue
         export(task_no, session_no, correct_times, "start")
-        hole_lamp_turn("house_lamp", "on")
+        hole_lamp_turn("house_lamp", "off")
 
         # task call
         rising = False
@@ -207,10 +207,10 @@ def task(task_no: str, remained: int):
                 input("type ENTER key to call task")
             if current_task.get("time", False) and not any(
                     list(map(is_execution_time, current_task.get("time", [["00:00", "23:59"]])))):
-                hole_lamp_turn("house_lamp", "off")
+                hole_lamp_turn("house_lamp", "on")
                 continue
             export(task_no, session_no, correct_times, "task called")
-            hole_lamp_turn("house_lamp", "off")
+            hole_lamp_turn("house_lamp", "on")
 
             # cue delay
             premature = False
@@ -273,6 +273,7 @@ def task(task_no: str, remained: int):
                     export(task_no, session_no, correct_times, "time over")
             sleep(0.01)
         # end
+        hole_lamp_turn("house_lamp", "off")
         hole_lamps_turn("off", stimule_holes)
         if is_correct:
             # correct on(確定演出)
@@ -310,7 +311,7 @@ def task(task_no: str, remained: int):
                             else:
                                 hole_lamp_turn(fact, "off")
                 export(task_no, session_no, correct_times, "play noise", reward_delay)
-            hole_lamp_turn("house_lamp", "on")
+#            hole_lamp_turn("house_lamp", "off")
             dispense_pelet()
             feeds_today += 1
             # perseverative response measurement after reward & magazine nose poke detection
@@ -372,7 +373,7 @@ def T0():
     for times in range(0, int(current_task.get("upper_limit", 50) / limit[DEBUG])):
         #        if reset_time <= datetime.now():
         #            dispense_all(reward)
-        hole_lamp_turn("house_lamp", "on")
+#        hole_lamp_turn("house_lamp", "on")
         while not is_hole_poked("dispenser_sensor"):
             sleep(0.01)
         sleep(0.5)
@@ -382,7 +383,7 @@ def T0():
         #        set_output(fact, "off")
         feeds_today += 1
         export(task_no, session_no, times, "reward")
-        hole_lamp_turn("house_lamp", "off")
+#        hole_lamp_turn("house_lamp", "off")
         ITI(current_task.get("ITI", [4, 8, 16, 32]), correct_times=times)
         session_no += 1
     reward = reward - times
