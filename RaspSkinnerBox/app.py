@@ -375,6 +375,7 @@ def task(task_no: str, remained: int):
                             export(task_no, session_no, correct_times,
                                    "{}{} off".format(fact, poked_hole if ("light" or "lever") in fact else ""),
                                    reward_delay)
+            hole_lamps_turn("off", target_holes)
             actualITI = ITI(current_task["ITI_failure"], correct_times=correct_times)
             export(task_no, session_no, correct_times, "ITI", actualITI)
         session_no += 1
