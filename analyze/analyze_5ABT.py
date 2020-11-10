@@ -281,15 +281,17 @@ def calc_reach_threshold_ratio(mice, task, is_over, threshold_ratio, window, cor
         # threshold_ratioを超えるまで(is_over = trueの場合), もしくは下回るまでis_over=falseの場合)の
         # reward/failureに基づく(timeoverは除く)trial数
         # データの抜出
-        trials = data[(data.task.isin([task])) & (data.event_type.isin(["reward", "failure"]))].hole_no.reset_index()
+        trials = data[(data.task.isin([task])) & (data.event_type.isin(["reward", "failure"]))].hole_no.reset_index().hole_no
         # 各関数の宣言
         conditions_function = (lambda x: x > threshold_ratio) if is_over else (lambda x: x < threshold_ratio)
-        calc_select_prob_function = lambda d: d[d.hole_no.isin([correct_hole])].size / window
+        calc_select_prob_function = lambda d: d[d.isin([correct_hole])].size / window
         # 選択率の算出
         selection_raito = trials.rolling(window).apply(calc_select_prob_function)
         # 選択率と閾値の比較
         result = selection_raito.apply(conditions_function)
         # 最初に選択率の条件を満たしたindexを取得
+        first_trial = min(result[result].index)
+        # TODO ＠タカラダ　結果を保存
 
 
         # BK KOマウスは、Only5_50で、hole 5のみが正解であることに気づくまで時間がかかることを定量化したい
