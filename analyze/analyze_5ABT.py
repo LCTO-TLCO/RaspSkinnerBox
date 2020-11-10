@@ -103,7 +103,16 @@ def estimate_learning_rate_and_beta(mice, models, tasks):
 # TODO 最適df_estimationはmain側でファイル保存できるようにしておき、あればsimのときにそれをmodel_paramsとして使う形にする？
 
 # TODO 1匹分, 横軸trial 佐鳥君
-# def plot_choiceratio_movingaverage_trialbase(mouse_id):
+def plot_choiceratio_movingaverage_trialbase(mouse_id):
+    """
+    指定マウス1匹分の選択確率の移動平均を試行ステップで描画しeps, png保存
+    :param mouse_id
+    :return: なし
+    """
+    moving_average_window = 100
+    data = get_data(mouse_id)
+    # TODO 以下処理
+
 
 # TODO n匹分, 横軸reward 佐鳥君
 # def plot_choiceratio_movingaverage_rewardbase(mice):
