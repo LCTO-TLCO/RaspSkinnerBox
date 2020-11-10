@@ -45,7 +45,7 @@ def get_mouse_group_dict():
                   "mice": [27, 30, 31, 33, 47, 49, 50, 52, 64, 67, 68, 71, 116, 117, 181, 184, 186, 187],
                   },
         "BKKO": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
-                 "mice": [118, 132, 175, 195, 201],
+                 "mice": [118, 132, 175, 195, 201, 205],
                  },
         "BKLT": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
                  "mice": [119, 136, 149, 177, 190, 202, 206],
@@ -84,7 +84,6 @@ def load_from_action_csv(mouse_id):
 
 
 def get_data(mouse_id):
-    # check TODO: global変数的な何かでキャッシュを実装する 宝田君
     global data_cache
     data = data_cache[mouse_id] if data_cache.get(mouse_id, False) else load_from_action_csv(mouse_id)
     return data
@@ -213,7 +212,13 @@ def _export_P_20_filter(dc, mice, all_sel_dc):
 # TODO 冗長だけど、mouse_id毎に計算して、dataframeに統合する形の方がわかりやすかな？
 # TODO CSV出力は呼び出し元で行う
 # def calc_stay_ratio(tdata, mice, tasks, selection=[1, 3, 5, 7, 9]) -> dict:
-def calc_stay_ratio(mice, selection=[1, 3, 5, 7, 9]) -> [dict, dict]:
+def calc_stay_ratio(mice, tasks, selection=[1, 3, 5, 7, 9]) -> [dict, dict]:
+    """
+    指定タスクにおける特定のholeの平均選択率が指定した率を上回った、もしくは下回るまでのtrial数を返す
+    :param mice: mouse_idのリスト
+    :param tasks: 解析対象のtask
+    :param selection: 解析対象とするhole no
+    """
     # count_taskをclass task_dataの外で下記の仕様で再実装（classから消す必要はない）ßß
 
     if isinstance(selection, str):
@@ -223,8 +228,8 @@ def calc_stay_ratio(mice, selection=[1, 3, 5, 7, 9]) -> [dict, dict]:
     selection = [str(num) for num in selection]
     tdata = pd.DataFrame(columns=["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"])
     for mouse_id in mice:
-        tdata = pd.concat([tdata, get_data(mouse_id)])
-    dc = tdata.mice_task[tdata["event_type"].isin(["reward", "failure"]) & tdata.task.isin(tasks)]
+        tdata = pd.concat([tdata, get_data(mouse_id)]) # mouse_idが無いので_export_P_20_filterでひっかかる
+    dc = tdata[tdata["event_type"].isin(["reward", "failure"]) & tdata.task.isin(tasks)]
     dc = dc.reset_index()
 
     tmp_dt = dc[dc["hole_no"].isin(selection)]
@@ -294,8 +299,8 @@ def calc_reach_threshold_ratio(mice, task, is_over, threshold_ratio, window, cor
         # TODO ＠タカラダ　結果を保存
 
 
-        # BK KOマウスは、Only5_50で、hole 5のみが正解であることに気づくまで時間がかかることを定量化したい
-        # BK KOマウスは、Not5_Other30で、hole 5に固執することを定量化したい
+        # BK KOマウスは、Only5_50で、hole 5のみが正解であることに気づくまで試行回数がかかることを定量化したい
+        # BK KOマウスは、Not5_Other30で、hole 5に固執し、hole 5から脱却するまでの試行回数を算出したい
 
     return df_summary
 
@@ -371,6 +376,9 @@ if __name__ == '__main__':
     dfp300 = df.pivot_table(index=['mouse_id'], columns=['task'], values=['entropy300'])  ## TODO: task実行順に並べたい
     print(dfp300)
     dfp300.to_csv("./data/entropy/entropy300_{}.csv".format("-".join([str(n) for n in mice])))
+
+    # WSLS
+    calc_stay_ratio(mice, tasks, selection=[1, 3, 5, 7, 9])
 
     # # 正解選択率が50%を越えるまでのステップ数計算
     # df_step_UP = calc_reach_threshold_ratio(mice, 'Only5_50', True, 0.5, 10, 5)
