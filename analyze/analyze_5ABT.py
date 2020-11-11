@@ -217,7 +217,7 @@ def _export_P_20_filter(dc, mice, all_sel_dc):
     return {"c_same": avg_c, "f_same": avg_f, "c_same_base": avg_c_base, "f_same_base": avg_i_base}
 
 
-# TODO tdataの代わりにmouse_idで都度読み出しに変更 宝田君
+# check TODO tdataの代わりにmouse_idで都度読み出しに変更 宝田君
 # TODO 冗長だけど、mouse_id毎に計算して、dataframeに統合する形の方がわかりやすかな？
 # TODO CSV出力は呼び出し元で行う
 # def calc_stay_ratio(tdata, mice, tasks, selection=[1, 3, 5, 7, 9]) -> dict:
@@ -235,9 +235,11 @@ def calc_stay_ratio(mice, tasks, selection=[1, 3, 5, 7, 9]) -> [dict, dict]:
     elif isinstance(selection, int):
         selection = [str(selection)]
     selection = [str(num) for num in selection]
-    tdata = pd.DataFrame(columns=["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"])
+    tdata = pd.DataFrame(
+        columns=["timestamps", "mouse_id", "task", "session_id", "correct_times", "event_type", "hole_no"])
     for mouse_id in mice:
-        tdata = pd.concat([tdata, get_data(mouse_id)])
+        tdata = pd.concat(
+            [tdata, get_data(mouse_id).assign(mouse_id=mouse_id)])  # check mouse_idが無いので_export_P_20_filterでひっかかる
     dc = tdata[tdata["event_type"].isin(["reward", "failure"]) & tdata.task.isin(tasks)]
     dc = dc.reset_index()
 
@@ -271,7 +273,7 @@ def calc_stay_ratio(mice, tasks, selection=[1, 3, 5, 7, 9]) -> [dict, dict]:
 # count_task(tdata30, mice30, tasks30, [1, 3, 5, 7, 9])
 # count_task(tdata50, mice50, tasks50, [1, 3, 5, 7, 9])
 
-# TODO 宝田君
+# check TODO 宝田君
 def calc_reach_threshold_ratio(mice, task, is_over, threshold_ratio, window, correct_hole):
     """
     指定タスクにおける特定のholeの平均選択率が指定した率を上回った、もしくは下回るまでのtrial数を返す
@@ -294,8 +296,13 @@ def calc_reach_threshold_ratio(mice, task, is_over, threshold_ratio, window, cor
         # 各windowステップ内(task先頭+windowから)でのcorrect_hole選択率が
         # threshold_ratioを超えるまで(is_over = trueの場合), もしくは下回るまでis_over=falseの場合)の
         # reward/failureに基づく(timeoverは除く)trial数
+
         # データの抜出
-        trials = data[(data.task.isin([task])) & (data.event_type.isin(["reward", "failure"]))].hole_no.reset_index().hole_no
+        trials = data[
+            (data.task.isin([task])) & (data.event_type.isin(["reward", "failure"]))].hole_no.reset_index().hole_no
+        # 該当するデータが存在しないときは中断して次のマウス
+        if trials.size == 0:
+            continue
         # 各関数の宣言
         conditions_function = (lambda x: x > threshold_ratio) if is_over else (lambda x: x < threshold_ratio)
         calc_select_prob_function = lambda d: d[d.isin([correct_hole])].size / window
@@ -305,15 +312,15 @@ def calc_reach_threshold_ratio(mice, task, is_over, threshold_ratio, window, cor
         result = selection_raito.apply(conditions_function)
         # 最初に選択率の条件を満たしたindexを取得
         first_trial = min(result[result].index)
-        # TODO ＠タカラダ　結果を保存
-
+        # 結果を保存
+        df_summary = df_summary.append({'mouse_id': mouse_id, 'trials': first_trial}, ignore_index=True)
 
         # BK KOマウスは、Only5_50で、hole 5のみが正解であることに気づくまで試行回数がかかることを定量化したい
         # BK KOマウスは、Not5_Other30で、hole 5に固執し、hole 5から脱却するまでの試行回数を算出したい
 
     return df_summary
 
-
+# TODO 宝田
 def calc_reactiontime_rewardlatency(mice):
     """
     マガジンノーズポークからhole選択までの反応時間(reactiontime)と正解後のマガジンノーズポークまでの時間(rewardlatency)をマウス・タスク毎に算出する
