@@ -237,7 +237,7 @@ def calc_stay_ratio(mice, tasks, selection=[1, 3, 5, 7, 9]) -> [dict, dict]:
     selection = [str(num) for num in selection]
     tdata = pd.DataFrame(columns=["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"])
     for mouse_id in mice:
-        tdata = pd.concat([tdata, get_data(mouse_id)]) # mouse_idが無いので_export_P_20_filterでひっかかる
+        tdata = pd.concat([tdata, get_data(mouse_id)])
     dc = tdata[tdata["event_type"].isin(["reward", "failure"]) & tdata.task.isin(tasks)]
     dc = dc.reset_index()
 
@@ -315,6 +315,11 @@ def calc_reach_threshold_ratio(mice, task, is_over, threshold_ratio, window, cor
 
 
 def calc_reactiontime_rewardlatency(mice):
+    """
+    マガジンノーズポークからhole選択までの反応時間(reactiontime)と正解後のマガジンノーズポークまでの時間(rewardlatency)をマウス・タスク毎に算出する
+    :param mice: mouse_idのリスト
+    :return: DataFrame, columns=['mouse_id', 'task', 'reaction_time', 'reward_latency'];　unique key=(mouse_id, task)
+    """
     df_summary = pd.DataFrame(columns=['mouse_id', 'task', 'reaction_time', 'reward_latency'])
 
     for mouse_id in mice:
