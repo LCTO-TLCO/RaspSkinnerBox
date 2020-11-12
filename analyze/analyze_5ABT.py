@@ -372,7 +372,8 @@ if __name__ == '__main__':
 
     ## 解析対象マウスの指定
     if len(args) <= 1:
-        mouse_group_name = "BKKO"  # default
+        mouse_group_name = "BKLT"  # default
+        #mouse_group_name = "BKKO"  # default
     else:
         mouse_group_name = args[1]
 
@@ -384,32 +385,40 @@ if __name__ == '__main__':
     if len(args) >= 3:  # 個別に指定があった場合、そのマウスのみ解析
         mice = [args[2]]
 
-    ## entropy計算実行
-    df = calc_entropy(mice)
-    df = df[df.task.isin(tasks)]
+    is_calc_entropy = True
+    is_calc_stay_ratio = False
+    is_calc_reach_threshold_ratio = True
 
-    # entropy 150 まとめて書き出し
-    dfp150 = df.pivot_table(index=['mouse_id'], columns=['task'], values=['entropy150'])  ## TODO: task実行順に並べたい
-    print(dfp150)
-    dfp150.to_csv("./data/entropy/entropy150_{}.csv".format("-".join([str(n) for n in mice])))
+    # entropy計算
+    if is_calc_entropy:
+        df = calc_entropy(mice)
+        df = df[df.task.isin(tasks)]
 
-    # entropy 300 まとめて書き出し
-    dfp300 = df.pivot_table(index=['mouse_id'], columns=['task'], values=['entropy300'])  ## TODO: task実行順に並べたい
-    print(dfp300)
-    dfp300.to_csv("./data/entropy/entropy300_{}.csv".format("-".join([str(n) for n in mice])))
+        # entropy 150 まとめて書き出し
+        dfp150 = df.pivot_table(index=['mouse_id'], columns=['task'], values=['entropy150'])  ## TODO: task実行順に並べたい
+        print(dfp150)
+        dfp150.to_csv("./data/entropy/entropy150_{}.csv".format(mouse_group_name))
+
+        # entropy 300 まとめて書き出し
+        dfp300 = df.pivot_table(index=['mouse_id'], columns=['task'], values=['entropy300'])  ## TODO: task実行順に並べたい
+        print(dfp300)
+        dfp300.to_csv("./data/entropy/entropy300_{}.csv".format(mouse_group_name))
 
     # WSLS
-    calc_stay_ratio(mice, tasks, selection=[1, 3, 5, 7, 9])
+    if is_calc_stay_ratio:
+        calc_stay_ratio(mice, tasks, selection=[1, 3, 5, 7, 9])
 
-    # # 正解選択率が50%を越えるまでのステップ数計算
-    # df_step_UP = calc_reach_threshold_ratio(mice, 'Only5_50', True, 0.5, 10, 5)
-    # print(df_step_UP)
-    # df_step_UP.to_csv("./data/step/step_UP50_{}.csv".format("-".join([str(n) for n in mice])))
     #
-    # # 非正解選択率が50%を下回るまでステップ数計算
-    # df_step_DOWN = calc_reach_threshold_ratio(mice, 'Not5_Other30', False, 0.5, 10, 5)
-    # print(df_step_DOWN)
-    # df_step_DOWN.to_csv("./data/step/step_DOWN50_{}.csv".format("-".join([str(n) for n in mice])))
+    if is_calc_reach_threshold_ratio:
+        # # 正解選択率が50%を越えるまでのステップ数計算
+        df_step_UP = calc_reach_threshold_ratio(mice, 'Only5_50', True, 0.7, 50, 5)
+        print(df_step_UP)
+        df_step_UP.to_csv("./data/step/step_UP50_{}.csv".format(mouse_group_name))
+
+        # # 非正解選択率が50%を下回るまでステップ数計算
+        df_step_DOWN = calc_reach_threshold_ratio(mice, 'Not5_Other30', False, 0.7, 50, 5)
+        print(df_step_DOWN)
+        df_step_DOWN.to_csv("./data/step/step_DOWN50_{}.csv".format(mouse_group_name))
 
 # TODO 考え方:
 #  0.意識レベルの低下した人でも流れがわかるようにする
