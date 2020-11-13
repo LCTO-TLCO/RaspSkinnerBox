@@ -172,7 +172,7 @@ def _export_P_20_filter(dc, mice, all_sel_dc):
                 if dat["hole_no"] == mice_allsel_data["hole_no"][idx + j]:
                     tmp[j - 1] += 1
             prob_co.append(np.copy(tmp))
-        #        avg_c = np.append(avg_c, np.array([np.sum(np.array(prob_co),axis=0)/(len(correct_data)-b_min)]),axis=0)
+        # avg_c = np.append(avg_c, np.array([np.sum(np.array(prob_co),axis=0)/(len(correct_data)-b_min)]),axis=0)
         avg_c = np.append(avg_c, np.array([np.sum(np.array(prob_co), axis=0) / (len(correct_data) - skip)]), axis=0)
 
         # f_same
@@ -338,7 +338,7 @@ def calc_reactiontime_rewardlatency(mice):
 
 # calculating entropy head 300/150 at each task
 def calc_entropy(mice):
-    df_summary = pd.DataFrame(columns=['mouse_id', 'task', 'entropy300', 'entropy150'])
+    df_summary = pd.DataFrame(columns=['mouse_id', 'task', 'entropy300', 'entropy150', 'entropy400'])
 
     for mouse_id in mice:
         data = get_data(mouse_id)
@@ -355,35 +355,24 @@ def calc_entropy(mice):
                 print(tasks_data_p)  ## TODO: 回数なので整数で表示したい
 
             hole_list = tasks_data[tasks_data.event_type.isin(["reward", "failure"])]["hole_no"]
+            ent400 = pent.shannon_entropy(hole_list.head(400).to_list())
             ent300 = pent.shannon_entropy(hole_list.head(300).to_list())
             ent150 = pent.shannon_entropy(hole_list.head(150).to_list())
             if verbose_level > 0:
                 print(
                     f"[calc_entropy] mouse_id={mouse_id}, task={task: <13}: entropy300 = {ent300:.3f}, entropy150 = {ent150:.3f}, length={len(hole_list)}")
 
-            ent_row = pd.Series([mouse_id, task, ent300, ent150], index=df_summary.columns)
+            ent_row = pd.Series([mouse_id, task, ent300, ent150, ent400], index=df_summary.columns)
             df_summary = df_summary.append(ent_row, ignore_index=True)
 
     return df_summary
 
 
-if __name__ == '__main__':
-    args = sys.argv
-
-    ## 解析対象マウスの指定
-    if len(args) <= 1:
-        mouse_group_name = "BKLT"  # default
-        #mouse_group_name = "BKKO"  # default
-    else:
-        mouse_group_name = args[1]
-
+def do_process(mouse_group_name):
     mouse_group_dict = get_mouse_group_dict()
     choice_mouse_group_dict = mouse_group_dict[mouse_group_name]
     mice = choice_mouse_group_dict["mice"]
     tasks = choice_mouse_group_dict["tasks_section"]
-
-    if len(args) >= 3:  # 個別に指定があった場合、そのマウスのみ解析
-        mice = [args[2]]
 
     is_calc_entropy = True
     is_calc_stay_ratio = False
@@ -404,6 +393,10 @@ if __name__ == '__main__':
         print(dfp300)
         dfp300.to_csv("./data/entropy/entropy300_{}.csv".format(mouse_group_name))
 
+        # entropy 300 まとめて書き出し
+        dfp400 = df.pivot_table(index=['mouse_id'], columns=['task'], values=['entropy400'])  ## TODO: task実行順に並べたい
+        print(dfp400)
+        dfp400.to_csv("./data/entropy/entropy400_{}.csv".format(mouse_group_name))
     # WSLS
     if is_calc_stay_ratio:
         calc_stay_ratio(mice, tasks, selection=[1, 3, 5, 7, 9])
@@ -420,13 +413,16 @@ if __name__ == '__main__':
         print(df_step_DOWN)
         df_step_DOWN.to_csv("./data/step/step_DOWN50_{}.csv".format(mouse_group_name))
 
-# TODO 考え方:
-#  0.意識レベルの低下した人でも流れがわかるようにする
-#  1.命令はシンプルに(構造体で渡さずmouse_idなどの数字で渡す)
-#  2.各関数の中で必要な構造体は冗長でも都度getしに行く(キャッシュは使ってもよいが、他の関数で変更した構造体データに依存してはならない)
-#  3.複数匹のデータは、予め各関数の冒頭で決めて置いた列を持ったDataFrameで返す
-#  4.呼び出し元(main or jupyter)で、帰ってきたDataFrameの加工を行い、統計ソフト側で読めるように調整する(pivotの異なるcsvフォーマットが複数ありえる)
-#  5.グラフ出力は各関数の中で完結し、eps, pngを吐き出す(epsにエラーが出るものはpdfで吐く)
-#  6.呼び出し元で、条件毎にmiceを定義し、条件を指定してまとめて処理する
-#  7.特定の関数の中からしか呼ばれない汎用性の無い関数名は _ から始める
-#  8.mouse_group_dict["tasks_section"]は解析したい対象taskを書く。はじくのは呼び出し元(main)
+if __name__ == '__main__':
+    args = sys.argv
+
+    ## 解析対象マウスの指定
+    if len(args) <= 1:
+        do_process('BKKO')
+        do_process('BKLT')
+    else:
+        do_process(args[1])
+
+#    if len(args) >= 3:  # 個別に指定があった場合、そのマウスのみ解析
+#        mice = [args[2]]
+
