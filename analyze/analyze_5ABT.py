@@ -22,13 +22,27 @@ verbose_level = 0
 data_cache = {}
 sns.set()
 plt.style.use('ggplot')
-NUM_SIM = 5
+NUM_SIM = 100
 
 def get_model_list():
-    models_dict = [{"model_name": "standard_softmax_Q_beta_free",
-                    "update_q_func": Q_update,
-                    "policy_func": softmax_p,
-                    "pbounds": {"alpha_1": (0.0, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.0, 20.0)}}]
+    models_dict = [
+        {"model_name": "standard_Q_softmax_beta_free",
+        "update_q_func": Q_update,
+        "policy_func": softmax_p,
+        "pbounds": {"alpha_1": (0.0, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.0, 20.0)}},
+        {"model_name": "standard_Q_softmax_beta_5",
+         "update_q_func": Q_update,
+         "policy_func": softmax_p,
+         "pbounds": {"alpha_1": (0.0, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
+        {"model_name": "DLR_Q_softmax_beta_free",
+         "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
+         "policy_func": softmax_p,
+         "pbounds": {"alpha_1": (0.0, 0.3), "alpha_2": (0, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.0, 20.0)}},
+        {"model_name": "DLR_Q_softmax_beta_5",
+         "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
+         "policy_func": softmax_p,
+         "pbounds": {"alpha_1": (0.0, 0.3), "alpha_2": (0, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
+    ]
     return models_dict
 
 
@@ -72,7 +86,7 @@ def get_mouse_group_dict():
                   "mice": [27, 30, 31, 33, 47, 49, 50, 52, 64, 67, 68, 71, 116, 117, 181, 184, 186, 187],
                   },
         "BKKO": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
-                 "mice": [118, 132, 175, 195, 201, 205, 208],
+                 "mice": [118, 132, 175, 195, 201, 205],
                  },
         "BKLT": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
                  "mice": [119, 136, 149, 177, 190, 202, 206],
@@ -744,7 +758,7 @@ class Optimisation():
         self.num_first_to_remove = num_first_to_remove
         self.act_and_rew = act_and_rew
 
-    def do(self, update_q_func, policy_func, pbounds, n_calls, num_sim, is_show=False, is_save=False, model_name=None, is_unco=True):
+    def do(self, mouse_id, update_q_func, policy_func, pbounds, n_calls, num_sim, is_show=False, is_save=False, model_name=None, is_unco=True):
         values = [v for v in pbounds.values()]
         keys = [k for k in pbounds.keys()]
         self.agent.set_func(update_q_func, policy_func)
@@ -772,15 +786,17 @@ class Optimisation():
             print("--- try", i + 1, "-----------------------------")
             res = gp_minimize(
                 f, spaces,
-                acq_func="LCB",
-                #acq_func="gp_hedge",
-                n_random_starts=n_calls * 0.3,
+                #acq_func="LCB",
+                acq_func="gp_hedge",
+                n_initial_points=n_calls * 0.3,
                 n_calls=n_calls,
-                kappa=1.96,  # LCBのパラメータ[default = 1.96], 高いと探索優先
-                xi=0.01,  # EI, POIのパラメータ[default = 0.01], 以前の最適値に対してどれだけ改善を望むか
+                acq_optimizer="lbfgs",
+                #kappa=1.96,  # LCBのパラメータ[default = 1.96], 高いと探索優先
+                #xi=0.01,  # EI, POIのパラメータ[default = 0.01], 以前の最適値に対してどれだけ改善を望むか
                 #                noise="gaussian",  # ノイズ[default = "gaussian"], 全く与えたくなければ1e-10
-                noise=1e-8,  # ノイズ[default = "gaussian"], 全く与えたくなければ1e-10
+                #noise=1e-8,  # ノイズ[default = "gaussian"], 全く与えたくなければ1e-10
                 #                noise="gaussian",  # ノイズ[default = "gaussian"], 全く与えたくなければ1e-10
+                n_jobs=2,
                 verbose=False)
 
             param = {}
@@ -793,29 +809,6 @@ class Optimisation():
 
             q_value_array, prob_array = self.agent.sim(param)
             ll = np.sum(calculate_ll(self.act_and_rew, prob_array, self.num_first_to_remove, self.section_line))
-
-            # if is_unco:
-            #     unco_q_value_arrays, unco_prob_arrays = self.agent.unconstrained_sim_return_arrays(param, num_sim=NUM_SIM)
-            #     unco_ll_arrays = parallel_calculate_ll(self.act_and_rew, unco_prob_arrays, self.num_first_to_remove)
-            #     unco_ll_array = np.mean(unco_ll_arrays, axis=0)
-            #     unco_ll = np.sum(unco_ll_array)
-            #
-            #     mean_prob_array = np.mean(unco_prob_arrays, axis=0)
-            #     mean_unco_ll_array = calculate_ll(self.act_and_rew, mean_prob_array, self.num_first_to_remove, self.section_line)
-            #     mean_unco_ll = np.sum(mean_unco_ll_array)
-            #
-            # print("ll: ", ll)
-            # if is_unco:
-            #     print("unconstrained_each_ll: ", unco_ll)
-            #     print("unconstrained_mean_ll: ", mean_unco_ll)
-
-            plot_convergence(res)
-            if is_save:
-                plt.savefig(dirname + "convergence_try" + str(i + 1))
-            if is_show:
-                plt.show()
-            else:
-                plt.close()
 
             if (i + 1) % 5 == 0 and not((i + 1) == num_sim):
                 print("--- on the way result -----------------------------")
@@ -884,11 +877,12 @@ class Optimisation():
                 print("* Note", k, ": pbounds =", pbounds[k], ", best_params =", v)
 
         # 最後にまとめてcsv作るために保存しておく
-#        summary["ll"] = ll
 
         result = best_params.copy()
+        result["mouse_id"] = mouse_id
         result["ll"] = ll
         result["error"] = error
+        result["model"] = model_name
         if is_unco:
             result["unconstrained_mean_ll"] = unconstrained_sim_ll
             result["unconstrained_sim_error"] = unconstrained_sim_error
@@ -901,20 +895,6 @@ class Optimisation():
         self.model_results[model_name] = result
         self.model_order.append(model_name)
 
-        # このモデルの結果csvを作る
-        # result = pd.DataFrame(pbounds, index=["min", "max"])
-        # result = result[keys].T
-        # for i in range(num_sim):
-        #     result[str(i)] = params[i].values()
-        # result["best_params"] = best_params.values()
-        # result = result.T
-        # result["ll"] = [0, 0] + targets + [targets[best_index]]
-        # if is_save:
-        #     result = result.T
-        #     result.to_csv(dirname + "result.csv")
-
-#        return res, best_params
-#        return result
         return result
 
     def save_model_results_csv(self):
@@ -1226,25 +1206,14 @@ def satori_main(mice_id, dirname=None):
 
 
 
-def estimate_learning_rate_and_beta(mice, tasks, model):
+def estimate_learning_rate_and_beta(mice, tasks, model, num_sim=20, num_d_call = 150):
 
-    df_estimation = pd.DataFrame(
-    columns=['mouse_id', 'model', 'alpha1', 'alpha2', 'alpha3', 'beta', 'LL', 'AIC', 'unconstLL', 'unconstAIC'])
+    num_moving_average = 100  # 移動平均のstep数
+    num_first_to_remove = 100  # 移動平均にする際に削除するstep数
+    dirname = './'
+    is_show = False
 
     for mouse_id in mice:
-
-        # num_sim = 10  # 10
-        # num_d_call = 150  # 150
-        num_sim = 1  # 10
-        num_d_call = 1  # 150
-
-        dirname = './'
-
-        num_moving_average = 100  # 移動平均のstep数
-        num_first_to_remove = 100  # 移動平均にする際に削除するstep数
-
-        is_show = False
-
         start_time = time.time()
 
         print(f"[{mouse_id}] estimating learning rates")
@@ -1258,9 +1227,6 @@ def estimate_learning_rate_and_beta(mice, tasks, model):
         print("--- load section to analyze ---")
         section_step, section_line = check_section_size(data, tasks)
         act_and_rew = extract_act_and_rew(data)
-
-        # 全てのマウスのタスク区間のanalyzeによって加工されたデータの読み込み
-        print("--- load full section ---")
 
         # 既にフォルダが有っても作成
         # if dirname == None:
@@ -1276,12 +1242,12 @@ def estimate_learning_rate_and_beta(mice, tasks, model):
         opt = Optimisation(agent, dirname, section_line, average_action_array, num_first_to_remove, act_and_rew)
 
         ############## メイン実験
-
         with warnings.catch_warnings():
             warnings.filterwarnings('error')
             warnings.filterwarnings('ignore', message='The objective has been evaluated at this point before.')
 
-            result = opt.do(update_q_func=model["update_q_func"],
+            result = opt.do(mouse_id=mouse_id,
+                            update_q_func=model["update_q_func"],
                             policy_func=model["policy_func"],
                             pbounds=model["pbounds"],
                             n_calls=num_d_call,
@@ -1291,18 +1257,19 @@ def estimate_learning_rate_and_beta(mice, tasks, model):
                             is_unco=True,
                             model_name=model["model_name"])
 
-            df_estimation = df_estimation.append(pd.DataFrame.from_dict(result))
-#            mouse_idとmodel_nameを追加したい。
+            if 'df_estimation' in locals():
+                df_estimation = df_estimation.append(pd.DataFrame.from_dict(result, orient='index').T)
+            else:
+                df_estimation = pd.DataFrame.from_dict(result, orient='index').T
 
-    df_estimation.model = model["model_name"]
+    # TODO 宝田君 列名をmouse_id, model, ll, unconstrained_mean_ll・・・の順番にしたい
+    # TODO ・・・以下はモデルによって不定
+    # df_estimation = df_estimation.reindex(columns=['mouse_id', 'model', 'll', 'unconstrained_mean_ll']) #これでは消えてしまう
+
     print("total end time: ", time.time() - start_time)
 
     return df_estimation
 
-
-# TODO 最適df_estimationはmain側でファイル保存できるようにしておき、あればsimのときにそれをmodel_paramsとして使う形にする？
-
-# TODO 1匹分, 横軸trial 佐鳥君
 def plot_choiceratio_movingaverage_trialbase(mouse_id):
     """
     指定マウス1匹分の選択確率の移動平均を試行ステップで描画しeps, png保存
@@ -1623,12 +1590,15 @@ def do_process(mouse_group_name):
     if is_estimate_learning_params:
         models_dict = get_model_list()
         for model in models_dict:
-            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model)
+            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model, num_sim=100, num_d_call=150)
             df_learningparams = df_learningparams.assign(group=mouse_group_name)
-            print(df_learningparams)
+            df_learningparams.to_csv("./data/estimation/params_{}_{}.csv".format(model["model_name"], mouse_group_name))
 
-do_process('BKKO')
+        print(df_learningparams)
+    return df_learningparams
+
 do_process('BKLT')
+df_learningparams = do_process('BKKO')
 
 # if __name__ == '__main__':
 #     args = sys.argv
