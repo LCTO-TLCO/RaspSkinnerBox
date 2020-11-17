@@ -72,6 +72,8 @@ def get_tasks_prob_dict():
 
 
 def get_mouse_group_dict():
+    # 実験の意図
+    # 実験条件の宣言
     mouse_group_dict = {
         "Scarce": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
                    "mice": [8, 13, 17, 26, 137, 141, 144, 154, 168, 172],
@@ -253,7 +255,7 @@ def moving_average_time(mice_data, num_moving_average, num_first_to_remove):
     step_time = []
     average_time_array = []
     for i in range(total_timesteps - 1):
-        sec = (timestamps.iloc[i+1] - timestamps.iloc[i]).total_seconds()
+        sec = (timestamps.iloc[i + 1] - timestamps.iloc[i]).total_seconds()
         step_time.append(sec)
         average_time_array.append(np.mean(step_time[-num_moving_average:]))
     average_time_array = np.array(average_time_array)
@@ -266,7 +268,7 @@ def calculation_weight(mice_data, weight_dict):
     base_weight, dep_weight, end_weight = weight_dict["base"], weight_dict["dep"], weight_dict["end"]
     total_timesteps = len(mice_data)
     total_seconds = (
-    mice_data["timestamps"][total_timesteps - 1] - mice_data["timestamps"][0]).total_seconds()  # 実験でかかった秒数
+            mice_data["timestamps"][total_timesteps - 1] - mice_data["timestamps"][0]).total_seconds()  # 実験でかかった秒数
     total_reward = np.sum(mice_data["is_correct"])  # 実験で行われた給餌回数
     oneday_seconds = 24 * 60 * 60  # 1日の秒数
     decrease_one_second = (base_weight - dep_weight) / oneday_seconds  # 1秒に減る体重
@@ -679,6 +681,7 @@ def calculate_error(a, b, num_first_to_remove):  # 配列aとbとの自乗誤差
     error_array[:num_first_to_remove] = 0  # num_first_to_remove stepまでのerrorは削除
     return error_array
 
+
 def calculate_ll(act_and_rew, b, num_first_to_remove, section_line):
     # act_and_rew:マウスの選択と報酬履歴、b:強化学習による選択確率
     ll_array = np.zeros([len(b)])
@@ -708,6 +711,7 @@ def calculate_ll(act_and_rew, b, num_first_to_remove, section_line):
     # ll_array[:section_line[1]] = 0
 
     return ll_array
+
 
 def calculate_ll2(act_and_rew, b, num_first_to_remove):
     # act_and_rew:マウスの選択と報酬履歴、b:強化学習による選択確率
@@ -743,7 +747,7 @@ def carve_out_section(array, section_line):
         if i == 0:
             carve_out_array.append(array[0:section_line[i]])
         else:
-            carve_out_array.append(array[section_line[i-1]:section_line[i]])
+            carve_out_array.append(array[section_line[i - 1]:section_line[i]])
     return carve_out_array
 
 
@@ -1477,7 +1481,7 @@ def calc_reach_threshold_ratio(mice, task, is_over, threshold_ratio, window, cor
         # 選択率と閾値の比較
         result = selection_raito.apply(conditions_function)
         # 最初に選択率の条件を満たしたindexを取得
-        first_trial = min(result[result].index)
+        first_trial = min(result[result].index) if not result[result].empty else -1
         # 結果を保存
         df_summary = df_summary.append({'mouse_id': mouse_id, 'trials': first_trial}, ignore_index=True)
 
@@ -1485,6 +1489,58 @@ def calc_reach_threshold_ratio(mice, task, is_over, threshold_ratio, window, cor
         # BK KOマウスは、Not5_Other30で、hole 5に固執し、hole 5から脱却するまでの試行回数を算出したい
 
     return df_summary
+
+
+def _get_session_id(mouse_id):
+    if verbose_level > 0:
+        print(f"[load_from_action_csv] mouse_id ={mouse_id}")
+    # 環境によって要変更
+    # file = "./no{:03d}_action.csv".format(mouse_id)
+    file = "./data/no{:03d}_action.csv".format(mouse_id)
+    data = pd.read_csv(file, names=["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"],
+                       parse_dates=[0])
+    if isinstance(data.iloc[0].timestamps, str):
+        data = pd.read_csv(file, parse_dates=[0])  # 何対策？ -> 一行目がカラム名だった場合の対策です
+        data.columns = ["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"]
+    data = data.session_id
+    return data
+
+
+def _rehash_session_id(data):
+    session_id = 0
+    print("max_id_col:{}".format(len(data)))
+
+    def remove_terminate(index):
+        if data.at[index, "event_type"] == data.at[index + 1, "event_type"] and data.at[
+            index, "event_type"] == "start":
+            data.drop(index, inplace=True)
+
+    def rehash(x_index):
+        nonlocal session_id
+        if data.at[data.index[x_index], "task"] == "T0":
+            if (x_index == 0 or data.shift(1).at[data.index[x_index], "event_type"] == "start") and \
+                    len(data[:x_index][data.session_id == 0]) == 0:
+                session_id = 0
+                return 0
+            session_id = session_id + 1
+            return session_id
+        if data.at[data.index[x_index], "event_type"] == "start":
+            session_id = session_id + 1
+            return session_id
+        else:
+            return session_id
+
+    list(map(remove_terminate, data.index[:-1]))
+    data.reset_index(drop=True, inplace=True)
+    # 一回目
+    data["session_id"] = list(map(rehash, data.index))
+    data = data[data.session_id.isin(data.session_id[data.event_type.isin(["reward", "failure", "time over"])])]
+    data.reset_index(drop=True, inplace=True)
+    # 二回目
+    session_id = 0
+    data["session_id"] = list(map(rehash, data.index))
+    return data
+
 
 # TODO 宝田
 def calc_reactiontime_rewardlatency(mice):
@@ -1496,8 +1552,77 @@ def calc_reactiontime_rewardlatency(mice):
     df_summary = pd.DataFrame(columns=['mouse_id', 'task', 'reaction_time', 'reward_latency'])
 
     for mouse_id in mice:
-        data = get_data(mouse_id)
+        data = get_data(mouse_id).assign(session_id=_get_session_id(mouse_id))
+        data = _rehash_session_id(data)
         tasks_in_log = data.task.unique().tolist()
+        deltas = {}
+        for task in tasks_in_log:
+            current_data = data[data.task == task]
+
+            def calculate(session):
+                delta_df = pd.DataFrame()
+                # reaction time
+                current_target = current_data[current_data.session_id.isin([session])]
+                if bool(sum(current_target["event_type"].isin(["task called"]))) and bool(
+                        sum(current_target["event_type"].isin(["nose poke"]))):
+                    task_call = current_target[current_target["event_type"] == "task called"]
+                    task_end = current_target[current_target["event_type"] == "nose poke"]
+                    reaction_time = task_end.at[task_end.index[0], "timestamps"] - task_call.at[
+                        task_call.index[0], "timestamps"]
+                    # 連続無報酬期間
+                    previous_reward = data[
+                        (data["event_type"] == "reward") & (
+                                data["timestamps"] < task_call.at[task_call.index[0], "timestamps"])].tail(1)
+                    norewarded_time = task_call.at[task_call.index[0], "timestamps"] - previous_reward.at[
+                        previous_reward.index[0], "timestamps"]
+                    correct_incorrect = "correct" if bool(
+                        sum(current_target["event_type"].isin(["reward"]))) else "incorrect"
+                    if pd.to_timedelta(reaction_time) / np.timedelta64(1, 's') > 500:
+                        return None
+                    # df 追加
+                    delta_df = delta_df.append(
+                        {'type': 'reaction_time',
+                         'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
+                         'reaction_time_sec': pd.to_timedelta(reaction_time) / np.timedelta64(1, 's'),
+                         'correct_incorrect': correct_incorrect},
+                        ignore_index=True)
+                # reward latency
+                if bool(sum(current_target["event_type"].isin(["reward"]))) and bool(
+                        sum(current_target["event_type"].isin(["task called"]))):
+                    nose_poke = current_target[current_target["event_type"] == "nose poke"]
+                    reward_latency = current_target[current_target["event_type"] == "magazine nose poked"]
+                    reward_latency = reward_latency.at[reward_latency.index[0], "timestamps"] - \
+                                     nose_poke.at[nose_poke.index[0], "timestamps"]
+                    previous_reward = data[
+                        (data["event_type"] == "reward") & (
+                                data["timestamps"] < nose_poke.at[nose_poke.index[0], "timestamps"])].tail(1)
+                    norewarded_time = nose_poke.at[nose_poke.index[0], "timestamps"] - previous_reward.at[
+                        previous_reward.index[0], "timestamps"]
+                    if pd.to_timedelta(reward_latency) / np.timedelta64(1, 's') > 500:
+                        return None
+                    delta_df = delta_df.append(
+                        {'type': 'reward_latency',
+                         'noreward_duration_sec': pd.to_timedelta(norewarded_time) / np.timedelta64(1, 's'),
+                         'reward_latency_sec': pd.to_timedelta(reward_latency) / np.timedelta64(1, 's')
+                         }, ignore_index=True)
+                if delta_df.size:
+                    return delta_df
+                else:
+                    return None
+
+            # mouse_id のtask 中ログから
+            delta_df = current_data.session_id.drop_duplicates().map(calculate)
+            tmp_df = None
+            try:
+                tmp_df = pd.concat(list(delta_df), sort=False)
+            except:
+                continue
+            # 平均値を算出
+            reaction_time = tmp_df[tmp_df.type.isin(["reaction_time"])].reaction_time_sec.mean()
+            reward_latency = tmp_df[tmp_df.type.isin(["reward_latency"])].reward_latency_sec.mean()
+            df_summary = df_summary.append(
+                {"mouse_id": mouse_id, "task": task, "reaction_time": reaction_time, "reward_latency": reward_latency},
+                ignore_index=True)
 
     return df_summary
 
@@ -1609,5 +1734,3 @@ df_learningparams = do_process('BKKO')
 #         do_process('BKLT')
 #     else:
 #         do_process(args[1])
-
-
