@@ -37,15 +37,15 @@ def get_model_list():
         {"model_name": "standard_Q_softmax_beta_free",
         "update_q_func": Q_update,
         "policy_func": softmax_p,
-        "pbounds": {"alpha_1": (0.0001, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.0, 20.0)}},
-        # {"model_name": "DLR_Q_softmax_beta_5",
-        #  "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
-        #  "policy_func": softmax_p,
-        #  "pbounds": {"alpha_1": (0.0001, 0.3), "alpha_2": (0.0001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
-        # {"model_name": "standard_Q_softmax_beta_5",
-        #  "update_q_func": Q_update,
-        #  "policy_func": softmax_p,
-        #  "pbounds": {"alpha_1": (0.0001, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
+        "pbounds": {"alpha_1": (0.00001, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.0, 20.0)}},
+        {"model_name": "DLR_Q_softmax_beta_5",
+         "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
+         "policy_func": softmax_p,
+         "pbounds": {"alpha_1": (0.00001, 0.3), "alpha_2": (0.00001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
+        {"model_name": "standard_Q_softmax_beta_5",
+         "update_q_func": Q_update,
+         "policy_func": softmax_p,
+         "pbounds": {"alpha_1": (0.00001, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
     ]
     return models_dict
 
@@ -80,7 +80,7 @@ def get_mouse_group_dict():
                   "mice": [27, 30, 31, 33, 47, 49, 50, 52, 64, 67, 68, 71, 116, 117, 181, 184, 186, 187],
                   },
         "BKKO": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
-                 "mice": [118, 132, 175, 195, 201, 205],
+                 "mice": [118, 132, 175, 195, 201, 205, 208, 209],
                  },
         "BKLT": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
                  "mice": [119, 136, 149, 177, 190, 202, 206],
@@ -784,7 +784,7 @@ class Optimisation():
         self.num_first_to_remove = num_first_to_remove
         self.act_and_rew = act_and_rew
 
-    def do(self, mouse_id, update_q_func, policy_func, pbounds, n_calls, num_sim, is_show=False, is_save=False, model_name=None, is_unco=True):
+    def do(self, mouse_id, update_q_func, policy_func, pbounds, n_calls, num_sim, is_show=False, is_save=False, model_name=None, is_required_unco_target=False, is_unco_check=True):
         values = [v for v in pbounds.values()]
         keys = [k for k in pbounds.keys()]
         self.agent.set_func(update_q_func, policy_func)
@@ -836,28 +836,28 @@ class Optimisation():
                 best_params = params[best_index]
 
                 print("best_params: ", best_params)
-                ll, error = self.save_sim(best_params, dirname, is_save=is_save, is_show=is_show)
-                if is_unco:
-                    unconstrained_sim_ll, unconstrained_sim_error = self.save_unconstrained_sim(best_params,
-                                                                                            dirname + "uncostrained_sim/",
-                                                                                            is_save=is_save,
-                                                                                            is_show=False,
-                                                                                            num_sim=NUM_SIM)
-                print("ll: ", ll)
-                print("error: ", error)
+#                ll, error = self.save_sim(best_params, dirname, is_save=is_save, is_show=is_show)
 
-                ###
-                if is_unco:
-                    unco_q_value_arrays, unco_prob_arrays = self.agent.unconstrained_sim_return_arrays(best_params,
-                                                                                                                num_sim=NUM_SIM)
-                    unco_ll_arrays = parallel_calculate_ll(self.act_and_rew, unco_prob_arrays, self.num_first_to_remove)
-                    unco_ll_array = np.mean(unco_ll_arrays, axis=0)
-                    unco_ll = np.sum(unco_ll_array)
-                    print("unconstrained_each_ll: ", unco_ll)
-                    print("unconstrained_mean_ll: ", unconstrained_sim_ll)
-                    print("ll + each ll: ", ll + unco_ll)
-                    print("unconstrained_sim_error: ", unconstrained_sim_error)
-
+                # if is_unco:
+                #     unconstrained_sim_ll, unconstrained_sim_error = self.save_unconstrained_sim(best_params,
+                #                                                                             dirname + "uncostrained_sim/",
+                #                                                                             is_save=is_save,
+                #                                                                             is_show=False,
+                #                                                                             num_sim=NUM_SIM)
+                # print("ll: ", ll)
+                # print("error: ", error)
+                #
+                # ###
+                # if is_unco:
+                #     unco_q_value_arrays, unco_prob_arrays = self.agent.unconstrained_sim_return_arrays(best_params,
+                #                                                                                                 num_sim=NUM_SIM)
+                #     unco_ll_arrays = parallel_calculate_ll(self.act_and_rew, unco_prob_arrays, self.num_first_to_remove)
+                #     unco_ll_array = np.mean(unco_ll_arrays, axis=0)
+                #     unco_ll = np.sum(unco_ll_array)
+                #     print("unconstrained_each_ll: ", unco_ll)
+                #     print("unconstrained_mean_ll: ", unconstrained_sim_ll)
+                #     print("ll + each ll: ", ll + unco_ll)
+                #     print("unconstrained_sim_error: ", unconstrained_sim_error)
 
                 print("end time: ", time.time() - start_time)
 
@@ -870,7 +870,7 @@ class Optimisation():
         print("ll: ", ll)
         print("error: ", error)
 
-        if is_unco:
+        if is_unco_check:
             unconstrained_sim_ll, unconstrained_sim_error = self.save_unconstrained_sim(best_params,
                                                                                     dirname + "uncostrained_sim/",
                                                                                     is_save=is_save, is_show=False,
@@ -896,7 +896,7 @@ class Optimisation():
         result["ll"] = ll
         result["error"] = error
         result["model"] = model_name
-        if is_unco:
+        if is_unco_check:
             result["unconstrained_mean_ll"] = unconstrained_sim_ll
             result["unconstrained_sim_error"] = unconstrained_sim_error
             result["unconstrained_each_ll"] = unco_ll
@@ -1256,7 +1256,8 @@ def estimate_learning_rate_and_beta(mice, tasks, model, num_sim=20, n_calls = 15
                             num_sim=num_sim,
                             is_show=is_show,
                             is_save=True,
-                            is_unco=True,
+                            is_required_unco_target=False,
+                            is_unco_check=True,
                             model_name=model["model_name"])
 
             if 'df_estimation' in locals():
@@ -1564,7 +1565,6 @@ def _rehash_session_id(data):
     return data
 
 
-# TODO 宝田
 def calc_reactiontime_rewardlatency(mice):
     """
     マガジンノーズポークからhole選択までの反応時間(reactiontime)と正解後のマガジンノーズポークまでの時間(rewardlatency)をマウス・タスク毎に算出する
@@ -1688,14 +1688,23 @@ def do_process(mouse_group_name):
     tasks = choice_mouse_group_dict["tasks_section"]
 
     is_plot = False
-    is_calc_entropy = False
+    is_calc_reaction_rewardlatency = True
+    is_calc_entropy = True
     is_calc_stay_ratio = False
-    is_calc_reach_threshold_ratio = False
+    is_calc_reach_threshold_ratio = True
     is_estimate_learning_params = True
 
     if is_plot:
         for mouse_id in mice:
             plot_choiceratio_movingaverage_trialbase(mouse_id, tasks, mouse_group_name)
+
+    # reaction time & reward latency
+    if is_calc_reaction_rewardlatency:
+        df_rr = calc_reactiontime_rewardlatency(mice)
+        print("[{}] Reaction time and Reward latency:".format(mouse_group_name))
+        print(df_rr)
+        df_rr.to_csv("./data/reaction_time/reaction_rewardlatency_{}.csv".format(mouse_group_name))
+
 
     # entropy計算
     if is_calc_entropy:
@@ -1742,7 +1751,7 @@ def do_process(mouse_group_name):
     if is_estimate_learning_params:
         models_dict = get_model_list()
         for model in models_dict:
-            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model, num_sim=5, n_calls=200)
+            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model, num_sim=15, n_calls=200)
             df_learningparams = df_learningparams.assign(group=mouse_group_name)
             df_learningparams.to_csv("./data/estimation/params_{}_{}.csv".format(model["model_name"], mouse_group_name))
 
@@ -1750,7 +1759,7 @@ def do_process(mouse_group_name):
     #return df_learningparams
 
 do_process('BKKO')
-do_process('BKLT')
+#do_process('BKLT')
 
 #df_lp_BKLT = do_process('BKLT')
 #df_lp_BKKO = do_process('BKKO')
