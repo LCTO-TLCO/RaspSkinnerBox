@@ -33,19 +33,19 @@ def get_model_list():
         {"model_name": "DLR_Q_softmax_beta_free",
          "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
          "policy_func": softmax_p,
-         "pbounds": {"alpha_1": (0.00001, 0.3), "alpha_2": (0.00001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.5, 20.0)}},
-        {"model_name": "standard_Q_softmax_beta_free",
-        "update_q_func": Q_update,
-        "policy_func": softmax_p,
-        "pbounds": {"alpha_1": (0.00001, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.0, 20.0)}},
-        {"model_name": "DLR_Q_softmax_beta_5",
-         "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
-         "policy_func": softmax_p,
-         "pbounds": {"alpha_1": (0.00001, 0.3), "alpha_2": (0.00001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
-        {"model_name": "standard_Q_softmax_beta_5",
-         "update_q_func": Q_update,
-         "policy_func": softmax_p,
-         "pbounds": {"alpha_1": (0.00001, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
+         "pbounds": {"alpha_1": (0.000001, 0.3), "alpha_2": (0.000001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.5, 20.0)}},
+        # {"model_name": "standard_Q_softmax_beta_free",
+        # "update_q_func": Q_update,
+        # "policy_func": softmax_p,
+        # "pbounds": {"alpha_1": (0.00001, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.0, 20.0)}},
+        # {"model_name": "DLR_Q_softmax_beta_5",
+        #  "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
+        #  "policy_func": softmax_p,
+        #  "pbounds": {"alpha_1": (0.000001, 0.3), "alpha_2": (0.000001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
+        # {"model_name": "standard_Q_softmax_beta_5",
+        #  "update_q_func": Q_update,
+        #  "policy_func": softmax_p,
+        #  "pbounds": {"alpha_1": (0.00001, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
     ]
     return models_dict
 
@@ -80,9 +80,15 @@ def get_mouse_group_dict():
                   "mice": [27, 30, 31, 33, 47, 49, 50, 52, 64, 67, 68, 71, 116, 117, 181, 184, 186, 187],
                   },
         "BKKO": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
-                 "mice": [118, 132, 175, 195, 201, 205, 208, 209],
+                 "mice": [118, 132, 175, 195, 201, 205, 208, 209, 210],
                  },
         "BKLT": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+                 "mice": [119, 136, 149, 177, 190, 202, 206],
+                 },
+        "BKKO_Only5": {"tasks_section": ["All5_30", "Only5_50"],
+                 "mice": [118, 132, 175, 195, 201, 205, 208, 209, 210],
+                 },
+        "BKLT_Only5": {"tasks_section": ["All5_30", "Only5_50"],
                  "mice": [119, 136, 149, 177, 190, 202, 206],
                  },
         "BKtest": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
@@ -1751,15 +1757,18 @@ def do_process(mouse_group_name):
     if is_estimate_learning_params:
         models_dict = get_model_list()
         for model in models_dict:
-            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model, num_sim=15, n_calls=200)
+#            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model, num_sim=30, n_calls=200)
+            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model, num_sim=15, n_calls=100)
             df_learningparams = df_learningparams.assign(group=mouse_group_name)
             df_learningparams.to_csv("./data/estimation/params_{}_{}.csv".format(model["model_name"], mouse_group_name))
 
         print(df_learningparams)
     #return df_learningparams
 
-do_process('BKKO')
-#do_process('BKLT')
+do_process('BKKO_Only5')
+do_process('BKLT_Only5')
+# do_process('BKKO')
+# do_process('BKLT')
 
 #df_lp_BKLT = do_process('BKLT')
 #df_lp_BKKO = do_process('BKKO')
