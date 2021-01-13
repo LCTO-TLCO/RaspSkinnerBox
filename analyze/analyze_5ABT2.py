@@ -76,6 +76,12 @@ def get_mouse_group_dict():
         "Rich": {"tasks_section": ["All5_50", "Only5_80", "Not5_Other50"],
                  "mice": [95, 98, 100, 102, 110, 112, 113, 128, 130, 169],
                  },
+        "Alz6M": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+                 "mice": [238],
+                 },
+        "WT6M": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+                 "mice": [226, 232],
+                 },
         "All30": {"tasks_section": ["All5_30"],
                   "mice": [6, 11, 12, 14, 18, 19, 21, 23, 24, 123, 138, 146, 148, 152, 163, 174, 180, 192],
                   },
@@ -2008,7 +2014,8 @@ def do_process(mouse_group_name):
 
 # do_process('BKKO_Only5')
 # do_process('BKLT_Only5')
-do_process('ChAT-dTA')
+do_process('WT6M')
+#do_process('ChAT-dTA')
 #do_process('BKKO')
 #do_process('BKLT')
 
