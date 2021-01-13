@@ -33,18 +33,18 @@ num_first_to_remove = 100  # 移動平均にする際に削除するstep数
 
 def get_model_list():
     models_dict = [
-        {"model_name": "DLR_Q_softmax_beta_free",
-         "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
-         "policy_func": softmax_p,
-         "pbounds": {"alpha_1": (0.000001, 0.3), "alpha_2": (0.000001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.5, 20.0)}},
+        # {"model_name": "DLR_Q_softmax_beta_free",
+        #  "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
+        #  "policy_func": softmax_p,
+        #  "pbounds": {"alpha_1": (0.000001, 0.3), "alpha_2": (0.000001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.5, 20.0)}},
         # {"model_name": "standard_Q_softmax_beta_free",
         # "update_q_func": Q_update,
         # "policy_func": softmax_p,
         # "pbounds": {"alpha_1": (0.00001, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.0, 20.0)}},
-        # {"model_name": "DLR_Q_softmax_beta_5",
-        #  "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
-        #  "policy_func": softmax_p,
-        #  "pbounds": {"alpha_1": (0.000001, 0.3), "alpha_2": (0.000001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
+        {"model_name": "DLR_Q_softmax_beta_5",
+         "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
+         "policy_func": softmax_p,
+         "pbounds": {"alpha_1": (0.000001, 0.3), "alpha_2": (0.000001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
         # {"model_name": "standard_Q_softmax_beta_5",
         #  "update_q_func": Q_update,
         #  "policy_func": softmax_p,
@@ -86,13 +86,13 @@ def get_mouse_group_dict():
                  "mice": [118, 132, 175, 195, 201, 205, 208, 209, 210, 214],
                  },
         "BKLT": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
-                 "mice": [119, 136, 149, 177, 190, 202, 206, 216, 219, 222, 225],
+                 "mice": [119, 136, 149, 177, 190, 202, 206, 216, 219, 222, 225, 228],
                  },
         "BKKO_Only5": {"tasks_section": ["All5_30", "Only5_50"],
                  "mice": [118, 132, 175, 195, 201, 205, 208, 209, 210, 214],
                  },
         "BKLT_Only5": {"tasks_section": ["All5_30", "Only5_50"],
-                 "mice": [119, 136, 149, 177, 190, 202, 206, 216, 219, 222, 225],
+                 "mice": [119, 136, 149, 177, 190, 202, 206, 216, 219, 222, 225, 228],
                  },
         "BKtest": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
                  "mice": [118, 132],
@@ -1279,7 +1279,6 @@ def estimate_learning_rate_and_beta(mice, tasks, model, num_sim=20, n_calls =150
     return df_estimation
 
 
-
 def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sample_size):
     num_moving_average = 100  # 移動平均のstep数
     num_first_to_remove = 100  # 移動平均にする際に削除するstep数
@@ -1288,7 +1287,6 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
     is_required_unco_target = False
     is_unco_check = False
     is_save = True
-
 
     for mouse_id in mice:
         start_time = time.time()
@@ -1309,7 +1307,7 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
         act_and_rew = extract_act_and_rew(data)
 
         average_action_array = moving_average_action(act_and_rew, num_moving_average, num_first_to_remove)
-        average_time_array = moving_average_time(data, num_moving_average, num_first_to_remove)
+        # average_time_array = moving_average_time(data, num_moving_average, num_first_to_remove)
 
         agent = Agent(average_action_array, act_and_rew, section_line, num_first_to_remove)
         agent.set_unconstrained_sim_info(tasks, section_line, get_tasks_prob_dict())
@@ -1317,13 +1315,15 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
         agent.set_func(model["update_q_func"], model["policy_func"])
         agent.set_keys(keys)
 
-        # パラメータの集合(alp+, alp-, beta)をサンプリングする．遅いかも．
-        alpha_plus_samples = stats.uniform.rvs(loc=model['pbounds']['alpha_1'][0], scale=model['pbounds']['alpha_1'][1], size=sample_size)
-        alpha_minus_samples = stats.uniform.rvs(loc=model['pbounds']['alpha_2'][0], scale=model['pbounds']['alpha_2'][1], size=sample_size)
-        beta_samples = stats.uniform.rvs(loc=model['pbounds']['beta'][0], scale=model['pbounds']['beta'][0], size=sample_size)
-        feature_list = ['alpha_plus', 'alpha_minus', 'beta']
-        sampled_params_df = pd.DataFrame(np.column_stack([alpha_plus_samples, alpha_minus_samples, beta_samples]), columns=feature_list)
-        weighted_params_df = pd.DataFrame(0, index=np.arange(len(sampled_params_df)), columns=feature_list)
+        # パラメータの集合をサンプリングする．
+        fixed_key = [k for k, v in model['pbounds'].items() if type(v) is list]  # 固定値を指定されたパラメータ
+        bounds_key = [k for k, v in model['pbounds'].items() if type(v) is tuple]  # 範囲を指定されたパラメータ
+        samples = {}
+        for bk in bounds_key:
+            samples[bk] = np.random.uniform(model['pbounds']['alpha_1'][0], model['pbounds']['alpha_1'][-1], sample_size)
+
+        sampled_params_df = pd.DataFrame(samples)
+        weighted_params_df = pd.DataFrame(0, index=np.arange(len(sampled_params_df)), columns=bounds_key)
 
         # 対数尤度にマイナスを掛けたものを普通の尤度に戻すメソッド
         # WARNING: sympyの扱いに注意．意図せずfloatにキャストするとアンダーフローする．
@@ -1335,12 +1335,16 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
         time.sleep(0.5)  # tqdmの進捗バーを適切に表示するため
         sum_like = 0  # 周辺尤度
         for ins_i in tqdm(range(sample_size)):
-            values = [sampled_params_df.iloc[ins_i]['alpha_plus'],
-                    sampled_params_df.iloc[ins_i]['alpha_minus'],
-                    model['pbounds']['alpha_3'][0],
-                    model['pbounds']['kappa_1'][0],
-                    model['pbounds']['kappa_2'][0],
-                    sampled_params_df.iloc[ins_i]['beta']]
+
+            values = []
+            for k in keys:
+                if k in bounds_key:
+                    values.append(sampled_params_df.iloc[ins_i][k])
+                elif k in fixed_key:
+                    values.append(model['pbounds'][k][0])
+                else:
+                    print('The following key\'s bounds are not properly described:', k)
+
             like = eval_like(agent, values)
             weighted_params_df.iloc[ins_i] = sampled_params_df.iloc[ins_i] * like
             sum_like += like
@@ -1364,12 +1368,15 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
         # 推定パラメータはそんなに小さくないのでアンダーフローは基本起きないはず．元のコードとの互換性のためここでfloatに変換しないといけない．
         estimated_params_ser = estimated_params_ser.astype('float')
 
-        est_values = [estimated_params_ser['alpha_plus'],
-                estimated_params_ser['alpha_minus'],
-                model['pbounds']['alpha_3'][0],
-                model['pbounds']['kappa_1'][0],
-                model['pbounds']['kappa_2'][0],
-                estimated_params_ser['beta']]
+        est_values = []
+        for k in keys:
+            if k in bounds_key:
+                est_values.append(estimated_params_ser[k])
+            elif k in fixed_key:
+                est_values.append(model['pbounds'][k][0])
+            else:
+                print('The following key\'s bounds are not properly described:', k)
+
         # ll = agent.only_values_sim_f(est_values)
 
         # llとかerrorとか求めてグラフを描く．
@@ -1434,7 +1441,7 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
         else:
             df_estimation_is = pd.DataFrame([estimated_params_ser])
 
-    # mouse_idの型をintにする．もっといいやり方あるかも．
+    # mouse_idがfloatで表示されると気味が悪いのでintにする．もっといいやり方あるかも．
     df_estimation_is['mouse_id'] = df_estimation_is['mouse_id'].astype(int)
     print("total end time: ", time.time() - start_time)
     return df_estimation_is
@@ -1918,8 +1925,8 @@ def do_process(mouse_group_name):
     is_calc_entropy = False
     is_calc_stay_ratio = False
     is_calc_reach_threshold_ratio = False
-    is_estimate_learning_params = True
-    is_estimate_learning_params_importancesampling = False
+    is_estimate_learning_params = False
+    is_estimate_learning_params_importancesampling = True
 
     if is_plot:
         for mouse_id in mice:
@@ -1985,7 +1992,8 @@ def do_process(mouse_group_name):
     if is_estimate_learning_params_importancesampling:
         models_dict = get_model_list()
         for model in models_dict:
-            df_learningparams_is = estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sample_size=25000)
+#            df_learningparams_is = estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sample_size=25000)
+            df_learningparams_is = estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sample_size=2500)
             df_learningparams_is = df_learningparams_is.assign(group=mouse_group_name)
             if not os.path.exists('./data/estimation_is/'):
                 os.mkdir('./data/estimation_is/')
