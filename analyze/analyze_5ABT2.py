@@ -36,15 +36,15 @@ def get_model_list():
         {"model_name": "DLR_Q_softmax_beta_free",
          "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
          "policy_func": softmax_p,
-         "pbounds": {"alpha_1": (0.000001, 0.3), "alpha_2": (0.000001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.5, 20.0)}},
+         "pbounds": {"alpha_1": (0.000001, 0.15), "alpha_2": (0.000001, 0.015), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.1, 20.0)}},
         # {"model_name": "standard_Q_softmax_beta_free",
         # "update_q_func": Q_update,
         # "policy_func": softmax_p,
         # "pbounds": {"alpha_1": (0.00001, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.0, 20.0)}},
-        # {"model_name": "DLR_Q_softmax_beta_5",
-        #  "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
-        #  "policy_func": softmax_p,
-        #  "pbounds": {"alpha_1": (0.000001, 0.3), "alpha_2": (0.000001, 0.3), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
+        {"model_name": "DLR_Q_softmax_beta_5",
+         "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
+         "policy_func": softmax_p,
+         "pbounds": {"alpha_1": (0.000001, 0.15), "alpha_2": (0.000001, 0.015), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
         # {"model_name": "standard_Q_softmax_beta_5",
         #  "update_q_func": Q_update,
         #  "policy_func": softmax_p,
@@ -1929,12 +1929,12 @@ def do_process(mouse_group_name):
     mice = choice_mouse_group_dict["mice"]
     tasks = choice_mouse_group_dict["tasks_section"]
 
-    is_plot = True
-    is_calc_reaction_rewardlatency = True
-    is_calc_entropy = True
+    is_plot = False
+    is_calc_reaction_rewardlatency = False
+    is_calc_entropy = False
     is_calc_stay_ratio = False
-    is_calc_reach_threshold_ratio = True
-    is_estimate_learning_params = False
+    is_calc_reach_threshold_ratio = False
+    is_estimate_learning_params = True
     is_estimate_learning_params_importancesampling = True
 
     if is_plot:
@@ -2007,17 +2007,17 @@ def do_process(mouse_group_name):
             if not os.path.exists('./data/estimation_is/'):
                 os.mkdir('./data/estimation_is/')
             df_learningparams_is.to_csv(
-                "./data/estimation_is/params_{}_{}.csv".format(model["model_name"], mouse_group_name))
+                "./data/estimation_is/is_params_{}_{}.csv".format(model["model_name"], mouse_group_name))
 
     #return df_learningparams
 
 
 # do_process('BKKO_Only5')
 # do_process('BKLT_Only5')
-do_process('WT6M')
-#do_process('ChAT-dTA')
-#do_process('BKKO')
-#do_process('BKLT')
+#do_process('WT6M')
+do_process('ChAT-dTA')
+do_process('BKKO')
+do_process('BKLT')
 
 #df_lp_BKLT = do_process('BKLT')
 #df_lp_BKKO = do_process('BKKO')
