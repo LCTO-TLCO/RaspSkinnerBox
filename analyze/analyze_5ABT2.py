@@ -1994,9 +1994,9 @@ def do_process(mouse_group_name):
     if is_estimate_learning_params:
         models_dict = get_model_list()
         for model in models_dict:
-            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model, num_sim=15, n_calls=100)
+            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model, num_sim=20, n_calls=150)
             df_learningparams = df_learningparams.assign(group=mouse_group_name)
-            df_learningparams.to_csv("./data/estimation/params_{}_{}.csv".format(model["model_name"], mouse_group_name))
+            df_learningparams.to_csv("./data/estimation/params_{}_{}.csv".format(mouse_group_name, model["model_name"]))
 
     if is_estimate_learning_params_importancesampling:
         models_dict = get_model_list()
@@ -2007,7 +2007,7 @@ def do_process(mouse_group_name):
             if not os.path.exists('./data/estimation_is/'):
                 os.mkdir('./data/estimation_is/')
             df_learningparams_is.to_csv(
-                "./data/estimation_is/is_params_{}_{}.csv".format(model["model_name"], mouse_group_name))
+                "./data/estimation_is/is_params_{}_{}.csv".format(mouse_group_name,model["model_name"]))
 
     #return df_learningparams
 
@@ -2018,6 +2018,8 @@ def do_process(mouse_group_name):
 do_process('ChAT-dTA')
 do_process('BKKO')
 do_process('BKLT')
+do_process('Scarce')
+do_process('Rich')
 
 #df_lp_BKLT = do_process('BKLT')
 #df_lp_BKKO = do_process('BKKO')
