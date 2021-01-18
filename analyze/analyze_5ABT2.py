@@ -71,39 +71,51 @@ def get_mouse_group_dict():
     # 実験条件の宣言
     mouse_group_dict = {
         "Scarce": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+                   "WSLS_task_section": ["All5_30"],
                    "mice": [8, 13, 17, 26, 137, 141, 144, 154, 168, 172],
                    },
-        "Rich": {"tasks_section": ["All5_50", "Only5_80", "Not5_Other50"],
+        "Rich": {"tasks_section": ["All5_60", "Only5_80", "Not5_Other60"],
+                 "WSLS_task_section": ["All5_60"],
                  "mice": [95, 98, 100, 102, 110, 112, 113, 128, 130, 169],
                  },
         "Alz6M": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
-                 "mice": [238],
+                  "WSLS_task_section": ["All5_30"],
+                  "mice": [238],
                  },
         "WT6M": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+                 "WSLS_task_section": ["All5_30"],
                  "mice": [226, 232],
                  },
         "All30": {"tasks_section": ["All5_30"],
+                  "WSLS_task_section": ["All5_30"],
                   "mice": [6, 11, 12, 14, 18, 19, 21, 23, 24, 123, 138, 146, 148, 152, 163, 174, 180, 192],
                   },
         "All50": {"tasks_section": ["All5_50"],
+                  "WSLS_task_section": ["All5_50"],
                   "mice": [27, 30, 31, 33, 47, 49, 50, 52, 64, 67, 68, 71, 116, 117, 181, 184, 186, 187],
                   },
         "ChAT-dTA": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+                 "WSLS_task_section": ["All5_30", "Only5_50", "Not5_Other30"],
                  "mice": [233],
                  },
         "BKKO": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+                 "WSLS_task_section": ["All5_30", "Only5_50", "Not5_Other30"],
                  "mice": [118, 132, 175, 195, 201, 205, 208, 209, 210, 214],
                  },
         "BKLT": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+                 "WSLS_task_section": ["All5_30", "Only5_50", "Not5_Other30"],
                  "mice": [119, 136, 149, 177, 190, 202, 206, 216, 219, 222, 225, 228],
                  },
         "BKKO_Only5": {"tasks_section": ["All5_30", "Only5_50"],
+                 "WSLS_task_section": ["All5_30"],
                  "mice": [118, 132, 175, 195, 201, 205, 208, 209, 210, 214],
                  },
         "BKLT_Only5": {"tasks_section": ["All5_30", "Only5_50"],
+                 "WSLS_task_section": ["All5_30"],
                  "mice": [119, 136, 149, 177, 190, 202, 206, 216, 219, 222, 225, 228],
                  },
         "BKtest": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+                 "WSLS_task_section": ["All5_30"],
                  "mice": [118, 132],
                  },
     }
@@ -1598,7 +1610,7 @@ def _export_P_20_filter(dc, mice, all_sel_dc):
 # TODO 冗長だけど、mouse_id毎に計算して、dataframeに統合する形の方がわかりやすかな？
 # TODO CSV出力は呼び出し元で行う
 # def calc_stay_ratio(tdata, mice, tasks, selection=[1, 3, 5, 7, 9]) -> dict:
-def calc_stay_ratio(mice, tasks, selection=[1, 3, 5, 7, 9]) -> [dict, dict]:
+def calc_stay_ratio(mice, tasks, mouse_group_name, selection=[1, 3, 5, 7, 9] ) -> [dict, dict]:
     """
     指定タスクにおける特定のholeの平均選択率が指定した率を上回った、もしくは下回るまでのtrial数を返す
     :param mice: mouse_idのリスト
@@ -1632,10 +1644,10 @@ def calc_stay_ratio(mice, tasks, selection=[1, 3, 5, 7, 9]) -> [dict, dict]:
     incorrect_data = pd.DataFrame(prob["f_same"], index=mice)
 
     # 3のタスク毎の任意の複数の選択肢毎の全マウス平均をcsv出力
-    correct_data.to_csv("./data/WSLS/mice_task{}_hole{}_cstart.csv".format("-".join(tasks), "".join(selection)))
-    incorrect_data.to_csv("./data/WSLS/mice_task{}_hole{}_fstart.csv".format("-".join(tasks), "".join(selection)))
+    correct_data.to_csv("./data/WSLS/{}_task{}_hole{}_cstart.csv".format(mouse_group_name,"-".join(tasks), "".join(selection)))
+    incorrect_data.to_csv("./data/WSLS/{}_task{}_hole{}_fstart.csv".format(mouse_group_name,"-".join(tasks), "".join(selection)))
 
-    with open(f'./data/WSLS/mice_task{"-".join(tasks)}_hole{"".join(selection)}_serial.csv', 'w', newline='') as f:
+    with open(f'./data/WSLS/{mouse_group_name}_task{"-".join(tasks)}_hole{"".join(selection)}_serial.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         i = 0
         for idx in mice:
@@ -1924,6 +1936,7 @@ def calc_task_duration(mice):
 
 
 def do_process(mouse_group_name):
+    print(mouse_group_name)
     mouse_group_dict = get_mouse_group_dict()
     choice_mouse_group_dict = mouse_group_dict[mouse_group_name]
     mice = choice_mouse_group_dict["mice"]
@@ -1932,10 +1945,10 @@ def do_process(mouse_group_name):
     is_plot = False
     is_calc_reaction_rewardlatency = False
     is_calc_entropy = False
-    is_calc_stay_ratio = False
+    is_calc_stay_ratio = True # WSLS
     is_calc_reach_threshold_ratio = False
-    is_estimate_learning_params = True
-    is_estimate_learning_params_importancesampling = True
+    is_estimate_learning_params = False
+    is_estimate_learning_params_importancesampling = False
 
     if is_plot:
         for mouse_id in mice:
@@ -1973,7 +1986,7 @@ def do_process(mouse_group_name):
 
     # WSLS
     if is_calc_stay_ratio:
-        calc_stay_ratio(mice, tasks, selection=[1, 3, 5, 7, 9])
+        calc_stay_ratio(mice, choice_mouse_group_dict["WSLS_task_section"], mouse_group_name, selection=[1, 3, 5, 7, 9])
 
     #
     if is_calc_reach_threshold_ratio:
