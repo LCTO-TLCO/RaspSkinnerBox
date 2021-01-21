@@ -20,7 +20,7 @@ from lerning_rule_func import *
 from scipy import stats
 from tqdm import tqdm
 import sympy
-
+from joblib import Parallel, delayed
 
 verbose_level = 0
 data_cache = {}
@@ -36,15 +36,15 @@ def get_model_list():
         {"model_name": "DLR_Q_softmax_beta_free",
          "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
          "policy_func": softmax_p,
-         "pbounds": {"alpha_1": (0.000001, 0.15), "alpha_2": (0.000001, 0.015), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.1, 20.0)}},
+         "pbounds": {"alpha_1": (0.0010, 0.150), "alpha_2": (0.000010, 0.0150), "alpha_3": [0], "kappa_1": [1], "kappa_2": [0], "beta": (2.0, 15.0)}},
         # {"model_name": "standard_Q_softmax_beta_free",
         # "update_q_func": Q_update,
         # "policy_func": softmax_p,
-        # "pbounds": {"alpha_1": (0.00001, 0.3), "kappa_1": [1.0], "kappa_2": [0.0], "beta": (0.0, 20.0)}},
-        {"model_name": "DLR_Q_softmax_beta_5",
-         "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
-         "policy_func": softmax_p,
-         "pbounds": {"alpha_1": (0.000001, 0.15), "alpha_2": (0.000001, 0.015), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
+        # "pbounds": {"alpha_1": (0.00001, 0.15), "kappa_1": [1.0], "kappa_2": [0.0], "beta": (2, 40.0)}},
+        # {"model_name": "DLR_Q_softmax_beta_5",
+        #  "update_q_func": alpha_nega_posi_TD_error_DFQ_update,
+        #  "policy_func": softmax_p,
+        #  "pbounds": {"alpha_1": (0.000001, 0.15), "alpha_2": (0.000001, 0.015), "alpha_3": [0.0], "kappa_1": [1.0], "kappa_2": [0.0], "beta": [5]}},
         # {"model_name": "standard_Q_softmax_beta_5",
         #  "update_q_func": Q_update,
         #  "policy_func": softmax_p,
@@ -54,7 +54,9 @@ def get_model_list():
 
 
 def get_tasks_prob_dict():
-    tasks_prob_dict = {"All5_30": [0.3, 0.3, 0.3, 0.3, 0.3],
+    tasks_prob_dict = {"TC100": [1.0, 1.0, 1.0, 1.0, 1.0],
+                       "TC70": [0.7, 0.7, 0.7, 0.7, 0.7],
+                       "All5_30": [0.3, 0.3, 0.3, 0.3, 0.3],
                        "All5_50": [0.5, 0.5, 0.5, 0.5, 0.5],
                        "All5_60": [0.6, 0.6, 0.6, 0.6, 0.6],
                        "Only5_50": [0, 0, 0.5, 0, 0],
@@ -94,15 +96,15 @@ def get_mouse_group_dict():
                   "WSLS_task_section": ["All5_50"],
                   "mice": [27, 30, 31, 33, 47, 49, 50, 52, 64, 67, 68, 71, 116, 117, 181, 184, 186, 187],
                   },
-        "ChAT-dTA": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
-                 "WSLS_task_section": ["All5_30", "Only5_50", "Not5_Other30"],
-                 "mice": [233],
+        "ChAT-dTA": {"tasks_section": ["TC100", "TC70", "All5_30", "Only5_50", "Not5_Other30"],
+                 "WSLS_task_section": ["All5_30"],
+                 "mice": [233, 237],
                  },
-        "BKKO": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+        "BKKO": {"tasks_section": ["TC100", "TC70", "All5_30", "Only5_50", "Not5_Other30"],
                  "WSLS_task_section": ["All5_30", "Only5_50", "Not5_Other30"],
                  "mice": [118, 132, 175, 195, 201, 205, 208, 209, 210, 214],
                  },
-        "BKLT": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+        "BKLT": {"tasks_section": ["TC100", "TC70", "All5_30", "Only5_50", "Not5_Other30"],
                  "WSLS_task_section": ["All5_30", "Only5_50", "Not5_Other30"],
                  "mice": [119, 136, 149, 177, 190, 202, 206, 216, 219, 222, 225, 228],
                  },
@@ -162,6 +164,7 @@ def get_data(mouse_id):
 # 引数のbase_wに値が入っているとbase_wの横線が引かれる
 def my_graph_plot(array, section_line, title, xlabel, ylabel, dirname=None, is_prob=False, base_w=False, is_save=False,
                   is_show=False):
+    plt.clf()
     mpl.rcdefaults()
     plt.style.use('seaborn-colorblind')
 
@@ -841,7 +844,7 @@ class Optimisation():
             res = gp_minimize(
                 f, spaces,
                 acq_func="gp_hedge",
-                n_initial_points=round(n_calls * 0.3),
+#                n_initial_points=round(n_calls * 0.3),
                 n_calls=n_calls,
                 acq_optimizer="lbfgs",
                 n_jobs=-1,
@@ -1244,7 +1247,7 @@ def satori_main(mice_id, dirname=None):
                   full_tasls_dirname, is_save=True, is_show=full_is_show)
 
 
-def estimate_learning_rate_and_beta(mice, tasks, model, num_sim=20, n_calls =150):
+def estimate_learning_rate_and_beta(mice, tasks, model, num_sim=20, n_calls =150, ignore_tasks=[]):
     num_moving_average = 100  # 移動平均のstep数
     num_first_to_remove = 100  # 移動平均にする際に削除するstep数
     dirname = './'
@@ -1259,6 +1262,11 @@ def estimate_learning_rate_and_beta(mice, tasks, model, num_sim=20, n_calls =150
         data = data[data["event_type"].isin(["reward", "failure"])]
         data = data[data["task"].isin(tasks)]
         data.reset_index()
+
+        num_first_to_remove = data[data["task"].isin(ignore_tasks)].shape[0]
+        if num_first_to_remove == 0:
+            num_first_to_remove = 100
+        print(f'tasks to ignore in calculating the likelihood={ignore_tasks}, num_first_to_remove={num_first_to_remove}')
 
         section_step, section_line = check_section_size(data, tasks)
         act_and_rew = extract_act_and_rew(data)
@@ -1300,9 +1308,9 @@ def estimate_learning_rate_and_beta(mice, tasks, model, num_sim=20, n_calls =150
     return df_estimation
 
 
-def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sample_size):
+def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sample_size, ignore_tasks=[]):
     num_moving_average = 100  # 移動平均のstep数
-    num_first_to_remove = 100  # 移動平均にする際に削除するstep数
+#    num_first_to_remove = 100  # 移動平均にする際に削除するstep数
 
     is_show = False
     is_required_unco_target = False
@@ -1313,7 +1321,7 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
         start_time = time.time()
 
         # グラフの保存先をつくる．
-        # 末尾に'/'を書かないとmy_graph_plotは正常に動かない．osライブラリを使って書き換えたほうが良い気がする．
+        # 末尾に'/'を書かないとmy_graph_plotは正常に動かない．osライブラリを使ってmy_graph_plotを書き換えたほうが良い気がする．
         dirname = os.path.join('.', 'importans_sampling', str(mouse_id) + '/')
         os.makedirs(dirname, exist_ok=True)
 
@@ -1323,6 +1331,11 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
         data = data[data["event_type"].isin(["reward", "failure"])]
         data = data[data["task"].isin(tasks)]
         data.reset_index()
+
+        num_first_to_remove = data[data["task"].isin(ignore_tasks)].shape[0]
+        if num_first_to_remove == 0:
+            num_first_to_remove = 100
+        print(f'tasks to ignore in calculating the likelihood={ignore_tasks}, num_first_to_remove={num_first_to_remove}')
 
         section_step, section_line = check_section_size(data, tasks)
         act_and_rew = extract_act_and_rew(data)
@@ -1341,7 +1354,7 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
         bounds_key = [k for k, v in model['pbounds'].items() if type(v) is tuple]  # 範囲を指定されたパラメータ
         samples = {}
         for bk in bounds_key:
-            samples[bk] = np.random.uniform(model['pbounds']['alpha_1'][0], model['pbounds']['alpha_1'][-1], sample_size)
+            samples[bk] = np.random.uniform(model['pbounds'][bk][0], model['pbounds'][bk][-1], sample_size)
 
         sampled_params_df = pd.DataFrame(samples)
         weighted_params_df = pd.DataFrame(0, index=np.arange(len(sampled_params_df)), columns=bounds_key)
@@ -1353,10 +1366,7 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
             like = sympy.exp(-minus_ll)
             return like
 
-        time.sleep(0.5)  # tqdmの進捗バーを適切に表示するため
-        sum_like = 0  # 周辺尤度
-        for ins_i in tqdm(range(sample_size)):
-
+        def eval_like_for_a_sample(ins_i):
             values = []
             for k in keys:
                 if k in bounds_key:
@@ -1365,44 +1375,44 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
                     values.append(model['pbounds'][k][0])
                 else:
                     print('The following key\'s bounds are not properly described:', k)
-
             like = eval_like(agent, values)
-            weighted_params_df.iloc[ins_i] = sampled_params_df.iloc[ins_i] * like
-            sum_like += like
+            if like == 0:
+                print('WARNING; like is zero. It may be a float type instead of sympy.')
+            return like
 
+        likes = Parallel(n_jobs=-1, verbose=1)(delayed(eval_like_for_a_sample)(ins_i) for ins_i in range(sample_size))
+        sum_like = sum(likes)
         if sum_like == 0:
             print('WARNING; sum_like is zero. It may be a float type instead of sympy.')
 
-        cols = weighted_params_df.columns.values.tolist()
-        # sympyからfloatへのキャストを防ぐため一旦辞書にする．
-        sumed_weighted_params_dic = {}
-        # df.sum()を使うと（多分）floatにキャストされてから総和を求めるのでアンダーフローが起こる．だから，いちいちfor文を回して総和を取る．
-        for pram_v in (cols):
-            sumed_weighted_param = 0
-            for ins_i in range(sample_size):
-                sumed_weighted_param += weighted_params_df[pram_v][ins_i]
-            #print(sumed_weighted_param)
-            sumed_weighted_params_dic[pram_v] = sumed_weighted_param
+        for ins_i in range(sample_size):
+            weighted_params_df.iloc[ins_i] = sampled_params_df.iloc[ins_i] * likes[ins_i]
 
-        sumed_weighted_params_ser = pd.Series(sumed_weighted_params_dic)
-        estimated_params_ser = sumed_weighted_params_ser / sum_like
-        # 推定パラメータはそんなに小さくないのでアンダーフローは基本起きないはず．元のコードとの互換性のためここでfloatに変換しないといけない．
-        estimated_params_ser = estimated_params_ser.astype('float')
+        estimated_params = np.zeros(len(bounds_key))
+        for pram_i, pram_v in enumerate(bounds_key):
+            sumed_weighted_param = sum(weighted_params_df[pram_v].tolist())
+            # sympyはブロードキャストできないのでfor文で回している
+            estimated_params[pram_i] = sumed_weighted_param / sum_like
+        # 元のコードとの互換性のためここでfloatに変換する．推定パラメータはそんなに小さくないのでアンダーフローは基本起きない．
+        estimated_params = estimated_params.astype(np.float32)
+        estimated_params_dict = dict(zip(bounds_key, estimated_params))
 
+        # 上で求めた推定パラメータと固定パラメータを合わせたリストにする
         est_values = []
         for k in keys:
             if k in bounds_key:
-                est_values.append(estimated_params_ser[k])
+                est_values.append(estimated_params_dict[k])
             elif k in fixed_key:
                 est_values.append(model['pbounds'][k][0])
             else:
                 print('The following key\'s bounds are not properly described:', k)
 
-        # ll = agent.only_values_sim_f(est_values)
+        estimated_params_dict = dict(zip(keys, est_values))
+        estimated_params_ser = pd.Series(estimated_params_dict)
 
-        # llとかerrorとか求めてグラフを描く．
+        # ここから，llとかerrorとか求めてグラフを描く．
+        # ll = agent.only_values_sim_f(est_values)
         # HACK: Optimisationとbaysian_optが癒着していてOptimisationを再利用できないため，ここからはそのコピペ．つまり，オブジェクト指向的には最悪．
-        estimated_params = dict(zip(keys, est_values))
 
         def save_sim(estimated_params, dirname, is_save=False, is_show=False):
             q_value_array, prob_array = agent.sim(estimated_params)
@@ -1425,8 +1435,8 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
             my_graph_plot(error_array, section_line, "error_graph", "total timestep", "error", dirname=dirname, is_save=is_save, is_show=is_show)
             return np.sum(ll_array), np.sum(error_array)
 
-        ll, error = save_sim(estimated_params, dirname, is_save=is_save, is_show=is_show)
-        print("estimated_params: ", estimated_params)
+        ll, error = save_sim(estimated_params_dict, dirname, is_save=is_save, is_show=is_show)
+        print("estimated_params: ", estimated_params_dict)
         print("ll: ", ll)
         print("error: ", error)
 
@@ -1442,7 +1452,7 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
             print("ll + each ll: ", ll + unco_ll)
             print("unconstrained_sim_error: ", unconstrained_sim_error)
 
-        for k, v in estimated_params.items():  # 範囲の端ならば注意メッセージを出す
+        for k, v in estimated_params_dict.items():  # 範囲の端ならば注意メッセージを出す
             if any(np.array(model['pbounds'][k]) == v) and not (len(model['pbounds'][k]) == 1):
                 print("* Note", k, ": pbounds =", model['pbounds'][k], ", best_params =", v)
 
@@ -1462,7 +1472,7 @@ def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sampl
         else:
             df_estimation_is = pd.DataFrame([estimated_params_ser])
 
-    # mouse_idがfloatで表示されると気味が悪いのでintにする．もっといいやり方あるかも．
+    # mouse_idがfloatで表示されると見た目が悪いのでintにする．もっといいやり方あるかも．
     df_estimation_is['mouse_id'] = df_estimation_is['mouse_id'].astype(int)
     print("total end time: ", time.time() - start_time)
     return df_estimation_is
@@ -1644,10 +1654,10 @@ def calc_stay_ratio(mice, tasks, mouse_group_name, selection=[1, 3, 5, 7, 9] ) -
     incorrect_data = pd.DataFrame(prob["f_same"], index=mice)
 
     # 3のタスク毎の任意の複数の選択肢毎の全マウス平均をcsv出力
-    correct_data.to_csv("./data/WSLS/{}_task{}_hole{}_cstart.csv".format(mouse_group_name,"-".join(tasks), "".join(selection)))
-    incorrect_data.to_csv("./data/WSLS/{}_task{}_hole{}_fstart.csv".format(mouse_group_name,"-".join(tasks), "".join(selection)))
+    correct_data.to_csv("./data/WSLS/{}_{}_hole{}_cstart.csv".format(mouse_group_name,"-".join(tasks), "".join(selection)))
+    incorrect_data.to_csv("./data/WSLS/{}_{}_hole{}_fstart.csv".format(mouse_group_name,"-".join(tasks), "".join(selection)))
 
-    with open(f'./data/WSLS/{mouse_group_name}_task{"-".join(tasks)}_hole{"".join(selection)}_serial.csv', 'w', newline='') as f:
+    with open(f'./data/WSLS/{mouse_group_name}_{"-".join(tasks)}_hole{"".join(selection)}_serial.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         i = 0
         for idx in mice:
@@ -1945,10 +1955,10 @@ def do_process(mouse_group_name):
     is_plot = False
     is_calc_reaction_rewardlatency = False
     is_calc_entropy = False
-    is_calc_stay_ratio = True # WSLS
+    is_calc_stay_ratio = False # WSLS
     is_calc_reach_threshold_ratio = False
-    is_estimate_learning_params = False
-    is_estimate_learning_params_importancesampling = False
+    is_estimate_learning_params = True
+    is_estimate_learning_params_importancesampling = True
 
     if is_plot:
         for mouse_id in mice:
@@ -2007,20 +2017,19 @@ def do_process(mouse_group_name):
     if is_estimate_learning_params:
         models_dict = get_model_list()
         for model in models_dict:
-            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model, num_sim=20, n_calls=150)
+            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model, num_sim=30, n_calls=100, ignore_tasks=["TC100", "TC70"])
             df_learningparams = df_learningparams.assign(group=mouse_group_name)
-            df_learningparams.to_csv("./data/estimation/params_{}_{}.csv".format(mouse_group_name, model["model_name"]))
+            df_learningparams.to_csv("./data/estimation/mle{}_{}.csv".format(mouse_group_name, model["model_name"]))
 
     if is_estimate_learning_params_importancesampling:
         models_dict = get_model_list()
         for model in models_dict:
-            df_learningparams_is = estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sample_size=25000)
-            #            df_learningparams_is = estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sample_size=2500)
+            df_learningparams_is = estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sample_size=50000, ignore_tasks=["TC100", "TC70"])
             df_learningparams_is = df_learningparams_is.assign(group=mouse_group_name)
             if not os.path.exists('./data/estimation_is/'):
                 os.mkdir('./data/estimation_is/')
             df_learningparams_is.to_csv(
-                "./data/estimation_is/is_params_{}_{}.csv".format(mouse_group_name,model["model_name"]))
+                "./data/estimation_is/is_{}_{}.csv".format(mouse_group_name,model["model_name"]))
 
     #return df_learningparams
 
@@ -2031,8 +2040,8 @@ def do_process(mouse_group_name):
 do_process('ChAT-dTA')
 do_process('BKKO')
 do_process('BKLT')
-do_process('Scarce')
-do_process('Rich')
+#do_process('Scarce')
+#do_process('Rich')
 
 #df_lp_BKLT = do_process('BKLT')
 #df_lp_BKKO = do_process('BKKO')
