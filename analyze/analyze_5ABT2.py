@@ -72,19 +72,19 @@ def get_mouse_group_dict():
     # 実験の意図
     # 実験条件の宣言
     mouse_group_dict = {
-        "Scarce": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+        "Scarce": {"tasks_section": ["TC100", "TC70", "All5_30", "Only5_50", "Not5_Other30"],
                    "WSLS_task_section": ["All5_30"],
                    "mice": [8, 13, 17, 26, 137, 141, 144, 154, 168, 172],
                    },
-        "Rich": {"tasks_section": ["All5_60", "Only5_80", "Not5_Other60"],
+        "Rich": {"tasks_section": ["TC100", "TC70", "All5_60", "Only5_80", "Not5_Other60"],
                  "WSLS_task_section": ["All5_60"],
                  "mice": [95, 98, 100, 102, 110, 112, 113, 128, 130, 169],
                  },
-        "Alz6M": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+        "Alz6M": {"tasks_section": ["TC100", "TC70", "All5_30", "Only5_50", "Not5_Other30"],
                   "WSLS_task_section": ["All5_30"],
                   "mice": [238],
                  },
-        "WT6M": {"tasks_section": ["All5_30", "Only5_50", "Not5_Other30"],
+        "WT6M": {"tasks_section": ["TC100", "TC70", "All5_30", "Only5_50", "Not5_Other30"],
                  "WSLS_task_section": ["All5_30"],
                  "mice": [226, 232],
                  },
@@ -106,7 +106,7 @@ def get_mouse_group_dict():
                  },
         "BKLT": {"tasks_section": ["TC100", "TC70", "All5_30", "Only5_50", "Not5_Other30"],
                  "WSLS_task_section": ["All5_30", "Only5_50", "Not5_Other30"],
-                 "mice": [119, 136, 149, 177, 190, 202, 206, 216, 219, 222, 225, 228],
+                 "mice": [119, 136, 149, 177, 190, 202, 206, 216, 219, 222, 225],
                  },
         "BKKO_Only5": {"tasks_section": ["All5_30", "Only5_50"],
                  "WSLS_task_section": ["All5_30"],
@@ -1247,7 +1247,8 @@ def satori_main(mice_id, dirname=None):
                   full_tasls_dirname, is_save=True, is_show=full_is_show)
 
 
-def estimate_learning_rate_and_beta(mice, tasks, model, num_sim=20, n_calls =150, ignore_tasks=[]):
+# 最尤推定
+def estimate_learning_rate_and_beta_mle(mice, tasks, model, num_sim=20, n_calls =150, ignore_tasks=[]):
     num_moving_average = 100  # 移動平均のstep数
     num_first_to_remove = 100  # 移動平均にする際に削除するstep数
     dirname = './'
@@ -1307,7 +1308,7 @@ def estimate_learning_rate_and_beta(mice, tasks, model, num_sim=20, n_calls =150
     print("total end time: ", time.time() - start_time)
     return df_estimation
 
-
+# importance sampling
 def estimate_learning_rate_and_beta_importancesampling(mice, tasks, model, sample_size, ignore_tasks=[]):
     num_moving_average = 100  # 移動平均のstep数
 #    num_first_to_remove = 100  # 移動平均にする際に削除するstep数
@@ -1957,8 +1958,8 @@ def do_process(mouse_group_name):
     is_calc_entropy = False
     is_calc_stay_ratio = False # WSLS
     is_calc_reach_threshold_ratio = False
-    is_estimate_learning_params = True
-    is_estimate_learning_params_importancesampling = True
+    is_estimate_learning_params_mle = True
+    is_estimate_learning_params_importancesampling = False
 
     if is_plot:
         for mouse_id in mice:
@@ -2014,10 +2015,10 @@ def do_process(mouse_group_name):
         print(df_step_DOWN)
         df_step_DOWN.to_csv("./data/step/step_DOWN50_{}.csv".format(mouse_group_name))
 
-    if is_estimate_learning_params:
+    if is_estimate_learning_params_mle:
         models_dict = get_model_list()
         for model in models_dict:
-            df_learningparams = estimate_learning_rate_and_beta(mice, tasks, model, num_sim=30, n_calls=100, ignore_tasks=["TC100", "TC70"])
+            df_learningparams = estimate_learning_rate_and_beta_mle(mice, tasks, model, num_sim=30, n_calls=200, ignore_tasks=["TC100", "TC70"])
             df_learningparams = df_learningparams.assign(group=mouse_group_name)
             df_learningparams.to_csv("./data/estimation/mle{}_{}.csv".format(mouse_group_name, model["model_name"]))
 
@@ -2037,11 +2038,11 @@ def do_process(mouse_group_name):
 # do_process('BKKO_Only5')
 # do_process('BKLT_Only5')
 #do_process('WT6M')
-do_process('ChAT-dTA')
-do_process('BKKO')
-do_process('BKLT')
-#do_process('Scarce')
-#do_process('Rich')
+# do_process('ChAT-dTA')
+# do_process('BKKO')
+# do_process('BKLT')
+do_process('Scarce')
+do_process('Rich')
 
 #df_lp_BKLT = do_process('BKLT')
 #df_lp_BKKO = do_process('BKKO')
