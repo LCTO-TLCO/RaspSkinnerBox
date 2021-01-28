@@ -58,12 +58,30 @@ def get_status(mouse_id) -> pd.DataFrame:
     return ret_val
 
 def write_report_csv(mouse_id):
-    print(f"mouse_id={mouse_id}")
+    print(f"[{mouse_id}]")
     status_df = get_status(mouse_id)
 #    print(status_df)
     ldf = status_df.tail(1)
-#    print(ldf)
-    str = f"{ldf.index[0]} {ldf['duration in hours'].iloc[-1]:.0f}h R{ldf['reward'].iloc[-1]:.0f} F{ldf['failure'].iloc[-1]:.0f} T{ldf['time over'].iloc[-1]:.0f} E{ldf['entropy'].iloc[-1]:.2f}"
+
+    task = ldf.index[0]
+    duration = ldf['duration in hours'].iloc[-1]
+    try:
+        reward = ldf['reward'].iloc[-1]
+    except:
+        reward = 0
+    try:
+        failure = ldf['failure'].iloc[-1]
+    except:
+        failure = 0
+    try:
+        timeover = ldf['time over'].iloc[-1]
+    except:
+        timeover = 0
+    try:
+        entropy = ldf['entropy'].iloc[-1]
+    except:
+        entropy = 0
+    str = f"{task} {duration:.0f}h R{reward:.0f} F{failure:.0f} T{timeover:.0f} E{entropy:.2f}"
     print(str)
     f = open(f'./data/sync/report/{mouse_id:03d}.txt', 'w')
     f.write(str)
@@ -75,9 +93,14 @@ if __name__ == '__main__':
     if len(args) > 1:
         for i in args[1:len(args)]:
             write_report_csv(int(i))
-    else: # 最新6件
+    else: # 最新5件
         p = Path('./data/sync/')
         files = list(p.glob('no???_action.csv'))
-        file_updates = {file_path: os.stat(file_path).st_mtime for file_path in files}
-        newst_file_path = max(file_updates, key=file_updates.get)
-        print(newst_file_path)
+        for file in files[-6:-1]: # 最後の5データ
+            mouse_id = int(file.stem[2:5])
+            write_report_csv(mouse_id)
+
+#        file_updates = {file_path: os.stat(file_path).st_mtime for file_path in files}
+#        newst_file_path = max(file_updates, key=file_updates.get)
+#        print(newst_file_path)
+#        write_report_csv(int(i))
