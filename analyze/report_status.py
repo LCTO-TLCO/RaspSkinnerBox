@@ -67,8 +67,14 @@ def write_report_csv(mouse_id):
     print(f"[{mouse_id}]")
     [status_df, latest_row] = get_status(mouse_id)
     print(status_df)
+
     str_detail = status_df.to_string()
     str_latest_log = latest_row.to_string()
+
+    print(f"last action: {latest_row.tail(1)['timestamps'].iloc[-1]}")
+
+    pause_duration = int((datetime.now() - latest_row.tail(1)["timestamps"].iloc[-1]).total_seconds() / 3600)
+    print(f"pause duration = {pause_duration} h")
 
     ldf = status_df.tail(1)
     task = ldf.index[0]
@@ -89,11 +95,12 @@ def write_report_csv(mouse_id):
         entropy = ldf['entropy'].iloc[-1]
     except:
         entropy = 0
-    str = f"{task} {duration:.0f}h R{reward:.0f} F{failure:.0f} T{timeover:.0f} E{entropy:.2f}\n"
-    print(str)
+    str1 = f"{task} {duration:.0f}h (P{pause_duration}h) R{reward:.0f} F{failure:.0f} T{timeover:.0f} E{entropy:.2f}\n"
+    print(str1)
 
     f = open(f'./sync/report/{mouse_id:03d}.txt', 'w')
-    f.write(str)
+    f.write(str1)
+    f.write(str(pause_duration))
     f.write('\n')
     f.write(datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
     f.write('\n\n')
