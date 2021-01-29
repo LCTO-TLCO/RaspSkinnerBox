@@ -16,8 +16,9 @@ from pyentrp import entropy as pent
 import seaborn as sns
 from pathlib import Path
 
-def get_status(mouse_id) -> pd.DataFrame:
-    file = "./data/sync/no{:03d}_action.csv".format(mouse_id)
+
+def get_status(mouse_id) -> [pd.DataFrame, pd.DataFrame]:
+    file = "./sync/no{:03d}_action.csv".format(mouse_id)
     data = pd.read_csv(file, names=["timestamps", "task", "session_id", "correct_times", "event_type", "hole_no"],
                        parse_dates=[0])
     if isinstance(data.iloc[0].timestamps, str):
@@ -38,6 +39,9 @@ def get_status(mouse_id) -> pd.DataFrame:
     pd.options.display.precision = 1
     # print(ret_val)
 
+    latest_row = data[data.event_type.isin(["reward", "failure", "time over"])].tail(15)[
+        ["timestamps", "event_type", "hole_no"]]
+
     # entropy
     entropy_series = pd.Series(name='entropy')
     for last_task in tasks:
@@ -55,14 +59,18 @@ def get_status(mouse_id) -> pd.DataFrame:
     ret_val = ret_val.T
 #    print(ret_val.index)
 
-    return ret_val
+
+    return [ret_val, latest_row]
+
 
 def write_report_csv(mouse_id):
     print(f"[{mouse_id}]")
-    status_df = get_status(mouse_id)
-#    print(status_df)
-    ldf = status_df.tail(1)
+    [status_df, latest_row] = get_status(mouse_id)
+    print(status_df)
+    str_detail = status_df.to_string()
+    str_latest_log = latest_row.to_string()
 
+    ldf = status_df.tail(1)
     task = ldf.index[0]
     duration = ldf['duration in hours'].iloc[-1]
     try:
@@ -81,10 +89,18 @@ def write_report_csv(mouse_id):
         entropy = ldf['entropy'].iloc[-1]
     except:
         entropy = 0
-    str = f"{task} {duration:.0f}h R{reward:.0f} F{failure:.0f} T{timeover:.0f} E{entropy:.2f}"
+    str = f"{task} {duration:.0f}h R{reward:.0f} F{failure:.0f} T{timeover:.0f} E{entropy:.2f}\n"
     print(str)
-    f = open(f'./data/sync/report/{mouse_id:03d}.txt', 'w')
+
+    f = open(f'./sync/report/{mouse_id:03d}.txt', 'w')
     f.write(str)
+    f.write('\n')
+    f.write(datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
+    f.write('\n\n')
+    f.write(str_detail)
+    f.write('\n\n')
+    f.write(str_latest_log)
+    f.write('\n')
     f.close()
 
 if __name__ == '__main__':
@@ -94,13 +110,10 @@ if __name__ == '__main__':
         for i in args[1:len(args)]:
             write_report_csv(int(i))
     else: # 最新5件
-        p = Path('./data/sync/')
+        p = Path('./sync/')
+        print(p)
         files = list(p.glob('no???_action.csv'))
-        for file in files[-6:-1]: # 最後の5データ
+        for file in files[-5:]: # 最後の5データ
             mouse_id = int(file.stem[2:5])
             write_report_csv(mouse_id)
 
-#        file_updates = {file_path: os.stat(file_path).st_mtime for file_path in files}
-#        newst_file_path = max(file_updates, key=file_updates.get)
-#        print(newst_file_path)
-#        write_report_csv(int(i))
